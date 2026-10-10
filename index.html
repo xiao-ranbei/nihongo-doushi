@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f5f0">
+  <title>动词活用练习</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="verb-engine.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./index.html" aria-label="动词活用练习首页">
+        <span class="brand-mark" aria-hidden="true">活</span>
+        <span>
+          <strong>动词活用练习</strong>
+          <small>JAPANESE VERB PRACTICE</small>
+        </span>
+      </a>
+      <nav class="tabs" aria-label="工具页面">
+        <button class="tab is-active" type="button" data-view="practice" aria-current="page">练习</button>
+        <button class="tab" type="button" data-view="reference">活用速查</button>
+        <button class="tab" type="button" data-view="mistakes">
+          错题 <span class="tab-count" id="mistake-count">0</span>
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="page-intro">
+        <div>
+          <p class="eyebrow">一题一变，练到熟悉</p>
+          <h1>看见动词，<span>想起变化。</span></h1>
+          <p class="intro-copy">主动写出答案，再用变化规律记住它。支持五段、一段和不规则动词。</p>
+        </div>
+        <div class="offline-note"><span aria-hidden="true"></span> 离线可用 · 记录保存在本机</div>
+      </section>
+
+      <section class="view" id="view-practice" aria-labelledby="practice-title">
+        <div class="filter-bar">
+          <label>
+            <span>动词类别</span>
+            <select id="group-filter">
+              <option value="all">全部类别</option>
+              <option value="godan">五段动词</option>
+              <option value="ichidan">一段动词</option>
+              <option value="irregular">不规则动词</option>
+            </select>
+          </label>
+          <label>
+            <span>变形类型</span>
+            <select id="voice-filter"></select>
+          </label>
+          <label>
+            <span>活用形式</span>
+            <select id="inflection-filter"></select>
+          </label>
+          <button class="outline-button new-question-button" id="new-question" type="button">
+            <span aria-hidden="true">↻</span> 换一题
+          </button>
+        </div>
+
+        <div class="practice-layout">
+          <article class="practice-card">
+            <div class="card-topline">
+              <div>
+                <p class="eyebrow" id="question-index">随机练习</p>
+                <h2 id="practice-title">把变形说出来</h2>
+              </div>
+              <span class="target-pill" id="target-pill">准备中</span>
+            </div>
+
+            <div class="verb-prompt">
+              <div class="verb-meta">
+                <span class="class-pill" id="question-group"></span>
+                <span class="meaning" id="question-meaning"></span>
+              </div>
+              <h3 id="question-word"></h3>
+              <p class="reading" id="question-reading"></p>
+            </div>
+
+            <p class="question-instruction" id="question-instruction"></p>
+
+            <form class="answer-form" id="answer-form">
+              <label for="answer-input">写出日语答案</label>
+              <div class="answer-row">
+                <input
+                  id="answer-input"
+                  name="answer"
+                  type="text"
+                  autocomplete="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  placeholder="可输入汉字、假名或罗马字"
+                  required
+                >
+                <button class="primary-button" id="submit-answer" type="submit">检查答案</button>
+              </div>
+              <div class="answer-help">
+                <span>例如：書きます、かきます或 kakimasu</span>
+                <button class="inline-button" id="hint-button" type="button" aria-expanded="false">显示规律提示</button>
+              </div>
+              <p class="hint-text" id="rule-hint" hidden></p>
+            </form>
+
+            <section class="feedback-panel" id="feedback-panel" aria-live="polite" hidden>
+              <div class="feedback-heading">
+                <span class="feedback-mark" id="feedback-mark" aria-hidden="true"></span>
+                <strong id="feedback-title"></strong>
+              </div>
+              <p class="feedback-user-answer" id="feedback-user-answer"></p>
+              <div class="correct-answer">
+                <span>正确形态</span>
+                <strong id="feedback-correct-answer"></strong>
+                <small id="feedback-reading"></small>
+              </div>
+              <div class="feedback-meaning">
+                <strong>常见表达大意（依语境）</strong>
+                <p id="feedback-voice-meaning" hidden></p>
+                <p id="feedback-inflection-meaning"></p>
+              </div>
+              <p class="feedback-rule" id="feedback-rule"></p>
+              <button class="primary-button next-button" id="next-question" type="button">
+                下一题 <span aria-hidden="true">→</span>
+              </button>
+            </section>
+          </article>
+
+          <aside class="learning-card">
+            <p class="eyebrow">记住变化的方法</p>
+            <h2>先分组，再变形。</h2>
+            <div class="class-note">
+              <span class="class-note-mark">五</span>
+              <div><strong>五段动词</strong><p>辞书形以「う段」假名结尾。<br>活用时，词尾在「あ・い・う・え・お」各段之间变化。</p></div>
+            </div>
+            <div class="class-note">
+              <span class="class-note-mark">一</span>
+              <div><strong>一段动词</strong><p>通常以「る」结尾，前一个假名在「い段」或「え段」（有少数例外）。<br>活用时，通常去掉「る」，再接相应词尾。</p></div>
+            </div>
+            <div class="class-note">
+              <span class="class-note-mark">不</span>
+              <div><strong>不规则动词</strong><p>「する」「来る」及其复合词需要单独记忆。</p></div>
+            </div>
+            <button class="text-link" type="button" data-open-view="reference">
+              查一个动词的完整变化 <span aria-hidden="true">→</span>
+            </button>
+            <div class="scope-note">
+              <strong>包含的变形</strong>
+              <p>ます、て、た、条件、可能、受身、使役、使役受身等。</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="view-reference" aria-labelledby="reference-title" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">REFERENCE</p>
+            <h2 id="reference-title">活用速查</h2>
+            <p>选择动词和变形类型，查看常见表达大意与变化提示；具体含义会随语境变化。</p>
+          </div>
+        </div>
+        <div class="reference-controls">
+          <label class="search-control">
+            <span>搜索动词</span>
+            <input id="reference-search" type="search" placeholder="输入汉字、假名或中文意思">
+          </label>
+          <label>
+            <span>动词</span>
+            <select id="reference-verb"></select>
+          </label>
+          <label>
+            <span>变形类型</span>
+            <select id="reference-voice"></select>
+          </label>
+        </div>
+        <div class="reference-summary">
+          <div>
+            <h3 id="reference-word"></h3>
+            <p id="reference-meaning"></p>
+            <p class="reference-voice-meaning" id="reference-voice-meaning"></p>
+          </div>
+          <span class="class-pill" id="reference-group"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="reference-table">
+            <thead>
+              <tr>
+                <th scope="col">活用形式</th>
+                <th scope="col">变形结果</th>
+                <th scope="col">常见表达大意</th>
+                <th scope="col">变化提示</th>
+              </tr>
+            </thead>
+            <tbody id="reference-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view" id="view-mistakes" aria-labelledby="mistakes-title" hidden>
+        <div class="section-heading mistakes-heading">
+          <div>
+            <p class="eyebrow">REVIEW</p>
+            <h2 id="mistakes-title">错题重练</h2>
+            <p>答错的变形会保存在本机，重练答对后自动移出。</p>
+          </div>
+          <div class="mistake-actions">
+            <button class="outline-button" id="review-mistakes" type="button">随机重练</button>
+            <button class="text-button danger-text" id="clear-mistakes" type="button">清空</button>
+          </div>
+        </div>
+        <div class="mistakes-list" id="mistakes-list"></div>
+        <div class="empty-state" id="mistakes-empty" hidden>
+          <span aria-hidden="true">◎</span>
+          <strong>还没有错题</strong>
+          <p>开始练习，没掌握的变形会自动收集到这里。</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>独立整理的日语活用练习工具</span>
+      <span>数据仅保存在当前浏览器</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
