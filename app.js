@@ -1,6 +1,29 @@
 (function () {
   "use strict";
 
+  function injectFontFaces() {
+    const fonts = Array.isArray(window.JapaneseFontManifest)
+      ? window.JapaneseFontManifest
+      : [];
+    if (!fonts.length) {
+      return;
+    }
+    const style = document.createElement("style");
+    style.id = "dynamic-font-faces";
+    style.textContent = fonts.map(function (font) {
+      return '@font-face {'
+        + ' font-family: "' + font.family + '";'
+        + ' src: url("' + font.src + '") format("' + (font.format || "truetype") + '");'
+        + ' font-weight: ' + (font.weight || "normal") + ';'
+        + ' font-style: ' + (font.style || "normal") + ';'
+        + ' font-display: ' + (font.display || "swap") + ';'
+        + ' }';
+    }).join("\n");
+    document.head.append(style);
+  }
+
+  injectFontFaces();
+
   const engine = window.JapaneseVerbEngine;
   if (!engine) {
     throw new Error("The verb conjugation engine did not load.");
@@ -328,10 +351,9 @@
     elements.ruleHint.hidden = true;
     elements.hintButton.textContent = "显示规律提示";
     elements.hintButton.setAttribute("aria-expanded", "false");
-    elements.ruleHint.textContent = engine.explain(
-      question.verb,
-      question.voiceId,
-      question.inflectionId
+    appendRuleText(
+      elements.ruleHint,
+      engine.explain(question.verb, question.voiceId, question.inflectionId)
     );
   }
 
@@ -349,6 +371,24 @@
     return /^[a-z']+$/i.test(normalized)
       ? engine.toHiraganaFromRomaji(normalized)
       : normalized;
+  }
+
+  function appendRuleText(target, text) {
+    target.replaceChildren();
+    const parts = String(text).split(/(「[^」]*」|[あいうえお]段)/);
+    parts.forEach(function (part, index) {
+      if (!part) {
+        return;
+      }
+      if (index % 2 === 1) {
+        const mark = document.createElement("mark");
+        mark.className = "rule-highlight";
+        mark.textContent = part;
+        target.append(mark);
+      } else {
+        target.append(document.createTextNode(part));
+      }
+    });
   }
 
   function recordMistake(question, answer) {
@@ -417,10 +457,13 @@
     elements.feedbackVoiceMeaning.textContent = "语态：" + voice.meaning;
     elements.feedbackInflectionMeaning.textContent = (currentQuestion.voiceId === "base" ? "" : "活用：")
       + inflection.meaning;
-    elements.feedbackRule.textContent = engine.explain(
-      currentQuestion.verb,
-      currentQuestion.voiceId,
-      currentQuestion.inflectionId
+    appendRuleText(
+      elements.feedbackRule,
+      engine.explain(
+        currentQuestion.verb,
+        currentQuestion.voiceId,
+        currentQuestion.inflectionId
+      )
     );
     elements.nextQuestion.hidden = false;
 
@@ -606,7 +649,7 @@
       meaningCell.textContent = form.meaning;
 
       const ruleCell = document.createElement("td");
-      ruleCell.textContent = engine.explain(verb, voiceId, form.id);
+      appendRuleText(ruleCell, engine.explain(verb, voiceId, form.id));
       row.append(formCell, answerCell, meaningCell, ruleCell);
       elements.referenceTableBody.append(row);
     });

@@ -1,10 +1,4 @@
-@font-face {
-  font-family: "LXGW ZhenKai GB";
-  src: url("./font/LXGWZhenKaiGB-Regular.ttf") format("truetype");
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-}
+/* 字体文件由 font/fonts.js 清单声明，运行时动态注入 @font-face，路径不再写死在 CSS 中。 */
 
 :root {
   color-scheme: light;
@@ -513,6 +507,19 @@ select {
   font-size: 10px;
   line-height: 1.65;
   white-space: pre-line;
+}
+
+.rule-highlight {
+  padding: 1px 3px;
+  border-radius: 4px;
+  background: rgba(50, 97, 81, 0.14);
+  color: var(--green-dark);
+  font-weight: 650;
+}
+
+.feedback-panel.is-wrong .rule-highlight {
+  background: rgba(165, 78, 69, 0.12);
+  color: var(--red);
 }
 
 .feedback-panel {
@@ -1153,6 +1160,42 @@ select {
 
   .footer {
     font-size: 8px;
+  }
+}
+
+/* 大屏适配：按视口尺寸对应用外壳整体等比放大，保证 2K（2560×1440）
+   及以上分辨率下文字、按钮与间距的可读性；缩放只影响 .app-shell，
+   小屏与中等屏的布局保持原样。 */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .app-shell {
+    width: min(1100px, calc(100% - 44px));
+  }
+
+  .app-shell,
+  .toast {
+    zoom: 1.15;
+  }
+}
+
+@media (min-width: 2200px) and (min-height: 1150px) {
+  .app-shell {
+    width: min(1220px, calc(100% - 44px));
+  }
+
+  .app-shell,
+  .toast {
+    zoom: 1.3;
+  }
+}
+
+@media (min-width: 3000px) and (min-height: 1500px) {
+  .app-shell {
+    width: min(1320px, calc(100% - 44px));
+  }
+
+  .app-shell,
+  .toast {
+    zoom: 1.45;
   }
 }
 
