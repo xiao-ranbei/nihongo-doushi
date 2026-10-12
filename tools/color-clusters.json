@@ -1,0 +1,831 @@
+[
+  {
+    "cluster": 7,
+    "suggest_token": null,
+    "representative": "#879188",
+    "members": [
+      "#869188",
+      "#879188"
+    ],
+    "occurrences": 5,
+    "lines": [
+      216,
+      999,
+      1038,
+      1069,
+      1169
+    ]
+  },
+  {
+    "cluster": 6,
+    "suggest_token": null,
+    "representative": "#e4e8df",
+    "members": [
+      "#e2e6de",
+      "#e2e7df",
+      "#e4e8df"
+    ],
+    "occurrences": 4,
+    "lines": [
+      213,
+      340,
+      395,
+      1186
+    ]
+  },
+  {
+    "cluster": 13,
+    "suggest_token": null,
+    "representative": "#eef0eb",
+    "members": [
+      "#edf0e9",
+      "#edf1eb",
+      "#eef0e9",
+      "#eef0eb"
+    ],
+    "occurrences": 4,
+    "lines": [
+      303,
+      307,
+      503,
+      1063
+    ]
+  },
+  {
+    "cluster": 30,
+    "suggest_token": null,
+    "representative": "#f4f8f2",
+    "members": [
+      "#f2f7f0",
+      "#f4f8f2",
+      "#f5f8f2"
+    ],
+    "occurrences": 4,
+    "lines": [
+      440,
+      702,
+      714,
+      1197
+    ]
+  },
+  {
+    "cluster": 53,
+    "suggest_token": null,
+    "representative": "#53675a",
+    "members": [
+      "#53675a",
+      "#53685a"
+    ],
+    "occurrences": 4,
+    "lines": [
+      851,
+      1083,
+      1090,
+      1223
+    ]
+  },
+  {
+    "cluster": 0,
+    "suggest_token": null,
+    "representative": "#939c93",
+    "members": [
+      "#929b92",
+      "#939c93"
+    ],
+    "occurrences": 3,
+    "lines": [
+      109,
+      555,
+      1162
+    ]
+  },
+  {
+    "cluster": 5,
+    "suggest_token": null,
+    "representative": "#828d84",
+    "members": [
+      "#818c83",
+      "#828d84"
+    ],
+    "occurrences": 3,
+    "lines": [
+      203,
+      246,
+      385
+    ]
+  },
+  {
+    "cluster": 20,
+    "suggest_token": null,
+    "representative": "#657268",
+    "members": [
+      "#647268",
+      "#647269",
+      "#657268"
+    ],
+    "occurrences": 3,
+    "lines": [
+      333,
+      576,
+      1076
+    ]
+  },
+  {
+    "cluster": 24,
+    "suggest_token": null,
+    "representative": "#fffefa",
+    "members": [
+      "#fffefa"
+    ],
+    "occurrences": 3,
+    "lines": [
+      397,
+      430,
+      1253
+    ]
+  },
+  {
+    "cluster": 27,
+    "suggest_token": null,
+    "representative": "#dfe5dc",
+    "members": [
+      "#dfe5dc"
+    ],
+    "occurrences": 3,
+    "lines": [
+      428,
+      624,
+      1210
+    ]
+  },
+  {
+    "cluster": 39,
+    "suggest_token": null,
+    "representative": "#9aa39b",
+    "members": [
+      "#9aa29a",
+      "#9aa399",
+      "#9aa39b"
+    ],
+    "occurrences": 3,
+    "lines": [
+      679,
+      1110,
+      1240
+    ]
+  },
+  {
+    "cluster": 1,
+    "suggest_token": null,
+    "representative": "#7c877e",
+    "members": [
+      "#7b867e",
+      "#7c877e"
+    ],
+    "occurrences": 2,
+    "lines": [
+      129,
+      342
+    ]
+  },
+  {
+    "cluster": 2,
+    "suggest_token": null,
+    "representative": "#e9eee7",
+    "members": [
+      "#e9eee7",
+      "#eaf0e8"
+    ],
+    "occurrences": 2,
+    "lines": [
+      168,
+      549
+    ]
+  },
+  {
+    "cluster": 3,
+    "suggest_token": null,
+    "representative": "#58725e",
+    "members": [
+      "#56705d",
+      "#58725e"
+    ],
+    "occurrences": 2,
+    "lines": [
+      169,
+      1189
+    ]
+  },
+  {
+    "cluster": 19,
+    "suggest_token": null,
+    "representative": "#909990",
+    "members": [
+      "#909990",
+      "#909a91"
+    ],
+    "occurrences": 2,
+    "lines": [
+      328,
+      1229
+    ]
+  },
+  {
+    "cluster": 22,
+    "suggest_token": null,
+    "representative": "#fff8f1",
+    "members": [
+      "#fff8f1"
+    ],
+    "occurrences": 2,
+    "lines": [
+      349,
+      586
+    ]
+  },
+  {
+    "cluster": 23,
+    "suggest_token": null,
+    "representative": "#895936",
+    "members": [
+      "#895936"
+    ],
+    "occurrences": 2,
+    "lines": [
+      350,
+      588
+    ]
+  },
+  {
+    "cluster": 33,
+    "suggest_token": null,
+    "representative": "#f8faf5",
+    "members": [
+      "#f8f9f5",
+      "#f8faf5"
+    ],
+    "occurrences": 2,
+    "lines": [
+      532,
+      1068
+    ]
+  },
+  {
+    "cluster": 37,
+    "suggest_token": null,
+    "representative": "#ffffff",
+    "members": [
+      "#fff"
+    ],
+    "occurrences": 2,
+    "lines": [
+      626,
+      1188
+    ]
+  },
+  {
+    "cluster": 48,
+    "suggest_token": null,
+    "representative": "#89958a",
+    "members": [
+      "#89958a",
+      "#8a948b"
+    ],
+    "occurrences": 2,
+    "lines": [
+      765,
+      857
+    ]
+  },
+  {
+    "cluster": 51,
+    "suggest_token": null,
+    "representative": "#627967",
+    "members": [
+      "#627967"
+    ],
+    "occurrences": 2,
+    "lines": [
+      792,
+      1043
+    ]
+  },
+  {
+    "cluster": 52,
+    "suggest_token": null,
+    "representative": "#65796a",
+    "members": [
+      "#65796a"
+    ],
+    "occurrences": 2,
+    "lines": [
+      799,
+      808
+    ]
+  },
+  {
+    "cluster": 59,
+    "suggest_token": null,
+    "representative": "#cbd9ca",
+    "members": [
+      "#cbd9ca"
+    ],
+    "occurrences": 2,
+    "lines": [
+      1196,
+      1251
+    ]
+  },
+  {
+    "cluster": 4,
+    "suggest_token": null,
+    "representative": "#839184",
+    "members": [
+      "#839184"
+    ],
+    "occurrences": 1,
+    "lines": [
+      183
+    ]
+  },
+  {
+    "cluster": 8,
+    "suggest_token": null,
+    "representative": "#87a37f",
+    "members": [
+      "#87a37f"
+    ],
+    "occurrences": 1,
+    "lines": [
+      225
+    ]
+  },
+  {
+    "cluster": 9,
+    "suggest_token": null,
+    "representative": "#54705a",
+    "members": [
+      "#54705a"
+    ],
+    "occurrences": 1,
+    "lines": [
+      269
+    ]
+  },
+  {
+    "cluster": 10,
+    "suggest_token": null,
+    "representative": "#98645b",
+    "members": [
+      "#98645b"
+    ],
+    "occurrences": 1,
+    "lines": [
+      273
+    ]
+  },
+  {
+    "cluster": 11,
+    "suggest_token": null,
+    "representative": "#78977c",
+    "members": [
+      "#78977c"
+    ],
+    "occurrences": 1,
+    "lines": [
+      284
+    ]
+  },
+  {
+    "cluster": 12,
+    "suggest_token": null,
+    "representative": "#d99b91",
+    "members": [
+      "#d99b91"
+    ],
+    "occurrences": 1,
+    "lines": [
+      288
+    ]
+  },
+  {
+    "cluster": 14,
+    "suggest_token": null,
+    "representative": "#f3eeea",
+    "members": [
+      "#f3eeea"
+    ],
+    "occurrences": 1,
+    "lines": [
+      307
+    ]
+  },
+  {
+    "cluster": 15,
+    "suggest_token": null,
+    "representative": "#92ad91",
+    "members": [
+      "#92ad91"
+    ],
+    "occurrences": 1,
+    "lines": [
+      317
+    ]
+  },
+  {
+    "cluster": 16,
+    "suggest_token": null,
+    "representative": "#66876d",
+    "members": [
+      "#66876d"
+    ],
+    "occurrences": 1,
+    "lines": [
+      317
+    ]
+  },
+  {
+    "cluster": 17,
+    "suggest_token": null,
+    "representative": "#e2b0a5",
+    "members": [
+      "#e2b0a5"
+    ],
+    "occurrences": 1,
+    "lines": [
+      321
+    ]
+  },
+  {
+    "cluster": 18,
+    "suggest_token": null,
+    "representative": "#c97f74",
+    "members": [
+      "#c97f74"
+    ],
+    "occurrences": 1,
+    "lines": [
+      321
+    ]
+  },
+  {
+    "cluster": 21,
+    "suggest_token": null,
+    "representative": "#d7b6a1",
+    "members": [
+      "#d7b6a1"
+    ],
+    "occurrences": 1,
+    "lines": [
+      348
+    ]
+  },
+  {
+    "cluster": 25,
+    "suggest_token": null,
+    "representative": "#4a5c50",
+    "members": [
+      "#4a5c50"
+    ],
+    "occurrences": 1,
+    "lines": [
+      398
+    ]
+  },
+  {
+    "cluster": 26,
+    "suggest_token": null,
+    "representative": "#c6d4c7",
+    "members": [
+      "#c6d4c7"
+    ],
+    "occurrences": 1,
+    "lines": [
+      406
+    ]
+  },
+  {
+    "cluster": 28,
+    "suggest_token": null,
+    "representative": "#4b6554",
+    "members": [
+      "#4b6554"
+    ],
+    "occurrences": 1,
+    "lines": [
+      431
+    ]
+  },
+  {
+    "cluster": 29,
+    "suggest_token": null,
+    "representative": "#b9cbbc",
+    "members": [
+      "#b9cbbc"
+    ],
+    "occurrences": 1,
+    "lines": [
+      439
+    ]
+  },
+  {
+    "cluster": 31,
+    "suggest_token": null,
+    "representative": "#9c704f",
+    "members": [
+      "#9c704f"
+    ],
+    "occurrences": 1,
+    "lines": [
+      517
+    ]
+  },
+  {
+    "cluster": 32,
+    "suggest_token": null,
+    "representative": "#e8ece4",
+    "members": [
+      "#e8ece4"
+    ],
+    "occurrences": 1,
+    "lines": [
+      528
+    ]
+  },
+  {
+    "cluster": 34,
+    "suggest_token": null,
+    "representative": "#657c69",
+    "members": [
+      "#657c69"
+    ],
+    "occurrences": 1,
+    "lines": [
+      550
+    ]
+  },
+  {
+    "cluster": 35,
+    "suggest_token": null,
+    "representative": "#839087",
+    "members": [
+      "#839087"
+    ],
+    "occurrences": 1,
+    "lines": [
+      570
+    ]
+  },
+  {
+    "cluster": 36,
+    "suggest_token": null,
+    "representative": "#57685c",
+    "members": [
+      "#57685c"
+    ],
+    "occurrences": 1,
+    "lines": [
+      610
+    ]
+  },
+  {
+    "cluster": 38,
+    "suggest_token": null,
+    "representative": "#b2bab2",
+    "members": [
+      "#b2bab2"
+    ],
+    "occurrences": 1,
+    "lines": [
+      638
+    ]
+  },
+  {
+    "cluster": 40,
+    "suggest_token": null,
+    "representative": "#9ab39a",
+    "members": [
+      "#9ab39a"
+    ],
+    "occurrences": 1,
+    "lines": [
+      700
+    ]
+  },
+  {
+    "cluster": 41,
+    "suggest_token": null,
+    "representative": "#718075",
+    "members": [
+      "#718075"
+    ],
+    "occurrences": 1,
+    "lines": [
+      703
+    ]
+  },
+  {
+    "cluster": 42,
+    "suggest_token": null,
+    "representative": "#d8e6d7",
+    "members": [
+      "#d8e6d7"
+    ],
+    "occurrences": 1,
+    "lines": [
+      712
+    ]
+  },
+  {
+    "cluster": 43,
+    "suggest_token": null,
+    "representative": "#ecd6d0",
+    "members": [
+      "#ecd6d0"
+    ],
+    "occurrences": 1,
+    "lines": [
+      719
+    ]
+  },
+  {
+    "cluster": 44,
+    "suggest_token": null,
+    "representative": "#fbf4f1",
+    "members": [
+      "#fbf4f1"
+    ],
+    "occurrences": 1,
+    "lines": [
+      720
+    ]
+  },
+  {
+    "cluster": 45,
+    "suggest_token": null,
+    "representative": "#dcebdd",
+    "members": [
+      "#dcebdd"
+    ],
+    "occurrences": 1,
+    "lines": [
+      741
+    ]
+  },
+  {
+    "cluster": 46,
+    "suggest_token": null,
+    "representative": "#f2dfda",
+    "members": [
+      "#f2dfda"
+    ],
+    "occurrences": 1,
+    "lines": [
+      748
+    ]
+  },
+  {
+    "cluster": 47,
+    "suggest_token": null,
+    "representative": "#7f8b81",
+    "members": [
+      "#7f8b81"
+    ],
+    "occurrences": 1,
+    "lines": [
+      753
+    ]
+  },
+  {
+    "cluster": 49,
+    "suggest_token": null,
+    "representative": "#365e49",
+    "members": [
+      "#365e49"
+    ],
+    "occurrences": 1,
+    "lines": [
+      770
+    ]
+  },
+  {
+    "cluster": 50,
+    "suggest_token": null,
+    "representative": "#8b968d",
+    "members": [
+      "#8b968d"
+    ],
+    "occurrences": 1,
+    "lines": [
+      778
+    ]
+  },
+  {
+    "cluster": 54,
+    "suggest_token": null,
+    "representative": "#e2ece0",
+    "members": [
+      "#e2ece0"
+    ],
+    "occurrences": 1,
+    "lines": [
+      978
+    ]
+  },
+  {
+    "cluster": 55,
+    "suggest_token": null,
+    "representative": "#3a5c49",
+    "members": [
+      "#3a5c49"
+    ],
+    "occurrences": 1,
+    "lines": [
+      1104
+    ]
+  },
+  {
+    "cluster": 56,
+    "suggest_token": null,
+    "representative": "#758178",
+    "members": [
+      "#758178"
+    ],
+    "occurrences": 1,
+    "lines": [
+      1126
+    ]
+  },
+  {
+    "cluster": 57,
+    "suggest_token": null,
+    "representative": "#3e5b49",
+    "members": [
+      "#3e5b49"
+    ],
+    "occurrences": 1,
+    "lines": [
+      1155
+    ]
+  },
+  {
+    "cluster": 58,
+    "suggest_token": null,
+    "representative": "#536d59",
+    "members": [
+      "#536d59"
+    ],
+    "occurrences": 1,
+    "lines": [
+      1174
+    ]
+  },
+  {
+    "cluster": 60,
+    "suggest_token": null,
+    "representative": "#9c5b50",
+    "members": [
+      "#9c5b50"
+    ],
+    "occurrences": 1,
+    "lines": [
+      1203
+    ]
+  },
+  {
+    "cluster": 61,
+    "suggest_token": null,
+    "representative": "#94a492",
+    "members": [
+      "#94a492"
+    ],
+    "occurrences": 1,
+    "lines": [
+      1218
+    ]
+  },
+  {
+    "cluster": 62,
+    "suggest_token": null,
+    "representative": "#45654f",
+    "members": [
+      "#45654f"
+    ],
+    "occurrences": 1,
+    "lines": [
+      1255
+    ]
+  },
+  {
+    "cluster": 63,
+    "suggest_token": null,
+    "representative": "#e7c7c0",
+    "members": [
+      "#e7c7c0"
+    ],
+    "occurrences": 1,
+    "lines": [
+      1269
+    ]
+  }
+]

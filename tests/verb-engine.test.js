@@ -92,3 +92,21 @@ test("罗马字输入可转换为平假名", function () {
   assert.equal(engine.toHiraganaFromRomaji("kanji"), "かんじ");
   assert.equal(engine.toHiraganaFromRomaji("matt e"), "まって");
 });
+
+test("答案归一化容忍中英标点、片假名与长音符号", function () {
+  const normalize = engine.normalizeAnswer;
+  assert.equal(normalize("かきます。"), "かきます");
+  assert.equal(normalize("、かきます"), "かきます");
+  assert.equal(normalize("かきます」"), "かきます");
+  assert.equal(normalize("カキマス"), "かきます");
+  assert.equal(normalize("ｶｷﾏｽ"), "かきます");
+  assert.equal(normalize("kakimasu."), "かきます");
+  assert.equal(normalize("kakimasu!"), "かきます");
+  assert.equal(normalize("tōkyō"), "とうきょう");
+  assert.equal(normalize("okāsan"), "おかあさん");
+  assert.equal(normalize("きてー"), "きてー");
+  assert.equal(normalize("ｔａｂｅｍａｓｕ"), "たべます");
+  assert.equal(normalize("  ka ki masu  "), "かきます");
+  assert.equal(normalize(""), "");
+  assert.equal(normalize("。。。"), "");
+});

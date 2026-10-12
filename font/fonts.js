@@ -12,8 +12,8 @@
   const FONTS = [
     {
       family: "LXGW ZhenKai GB",
-      file: "LXGWZhenKaiGB-Regular.ttf",
-      format: "truetype",
+      file: "LXGWZhenKaiGB-Regular.subset.woff2",
+      format: "woff2",
       weight: "400",
       style: "normal",
       display: "swap"

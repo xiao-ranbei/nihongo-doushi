@@ -106,6 +106,7 @@
 
   let storageAvailable = true;
   let toastTimeout = null;
+  let composing = false;
   let currentQuestion = null;
   let lastPairKey = "";
   let recentQuestionVerbIds = [];
@@ -553,14 +554,11 @@
   }
 
   function normalizeText(value) {
-    return String(value).normalize("NFKC").replace(/[\s\u3000]/g, "");
+    return engine.normalizeText(value);
   }
 
   function normalizeAnswer(value) {
-    const normalized = normalizeText(value);
-    return /^[a-z']+$/i.test(normalized)
-      ? engine.toHiraganaFromRomaji(normalized)
-      : normalized;
+    return engine.normalizeAnswer(value);
   }
 
   function recordMistake(question, answer) {
@@ -593,6 +591,10 @@
 
   function submitAnswer(event) {
     event.preventDefault();
+    if (composing || (event && event.isComposing)) {
+      // 输入法组字期间的回车只确认候选，不作为提交，避免半截答案入库
+      return;
+    }
     if (!currentQuestion) {
       return;
     }
@@ -616,8 +618,9 @@
     elements.feedbackPanel.classList.toggle("is-wrong", !correct);
     elements.feedbackMark.textContent = correct ? "✓" : "!";
     elements.feedbackTitle.textContent = correct ? "答对了" : "再记一下这个变化";
-    elements.feedbackUserAnswer.textContent = correct
-      ? "你的答案：" + (normalizedAnswer === engine.toHiraganaFromRomaji(normalizedAnswer) ? normalizedAnswer : rawAnswer)
+    const romajiInput = /^[a-z']+$/i.test(rawAnswer);
+    elements.feedbackUserAnswer.textContent = correct && romajiInput
+      ? "你的答案：" + rawAnswer + "（" + normalizedAnswer + "）"
       : "你的答案：" + rawAnswer;
     elements.feedbackCorrectAnswer.textContent = currentQuestion.result.written;
     elements.feedbackReading.textContent = currentQuestion.result.kana === currentQuestion.result.written
@@ -836,6 +839,12 @@
   });
 
   elements.answerForm.addEventListener("submit", submitAnswer);
+  elements.answerInput.addEventListener("compositionstart", function () {
+    composing = true;
+  });
+  elements.answerInput.addEventListener("compositionend", function () {
+    composing = false;
+  });
   elements.newQuestion.addEventListener("click", newRandomQuestion);
   elements.nextQuestion.addEventListener("click", continueAfterAnswer);
   elements.resetStats.addEventListener("click", resetPracticeStats);

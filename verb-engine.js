@@ -578,13 +578,50 @@
     return result;
   }
 
+  // 答案归一化管线：NFKC + 去空白 -> 去首尾中英标点 -> 片假名转平假名
+  // -> 长音符号展开 -> 纯罗马字输入转假名。各步对空串与异常输入均安全。
+  const LEADING_PUNCTUATION = /^[\u0021-\u002f\u003a-\u0040\u005b-\u0060\u007b-\u007e\u3001\u3002\u00b7\u2014\u2026\u300c-\u300f\u3010\u3011\uff01\uff0c\uff0e\uff1a\uff1b\uff1f]+/;
+  const TRAILING_PUNCTUATION = /[\u0021-\u002f\u003a-\u0040\u005b-\u0060\u007b-\u007e\u3001\u3002\u00b7\u2014\u2026\u300c-\u300f\u3010\u3011\uff01\uff0c\uff0e\uff1a\uff1b\uff1f]+$/;
+  const MACRON_EXPANSIONS = {
+    "\u0101": "aa", "\u0113": "ee", "\u012b": "ii",
+    "\u014d": "ou", "\u016b": "uu"
+  };
+
+  function normalizeText(value) {
+    return String(value).normalize("NFKC").replace(/[\s\u3000]/g, "");
+  }
+
+  function katakanaToHiragana(text) {
+    return text.replace(/[\u30a1-\u30f6]/g, function (char) {
+      return String.fromCharCode(char.charCodeAt(0) - 0x60);
+    });
+  }
+
+  function expandMacrons(text) {
+    return text.replace(/[\u0101\u0113\u012b\u014d\u016b]/g, function (char) {
+      return MACRON_EXPANSIONS[char];
+    });
+  }
+
+  function normalizeAnswer(value) {
+    const stripped = normalizeText(value)
+      .replace(LEADING_PUNCTUATION, "")
+      .replace(TRAILING_PUNCTUATION, "");
+    const normalized = expandMacrons(katakanaToHiragana(stripped));
+    return /^[a-z']+$/i.test(normalized)
+      ? toHiraganaFromRomaji(normalized)
+      : normalized;
+  }
+
   const api = {
     VOICES: VOICES,
     INFLECTIONS: INFLECTIONS,
     VERBS: VERBS,
     conjugate: conjugate,
     explain: explain,
-    toHiraganaFromRomaji: toHiraganaFromRomaji
+    toHiraganaFromRomaji: toHiraganaFromRomaji,
+    normalizeText: normalizeText,
+    normalizeAnswer: normalizeAnswer
   };
 
   if (typeof module !== "undefined" && module.exports) {
