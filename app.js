@@ -35,6 +35,7 @@
   const VERB_BY_ID = new Map(VERBS.map(function (verb) { return [verb.id, verb]; }));
   const VOICE_BY_ID = new Map(VOICES.map(function (voice) { return [voice.id, voice]; }));
   const INFLECTION_BY_ID = new Map(INFLECTIONS.map(function (form) { return [form.id, form]; }));
+  const LEVELS = [];
   const STORAGE_KEY = "japanese-verb-practice-mistakes-v1";
   const STATS_STORAGE_KEY = "japanese-verb-practice-stats-v1";
   const GROUP_LABELS = {
@@ -42,6 +43,17 @@
     ichidan: "一段动词",
     irregular: "不规则动词"
   };
+  const LEVEL_LABELS = {
+    basic: "基础活用",
+    advanced: "进阶活用"
+  };
+  // 难度档位从 INFLECTIONS.level 派生，新增档位时只需补上面的中文标签。
+  INFLECTIONS.forEach(function (form) {
+    const existing = LEVELS.some(function (level) { return level.id === form.level; });
+    if (!existing && LEVEL_LABELS[form.level]) {
+      LEVELS.push({ id: form.level, label: LEVEL_LABELS[form.level] });
+    }
+  });
   const RULE_FORM_LABELS = new Set(VOICES.concat(INFLECTIONS).map(function (form) {
     return form.label;
   }));
@@ -65,6 +77,10 @@
     groupFilter: document.getElementById("group-filter"),
     voiceFilter: document.getElementById("voice-filter"),
     inflectionFilter: document.getElementById("inflection-filter"),
+    levelFilter: document.getElementById("level-filter"),
+    reviewBanner: document.getElementById("review-banner"),
+    reviewBannerCount: document.getElementById("review-banner-count"),
+    exitReview: document.getElementById("exit-review"),
     practiceCard: document.querySelector(".practice-card"),
     newQuestion: document.getElementById("new-question"),
     questionIndex: document.getElementById("question-index"),
@@ -331,6 +347,25 @@
     INFLECTIONS.forEach(function (form) {
       addOption(elements.inflectionFilter, form.id, form.label);
     });
+
+    addOption(elements.levelFilter, "all", "全部难度");
+    LEVELS.forEach(function (level) {
+      addOption(elements.levelFilter, level.id, level.label);
+    });
+    syncLevelFilterState();
+  }
+
+  // 已指定具体活用形式时，难度筛选必然被覆盖，直接禁用比静默失效更诚实。
+  function syncLevelFilterState() {
+    const overridden = elements.inflectionFilter.value !== "all";
+    elements.levelFilter.disabled = overridden;
+    if (overridden) {
+      elements.levelFilter.title = "已指定具体活用形式，难度筛选暂不生效";
+      elements.levelFilter.setAttribute("aria-disabled", "true");
+    } else {
+      elements.levelFilter.title = "按基础／进阶筛选活用形式";
+      elements.levelFilter.removeAttribute("aria-disabled");
+    }
   }
 
   function populateReferenceControls(query) {
@@ -404,9 +439,12 @@
     const voices = elements.voiceFilter.value === "all"
       ? VOICES
       : VOICES.filter(function (voice) { return voice.id === elements.voiceFilter.value; });
-    const inflections = elements.inflectionFilter.value === "all"
-      ? INFLECTIONS
-      : INFLECTIONS.filter(function (form) { return form.id === elements.inflectionFilter.value; });
+    // 具体活用形式优先于难度：两者同时指定时以具体形式为准，不会筛出空题库。
+    const inflections = elements.inflectionFilter.value !== "all"
+      ? INFLECTIONS.filter(function (form) { return form.id === elements.inflectionFilter.value; })
+      : elements.levelFilter.value === "all"
+        ? INFLECTIONS
+        : INFLECTIONS.filter(function (form) { return form.level === elements.levelFilter.value; });
     const targets = [];
 
     voices.forEach(function (voice) {
@@ -417,18 +455,33 @@
     return targets;
   }
 
-  function questionFromMistake(mistake) {
-    const verb = VERB_BY_ID.get(mistake.verbId);
+  function buildQuestion(verb, voiceId, inflectionId) {
     if (!verb) {
       return null;
     }
     return {
       verb: verb,
-      voiceId: mistake.voiceId,
-      inflectionId: mistake.inflectionId,
-      result: engine.conjugate(verb, mistake.voiceId, mistake.inflectionId),
-      key: mistake.key
+      voiceId: voiceId,
+      inflectionId: inflectionId,
+      result: engine.conjugate(verb, voiceId, inflectionId),
+      key: getPairKey(verb, voiceId, inflectionId)
     };
+  }
+
+  function questionFromMistake(mistake) {
+    return buildQuestion(VERB_BY_ID.get(mistake.verbId), mistake.voiceId, mistake.inflectionId);
+  }
+
+  // 从速查表直接开练：不进入错题重练模式，但保留明确的题目来源。
+  function practiceFromReference(verb, voiceId, inflectionId) {
+    const question = buildQuestion(verb, voiceId, inflectionId);
+    if (!question) {
+      return;
+    }
+    setReviewingMistakes(false);
+    showView("practice");
+    startQuestion(question);
+    elements.answerInput.focus();
   }
 
   function chooseRandomQuestion() {
@@ -436,7 +489,8 @@
     const filterKey = JSON.stringify([
       groupId,
       elements.voiceFilter.value,
-      elements.inflectionFilter.value
+      elements.inflectionFilter.value,
+      elements.levelFilter.value
     ]);
     if (filterKey !== questionDeckFilterKey) {
       questionDeck = [];
@@ -515,6 +569,7 @@
     recentQuestionVerbIds = [question.verb.id]
       .concat(recentQuestionVerbIds.filter(function (verbId) { return verbId !== question.verb.id; }))
       .slice(0, 3);
+    renderReviewBanner();
     elements.questionIndex.textContent = reviewingMistakes ? "错题重练" : "随机练习";
     elements.targetPill.textContent = getTargetLabel(question.voiceId, question.inflectionId);
     elements.questionGroup.textContent = GROUP_LABELS[question.verb.group];
@@ -549,8 +604,19 @@
   }
 
   function newRandomQuestion() {
-    reviewingMistakes = false;
+    const wasReviewing = reviewingMistakes;
+    setReviewingMistakes(false);
     startQuestion(chooseRandomQuestion());
+    if (wasReviewing) {
+      showToast("已退出错题重练，回到随机练习。", false);
+    }
+  }
+
+  function exitMistakeReview() {
+    if (!reviewingMistakes) {
+      return;
+    }
+    newRandomQuestion();
   }
 
   function normalizeText(value) {
@@ -655,6 +721,20 @@
 
   function updateMistakeCount() {
     elements.mistakeCount.textContent = String(mistakes.length);
+    renderReviewBanner();
+  }
+
+  // 重练模式必须有常驻提示：否则「换一题」会静默退出，用户不知道自己已离开错题集。
+  function renderReviewBanner() {
+    elements.reviewBanner.hidden = !reviewingMistakes;
+    if (reviewingMistakes) {
+      elements.reviewBannerCount.textContent = "剩余 " + mistakes.length + " 题，答对后自动移出";
+    }
+  }
+
+  function setReviewingMistakes(value) {
+    reviewingMistakes = Boolean(value);
+    renderReviewBanner();
   }
 
   function showView(viewId) {
@@ -716,9 +796,10 @@
       practiceButton.type = "button";
       practiceButton.textContent = "练这题";
       practiceButton.addEventListener("click", function () {
-        reviewingMistakes = true;
+        setReviewingMistakes(true);
         showView("practice");
         startQuestion(questionFromMistake(mistake));
+        elements.answerInput.focus();
       });
       const removeButton = document.createElement("button");
       removeButton.type = "button";
@@ -743,7 +824,7 @@
     }
     mistakes = [];
     saveMistakes();
-    reviewingMistakes = false;
+    setReviewingMistakes(false);
     renderMistakes();
     showToast("错题已清空。", false);
   }
@@ -753,16 +834,17 @@
       showToast("目前没有错题可以重练。", false);
       return;
     }
-    reviewingMistakes = true;
+    setReviewingMistakes(true);
     showView("practice");
     const mistake = randomItem(mistakes);
     startQuestion(questionFromMistake(mistake));
+    elements.answerInput.focus();
   }
 
   function continueAfterAnswer() {
     if (reviewingMistakes) {
       if (!mistakes.length) {
-        reviewingMistakes = false;
+        setReviewingMistakes(false);
         showView("mistakes");
         showToast("错题已全部答对。", false);
         return;
@@ -822,7 +904,23 @@
 
       const ruleCell = document.createElement("td");
       renderRuleExplanation(ruleCell, engine.explain(verb, voiceId, form.id));
-      row.append(formCell, answerCell, meaningCell, ruleCell);
+
+      const actionCell = document.createElement("td");
+      actionCell.className = "reference-practice";
+      const practiceButton = document.createElement("button");
+      practiceButton.type = "button";
+      practiceButton.className = "inline-button practice-link";
+      practiceButton.textContent = "练这题";
+      practiceButton.setAttribute(
+        "aria-label",
+        "练习 " + verb.dictionary + " 的" + getTargetLabel(voiceId, form.id)
+      );
+      practiceButton.addEventListener("click", function () {
+        practiceFromReference(verb, voiceId, form.id);
+      });
+      actionCell.append(practiceButton);
+
+      row.append(formCell, answerCell, meaningCell, ruleCell, actionCell);
       elements.referenceTableBody.append(row);
     });
   }
@@ -848,9 +946,14 @@
   elements.newQuestion.addEventListener("click", newRandomQuestion);
   elements.nextQuestion.addEventListener("click", continueAfterAnswer);
   elements.resetStats.addEventListener("click", resetPracticeStats);
-  [elements.groupFilter, elements.voiceFilter, elements.inflectionFilter].forEach(function (select) {
-    select.addEventListener("change", newRandomQuestion);
-  });
+  elements.exitReview.addEventListener("click", exitMistakeReview);
+  [elements.groupFilter, elements.voiceFilter, elements.inflectionFilter, elements.levelFilter]
+    .forEach(function (select) {
+      select.addEventListener("change", function () {
+        syncLevelFilterState();
+        newRandomQuestion();
+      });
+    });
   elements.hintButton.addEventListener("click", function () {
     const expanded = elements.hintButton.getAttribute("aria-expanded") === "true";
     elements.hintButton.setAttribute("aria-expanded", String(!expanded));

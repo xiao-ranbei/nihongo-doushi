@@ -58,9 +58,22 @@
             <span>活用形式</span>
             <select id="inflection-filter"></select>
           </label>
+          <label>
+            <span>难度</span>
+            <select id="level-filter"></select>
+          </label>
           <button class="outline-button new-question-button" id="new-question" type="button">
             <span aria-hidden="true">↻</span> 换一题
           </button>
+        </div>
+
+        <div class="review-banner" id="review-banner" role="status" hidden>
+          <span class="review-banner-dot" aria-hidden="true"></span>
+          <span class="review-banner-text">
+            <strong>错题重练中</strong>
+            <span id="review-banner-count"></span>
+          </span>
+          <button class="text-button review-banner-exit" id="exit-review" type="button">退出重练</button>
         </div>
 
         <div class="practice-layout">
@@ -226,6 +239,7 @@
                 <th scope="col">变形结果</th>
                 <th scope="col">常见表达大意</th>
                 <th scope="col">变化提示</th>
+                <th scope="col" class="reference-practice-col">练一练</th>
               </tr>
             </thead>
             <tbody id="reference-table-body"></tbody>

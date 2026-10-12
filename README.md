@@ -13,6 +13,8 @@
 - 可能、受身、使役、短使役、使役受身等派生形
 - 答对／答错次数统计、逐题变化提示、活用形式与语态的大意说明、完整活用速查与错题重练
 - 随机题每轮不重复相同的动词与变形组合；尽量避免最近 3 题内重复同一动词，题池用完后重新洗牌
+- 练习范围可按动词类别、变形类型、活用形式、难度（基础／进阶）四个维度筛选；指定具体活用形式时难度筛选自动停用
+- 活用速查表每行可「练这题」，直接把查到的形式变成一道题；错题重练时有常驻横幅显示剩余题数，可随时退出
 
 题目和活用规则由本工具独立实现；不使用目标网站的源代码、素材或动词数据。
 
@@ -21,14 +23,21 @@
 安装 Node.js 后，在项目目录运行：
 
 ```text
-node --test tests/verb-engine.test.js tests/styles.test.js
+node --test tests/verb-engine.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
 ```
 
-`verb-engine.test.js` 覆盖变形规则、答案归一化与罗马字转换；`styles.test.js` 是样式契约守卫（令牌必须已定义、组件内禁止硬编码色值）。
+Windows 下 `node --test` 需要显式列出文件，不能只传 `tests/` 目录。
+
+| 测试文件 | 覆盖内容 |
+| --- | --- |
+| `verb-engine.test.js` | 变形规则、答案归一化、罗马字转换 |
+| `styles.test.js` | 样式契约守卫（令牌必须已定义、组件内禁止硬编码色值） |
+| `font.test.js` | 字体契约守卫（子集字符表与源码一致、清单指向的文件存在且未误提交全量字体） |
+| `ui.test.js` | UI 冒烟：用零依赖 DOM 桩加载 `app.js`，覆盖出题、判定、筛选、速查练习闭环、错题重练与存档容错 |
 
 ## 字体
 
-页面使用霞鹜楷体（`font/LXGWZhenKaiGB-Regular.ttf`，约 16.7MB）。运行时实际加载的是按当前词库与界面文本生成的子集 `LXGWZhenKaiGB-Regular.subset.woff2`（161KB，599 个字符，字形轮廓与步进宽度与原字体一致）。新增动词或界面文本后，重新生成子集：
+页面使用霞鹜楷体（`font/LXGWZhenKaiGB-Regular.ttf`，约 16.7MB）。运行时实际加载的是按当前词库与界面文本生成的子集 `LXGWZhenKaiGB-Regular.subset.woff2`（178KB，648 个字符，字形轮廓与步进宽度与原字体一致）。新增动词或界面文本后，重新生成子集：
 
 ```text
 pip install fonttools brotli
@@ -37,6 +46,8 @@ python font/subset.py
 
 脚本会收集字符、生成 woff2、校验字形覆盖与轮廓一致性，并把 `font/fonts.js` 指向新文件。全量字体只在该脚本运行时需要。
 
+漏字不只是"字形不好看"：回退字体的行高与楷体不同，实测新增「难度」二字而忘记重跑子集时，筛选栏行高由 12.5px 变成 16.67px、整页下移 5px。`tests/font.test.js` 会拦截这种情况。
+
 ## 开发工具（可选，运行时不依赖）
 
 | 工具 | 用途 |
@@ -44,6 +55,6 @@ python font/subset.py
 | `font/subset.py` | 字体子集化与校验 |
 | `tools/color-audit.py` | 统计并聚类 `styles.css` 中的硬编码色值 |
 | `tools/tokenize-colors.py` | 把硬编码色值替换为语义令牌并校验变量定义 |
-| `tools/visual-check.js` | 用 Playwright 截取 6 个关键界面状态 |
+| `tools/visual-check.js` | 用 Playwright 截取 7 个关键界面状态 |
 | `tools/visual-diff.py` | 逐像素对比两组截图，输出差异热图 |
 

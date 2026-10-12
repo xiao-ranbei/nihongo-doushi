@@ -3,11 +3,11 @@
 | 项 | 内容 |
 | --- | --- |
 | 日期 | 2026-10-12 |
-| 代码基线 | commit 1f75e8c（main）+ 本批「交互容错 / 字体子集 / 令牌化」改动（见 §7 变更记录） |
-| 规模 | index.html 265 行 / app.js 876 行 / verb-engine.js 631 行 / styles.css 1581 行 / 测试 177 行 |
+| 代码基线 | commit 971d8de（main）+ 本批「难度筛选 / 速查闭环 / 重练横幅 / UI 冒烟测试」改动（见 §7 变更记录） |
+| 规模 | index.html 279 行 / app.js 979 行 / verb-engine.js 631 行 / styles.css 1641 行 / 测试 497 行 + DOM 桩 455 行 |
 | 文档用途 | 项目思路与风格的权威描述；后续新增功能或新模块时**照此文档的模式仿写**，保持一致性 |
 
-**测试基线**：`node --test tests/verb-engine.test.js tests/styles.test.js` = 12/12 通过（9 条引擎 + 3 条样式契约）。任何改动后复跑，基线不许劣化。
+**测试基线**：`node --test tests/verb-engine.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js` = 29/29 通过（9 条引擎 + 3 条样式契约 + 2 条字体契约 + 15 条 UI 冒烟）。任何改动后复跑，基线不许劣化。
 
 ---
 
@@ -39,7 +39,8 @@ app-shell
 ├── topbar：品牌（「活」字标 + 中英文名）+ 三个 tab（练习 / 活用速查 / 错题[计数角标]）
 ├── page-intro：标语区（"看见动词，想起变化。"）+ 离线说明徽章
 ├── view-practice（默认）
-│   ├── filter-bar：动词类别 / 变形类型 / 活用形式 三个下拉 + 换一题按钮
+│   ├── filter-bar：动词类别 / 变形类型 / 活用形式 / 难度 四个下拉 + 换一题按钮
+│   ├── review-banner：错题重练模式的常驻提示条（剩余题数 + 退出重练），非重练模式时 hidden
 │   ├── practice-layout（双栏，840px 以下堆叠）
 │   │   ├── practice-card：题面（词、读音、类别、释义）→ 题目要求 → 答案表单
 │   │   │   （输入 + 提交 + 规律提示折叠）→ 反馈面板（对错、正确形态、语态/活用大意、规则、下一题）
@@ -64,7 +65,10 @@ app-shell
 
 - **判定后锁定输入**（input/submit disabled），防重复提交；「下一题」按钮获得焦点，回车可继续。
 - **输入法组字期间不提交**：`compositionstart/end` 维护 `composing` 标志，提交入口同时检查 `event.isComposing`，避免日文输入法下回车确认候选词时把半截答案提交入库。
-- **筛选变更立即出新题**，题池按筛选键（JSON.stringify 三条件）缓存，条件变了才重建。
+- **筛选变更立即出新题**，题池按筛选键（JSON.stringify 四条件）缓存，条件变了才重建。
+- **具体活用形式优先于难度**：指定了某个活用形式时「难度」下拉置灰（`disabled` + `title` 说明），避免两个维度叠加筛出空题库；条件冲突的兜底仍在（题池为空时 toast 提示）。
+- **重练模式必须有常驻可见状态**：进入错题重练后显示 `review-banner`（剩余题数 + 退出重练）；任何退出路径（换一题 / 退出按钮 / 答完全部）都要显式提示，不允许静默改变模式。状态迁移统一走 `setReviewingMistakes()`，不直接赋值。
+- **速查可反向进入练习**：速查表每行「练这题」直接构造该动词×语态×活用形式的题目并切到练习页，复用 `buildQuestion()`（与错题重练同一构造入口）。
 - **所有破坏性操作有确认**（清空错题用 `window.confirm`）或天然可逆（清零统计不动错题，UI 文案明确区分）。
 - **反馈永远三通道**：面板内联 + toast 轻提示 + 统计条变化；面板用 `aria-live="polite"`。
 - **localStorage 全程 try/catch 包裹**，读写失败降级为「仅当前页面保留」并 toast 告知，不抛错不白屏。
@@ -77,13 +81,14 @@ app.js           ←—— UI 编排层：DOM 引用集中管理 + 状态 + 渲�
 font/fonts.js    ←—— 资源清单层：字体文件清单，运行时注入 @font-face
 font/subset.py   ←—— 构建脚本：字体子集化与字形校验（开发用，运行时不依赖）
 styles.css       ←—— 表现层：语义令牌 + 组件样式 + 响应式 + 动效
-tests/           ←—— 覆盖 verb-engine（纯函数）与 styles 契约（令牌/色值红线）
+tests/           ←—— 覆盖 verb-engine（纯函数）、styles 契约（令牌/色值红线）、font 契约、app.js UI 冒烟
+tests/helpers/   ←—— 测试辅助：最小 DOM 桩（解析 index.html 建树，零依赖跑 app.js）
 tools/           ←—— 开发工具：色值审计与令牌化、Playwright 视觉回归
 ```
 
 **engine 内部**（verb-engine.js）：
 
-- 数据常量：`VOICES`（7 种语态，含中文大意）、`INFLECTIONS`（17 种活用，含 `level: basic/advanced` 与大意）、`VERBS`（44 词，`group` 三分类 + `kind` 变形类型五分类：godan/iku/ichidan/suru/kuru）。
+- 数据常量：`VOICES`（7 种语态，含中文大意）、`INFLECTIONS`（18 种活用，含 `level: basic/advanced` 与大意；12 基础 + 6 进阶）、`VERBS`（44 词，`group` 三分类 + `kind` 变形类型五分类：godan/iku/ichidan/suru/kuru）。
 - 变形管线：`conjugate(verb, voiceId, inflectionId)` = `inflect(deriveVoice(text, kind, voiceId), formId)`——**先派生语态（返回新形态+新 kind），再在派生结果上做活用**。两段各自查表（A/I/E/O 段映射、GODAN_TE/GODAN_PAST 音便表），特例（行く→行って、す结尾短使役受身、来る汉字/假名双表示）就地处理。
 - 双表示：所有结果返回 `{ written（汉字混写）, kana（纯假名） }`，判定与展示都吃两个形态。
 - 规则解释：`voiceRule`/`inflectionRule` 生成中文规则文本，`explain` 拼接；文本约定用「」包术语、用「X段」表述，供 UI 层高亮解析。
@@ -94,7 +99,7 @@ tools/           ←—— 开发工具：色值审计与令牌化、Playwright 
 
 1. 字体注入（读 fonts.js 清单生成 @font-face）；
 2. `elements` 一次性集中收集全部 DOM 引用（:49-105，新功能照此登记，不散落 getElementById）；
-3. 状态：mistakes / practiceStats（均从 localStorage 防御性加载）+ currentQuestion / questionDeck / reviewingMistakes；
+3. 状态：mistakes / practiceStats（均从 localStorage 防御性加载）+ currentQuestion / questionDeck / reviewingMistakes（只经 `setReviewingMistakes()` 变更，保证横幅同步）；
 4. 存取层：load/save 各一组，键名带版本号 `japanese-verb-practice-{mistakes|stats}-v1`（改结构时升版本，旧数据自然失效）；
 5. 渲染函数：renderPracticeStats / renderMistakes / renderReferenceTable / renderRuleExplanation（纯函数化，replaceChildren 重建，不拼 HTML 字符串——题干 instrution 例外用 innerHTML 但内容全部来自 engine 常量，无用户输入注入面）;
 6. 事件绑定集中在文件尾部（:827-858）+ 启动序列（:860-866）。
@@ -114,7 +119,9 @@ tools/           ←—— 开发工具：色值审计与令牌化、Playwright 
 | 错误提示 | toast（3s 自动消失，`is-error` 红色变体）；不使用 alert |
 | 样式 | 颜色一律引用 :root 语义令牌；新增令牌按「文字/线条/浅底/状态」分组命名并写注释；改动后跑 `tests/styles.test.js` |
 | 视觉回归 | 大范围样式或交互改动后，用 `tools/visual-check.js` + `tools/visual-diff.py` 对比改动前后截图（超容差像素 ≤500 且平均通道差 ≤0.5 视为无可见回归） |
-| 测试 | `node --test tests/verb-engine.test.js tests/styles.test.js`；断言 `written` 形态为主，覆盖特例（行く、一段可能形、さ结尾等）；新规则必须先补测试再实现 |
+| 测试 | `node --test tests/verb-engine.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js`（Windows 下必须列文件，不能只给目录）；引擎断言 `written` 形态为主，覆盖特例（行く、一段可能形、さ结尾等）；新规则必须先补测试再实现 |
+| UI 改动自测 | 任何改动 `app.js` 交互逻辑或 `index.html` 结构后，必须让 `tests/ui.test.js` 覆盖到该路径：DOM 桩会把 `getElementById` 解析不到、状态迁移漏刷节点直接变成失败 |
+| 新增界面文案 | 必须重跑 `font/subset.py`（`tests/font.test.js` 会拦截漏字）；漏字的表现是回退字体行高不同、整页位移，而不是简单的"字形不好看" |
 
 ## 5. 视觉与交互风格特点
 
@@ -153,6 +160,12 @@ tools/           ←—— 开发工具：色值审计与令牌化、Playwright 
 
 | 日期 | 变更内容 | 原因 | 影响范围 |
 | --- | --- | --- | --- |
+| 2026-10-12 | 「难度」筛选接线：`INFLECTIONS.level` 从死字段变成练习筛选维度（全部/基础/进阶）；指定具体活用形式时自动置灰难度下拉 | 引擎里早有 level 字段但 UI 从未使用，练习范围只能靠"全部活用"或逐项指定 | index.html、app.js、styles.css |
+| 2026-10-12 | 速查表每行新增「练这题」：把「查到的形式」一键变成题目并切到练习页（复用 `buildQuestion()`） | 速查是只读的死胡同，看完无法立刻验证；速查→练习本应是同一动作的两半 | index.html、app.js、styles.css |
+| 2026-10-12 | 错题重练模式新增常驻横幅（剩余题数 + 退出重练）；状态迁移统一走 `setReviewingMistakes()`；退出路径均给 toast | 「换一题」会静默退出重练模式，用户不知道自己已离开错题集 | index.html、app.js、styles.css |
+| 2026-10-12 | 新增 UI 冒烟测试：零依赖 DOM 桩（解析 index.html 建树）+ 15 条交互断言 | 纯静态页面此前只有引擎与样式有测试，DOM 接线断裂（改了 id、漏刷节点）只能靠手点发现 | tests/ui.test.js、tests/helpers/dom-stub.js |
+| 2026-10-12 | 新增字体契约测试 `tests/font.test.js`；重新生成字体子集（599→648 字符，161KB→178KB） | 新增「难度」二字不在子集里，回退字体行高不同导致筛选栏高 5px、整页下移；需静态守卫 | font/、tests/font.test.js |
+| 2026-10-12 | 视觉回归工具新增 `07-mistake-review` 状态；测试基线 12/12 → 29/29 | 新增组件需要纳入回归覆盖面 | tools/visual-check.js、tests/ |
 | 2026-10-12 | 字体子集化：运行时加载 161KB woff2 子集（原 16.7MB），新增 `font/subset.py` 生成与校验脚本 | 首屏等待大字体读取，低端机可感知卡顿 | font/、README |
 | 2026-10-12 | 答案归一化管线移入 engine 并增强：去首尾中英标点、片假名/半角片假名转平假名、罗马字长音符号展开；新增 1 条测试 | 句尾「。」、片假名、带标点罗马字、长音符号四类合法输入此前被判错 | verb-engine.js、app.js、tests |
 | 2026-10-12 | 提交入口增加输入法组字守卫（`composing` + `event.isComposing`） | 日文输入法回车确认候选时可能提交半截答案 | app.js |

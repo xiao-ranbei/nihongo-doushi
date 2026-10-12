@@ -107,6 +107,11 @@ async function main() {
     await page.waitForTimeout(350);
     await shoot(page, outDir, "04-mistakes-card");
 
+    // 错题重练模式：横幅 + 退出入口
+    await page.click("#review-mistakes");
+    await page.waitForTimeout(450);
+    await shoot(page, outDir, "07-mistake-review");
+
     // 速查视图
     await page.click('[data-view="reference"]');
     await page.waitForTimeout(350);

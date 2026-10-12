@@ -424,7 +424,7 @@ button:not(:disabled):active {
 
 .filter-bar {
   display: grid;
-  grid-template-columns: 1fr 1.1fr 1.1fr auto;
+  grid-template-columns: 1fr 1.1fr 1.1fr 0.9fr auto;
   align-items: end;
   gap: 11px;
   margin-bottom: 13px;
@@ -512,6 +512,48 @@ select {
 .new-question-button span {
   color: var(--green);
   font-size: 16px;
+}
+
+/* 重练模式提示条：常驻显示剩余量，避免「换一题」静默退出错题集。 */
+.review-banner {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 13px;
+  padding: 9px 13px;
+  border: 1px solid var(--line-accent);
+  border-radius: 12px;
+  background: var(--bg-pale-green);
+}
+
+.review-banner-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--orange);
+}
+
+.review-banner-text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  color: var(--text-green-deep);
+  font-size: 10px;
+}
+
+.review-banner-text strong {
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.review-banner-exit {
+  flex: none;
+  color: var(--text-button);
+  white-space: nowrap;
 }
 
 .practice-layout {
@@ -1160,6 +1202,24 @@ select {
 .reference-table td:nth-child(4) {
   min-width: 220px;
   white-space: pre-line;
+}
+
+.reference-table .reference-practice-col,
+.reference-table .reference-practice {
+  width: 66px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.practice-link {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+select:disabled {
+  background: var(--bg-neutral);
+  color: var(--text-faint-soft);
+  cursor: not-allowed;
 }
 
 .reference-result {
