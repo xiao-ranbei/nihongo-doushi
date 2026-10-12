@@ -36,11 +36,15 @@
   const VOICE_BY_ID = new Map(VOICES.map(function (voice) { return [voice.id, voice]; }));
   const INFLECTION_BY_ID = new Map(INFLECTIONS.map(function (form) { return [form.id, form]; }));
   const STORAGE_KEY = "japanese-verb-practice-mistakes-v1";
+  const STATS_STORAGE_KEY = "japanese-verb-practice-stats-v1";
   const GROUP_LABELS = {
     godan: "五段动词",
     ichidan: "一段动词",
     irregular: "不规则动词"
   };
+  const RULE_FORM_LABELS = new Set(VOICES.concat(INFLECTIONS).map(function (form) {
+    return form.label;
+  }));
 
   const elements = {
     tabs: Array.from(document.querySelectorAll("[data-view]")),
@@ -50,9 +54,18 @@
       mistakes: document.getElementById("view-mistakes")
     },
     mistakeCount: document.getElementById("mistake-count"),
+    correctAnswerCount: document.getElementById("correct-answer-count"),
+    incorrectAnswerCount: document.getElementById("incorrect-answer-count"),
+    totalAnswerCount: document.getElementById("total-answer-count"),
+    answerAccuracy: document.getElementById("answer-accuracy"),
+    answerDistribution: document.getElementById("answer-distribution"),
+    correctAnswerSegment: document.getElementById("correct-answer-segment"),
+    incorrectAnswerSegment: document.getElementById("incorrect-answer-segment"),
+    resetStats: document.getElementById("reset-stats"),
     groupFilter: document.getElementById("group-filter"),
     voiceFilter: document.getElementById("voice-filter"),
     inflectionFilter: document.getElementById("inflection-filter"),
+    practiceCard: document.querySelector(".practice-card"),
     newQuestion: document.getElementById("new-question"),
     questionIndex: document.getElementById("question-index"),
     targetPill: document.getElementById("target-pill"),
@@ -95,8 +108,12 @@
   let toastTimeout = null;
   let currentQuestion = null;
   let lastPairKey = "";
+  let recentQuestionVerbIds = [];
+  let questionDeck = [];
+  let questionDeckFilterKey = "";
   let reviewingMistakes = false;
   let mistakes = loadMistakes();
+  let practiceStats = loadPracticeStats();
 
   function showToast(message, isError) {
     elements.toast.textContent = message;
@@ -106,6 +123,30 @@
     toastTimeout = window.setTimeout(function () {
       elements.toast.classList.remove("is-visible");
     }, 3000);
+  }
+
+  function renderRuleExplanation(element, explanation) {
+    element.replaceChildren();
+    explanation.split(/(「[^」]+」|[あいうえお]段|\n)/g).forEach(function (part) {
+      if (!part) {
+        return;
+      }
+      if (part === "\n") {
+        element.append(document.createElement("br"));
+        return;
+      }
+
+      const quotedTerm = /^「([^」]+)」$/.exec(part);
+      const vowelRow = /^[あいうえお]段$/.test(part);
+      if (vowelRow || (quotedTerm && !RULE_FORM_LABELS.has(quotedTerm[1]))) {
+        const emphasis = document.createElement("span");
+        emphasis.className = "rule-emphasis";
+        emphasis.textContent = part;
+        element.append(emphasis);
+        return;
+      }
+      element.append(document.createTextNode(part));
+    });
   }
 
   function isObject(value) {
@@ -122,7 +163,7 @@
       raw = window.localStorage.getItem(STORAGE_KEY);
     } catch (error) {
       storageAvailable = false;
-      showToast("浏览器不允许读取本地错题；本次练习仍可继续。", true);
+      showToast("浏览器不允许访问本地存储；错题和答题统计仅保留在当前页面。", true);
       return [];
     }
 
@@ -171,7 +212,101 @@
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(mistakes));
     } catch (error) {
       storageAvailable = false;
-      showToast("浏览器无法保存错题；关闭页面后，这次记录可能不会保留。", true);
+      showToast("浏览器无法保存本地数据；错题和答题统计仅保留在当前页面。", true);
+    }
+  }
+
+  function createEmptyPracticeStats() {
+    return { correct: 0, incorrect: 0 };
+  }
+
+  function loadPracticeStats() {
+    if (!storageAvailable) {
+      return createEmptyPracticeStats();
+    }
+
+    let raw;
+    try {
+      raw = window.localStorage.getItem(STATS_STORAGE_KEY);
+    } catch (error) {
+      storageAvailable = false;
+      showToast("浏览器不允许访问本地存储；答题统计和错题仅保留在当前页面。", true);
+      return createEmptyPracticeStats();
+    }
+
+    if (!raw) {
+      return createEmptyPracticeStats();
+    }
+
+    let stored;
+    try {
+      stored = JSON.parse(raw);
+    } catch (error) {
+      showToast("本地答题统计无法解析，本次从零开始。", true);
+      return createEmptyPracticeStats();
+    }
+
+    if (!isObject(stored)
+      || !Number.isSafeInteger(stored.correct)
+      || stored.correct < 0
+      || !Number.isSafeInteger(stored.incorrect)
+      || stored.incorrect < 0) {
+      showToast("本地答题统计格式无效，本次从零开始。", true);
+      return createEmptyPracticeStats();
+    }
+
+    return { correct: stored.correct, incorrect: stored.incorrect };
+  }
+
+  function savePracticeStats() {
+    if (!storageAvailable) {
+      return false;
+    }
+    try {
+      window.localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(practiceStats));
+      return true;
+    } catch (error) {
+      storageAvailable = false;
+      showToast("浏览器无法保存本地数据；答题统计和错题仅保留在当前页面。", true);
+      return false;
+    }
+  }
+
+  function renderPracticeStats() {
+    elements.correctAnswerCount.textContent = String(practiceStats.correct);
+    elements.incorrectAnswerCount.textContent = String(practiceStats.incorrect);
+    const total = practiceStats.correct + practiceStats.incorrect;
+    const correctRatio = total === 0 ? 0 : practiceStats.correct / total;
+    const incorrectRatio = total === 0 ? 0 : practiceStats.incorrect / total;
+    const correctPercent = Math.round(correctRatio * 100);
+    const incorrectPercent = 100 - correctPercent;
+    elements.totalAnswerCount.textContent = String(total);
+    elements.answerAccuracy.textContent = total === 0 ? "—" : correctPercent + "%";
+    elements.correctAnswerSegment.style.width = correctRatio * 100 + "%";
+    elements.incorrectAnswerSegment.style.width = incorrectRatio * 100 + "%";
+    elements.answerDistribution.classList.toggle("is-empty", total === 0);
+    elements.answerDistribution.setAttribute(
+      "aria-label",
+      total === 0
+        ? "尚未作答"
+        : "答题比例：答对 " + practiceStats.correct + " 题，占 " + correctPercent
+          + "%；答错 " + practiceStats.incorrect + " 题，占 " + incorrectPercent + "%。"
+    );
+    elements.resetStats.disabled = practiceStats.correct === 0 && practiceStats.incorrect === 0;
+  }
+
+  function updatePracticeStats(correct) {
+    const key = correct ? "correct" : "incorrect";
+    practiceStats[key] = Math.min(Number.MAX_SAFE_INTEGER, practiceStats[key] + 1);
+    renderPracticeStats();
+    savePracticeStats();
+  }
+
+  function resetPracticeStats() {
+    practiceStats = createEmptyPracticeStats();
+    renderPracticeStats();
+    if (savePracticeStats()) {
+      showToast("答题统计已清零，错题集保持不变。", false);
     }
   }
 
@@ -256,6 +391,14 @@
     return items[Math.floor(Math.random() * items.length)];
   }
 
+  function shuffleItems(items) {
+    for (let index = items.length - 1; index > 0; index -= 1) {
+      const randomIndex = Math.floor(Math.random() * (index + 1));
+      [items[index], items[randomIndex]] = [items[randomIndex], items[index]];
+    }
+    return items;
+  }
+
   function buildTargets() {
     const voices = elements.voiceFilter.value === "all"
       ? VOICES
@@ -289,30 +432,70 @@
 
   function chooseRandomQuestion() {
     const groupId = elements.groupFilter.value;
-    const verbs = VERBS.filter(function (verb) {
-      return groupId === "all" || verb.group === groupId;
-    });
-    const targets = buildTargets();
-    const pairs = [];
-
-    verbs.forEach(function (verb) {
-      targets.forEach(function (target) {
-        pairs.push({
-          verb: verb,
-          voiceId: target.voiceId,
-          inflectionId: target.inflectionId,
-          key: getPairKey(verb, target.voiceId, target.inflectionId)
-        });
-      });
-    });
-
-    if (!pairs.length) {
-      showToast("当前筛选范围没有可练习的题目。", true);
-      return null;
+    const filterKey = JSON.stringify([
+      groupId,
+      elements.voiceFilter.value,
+      elements.inflectionFilter.value
+    ]);
+    if (filterKey !== questionDeckFilterKey) {
+      questionDeck = [];
+      questionDeckFilterKey = filterKey;
     }
 
-    const alternatives = pairs.filter(function (pair) { return pair.key !== lastPairKey; });
-    const pair = randomItem(alternatives.length ? alternatives : pairs);
+    if (!questionDeck.length) {
+      const verbs = VERBS.filter(function (verb) {
+        return groupId === "all" || verb.group === groupId;
+      });
+      const targets = buildTargets();
+      const pairs = [];
+
+      verbs.forEach(function (verb) {
+        targets.forEach(function (target) {
+          pairs.push({
+            verb: verb,
+            voiceId: target.voiceId,
+            inflectionId: target.inflectionId,
+            key: getPairKey(verb, target.voiceId, target.inflectionId)
+          });
+        });
+      });
+
+      if (!pairs.length) {
+        showToast("当前筛选范围没有可练习的题目。", true);
+        return null;
+      }
+      questionDeck = shuffleItems(pairs);
+    }
+
+    const nextIndex = questionDeck.length - 1;
+    if (nextIndex > 0) {
+      const nextPair = questionDeck[nextIndex];
+      const repeatsQuestion = nextPair.key === lastPairKey;
+      const repeatsRecentVerb = recentQuestionVerbIds.includes(nextPair.verb.id);
+      if (repeatsQuestion || repeatsRecentVerb) {
+        let alternatives = [];
+        for (let index = 0; index < nextIndex; index += 1) {
+          const candidate = questionDeck[index];
+          if (candidate.key !== lastPairKey && !recentQuestionVerbIds.includes(candidate.verb.id)) {
+            alternatives.push(index);
+          }
+        }
+        if (!alternatives.length && repeatsQuestion) {
+          for (let index = 0; index < nextIndex; index += 1) {
+            if (questionDeck[index].key !== lastPairKey) {
+              alternatives.push(index);
+            }
+          }
+        }
+        if (alternatives.length) {
+          const swapIndex = randomItem(alternatives);
+          [questionDeck[nextIndex], questionDeck[swapIndex]] =
+            [questionDeck[swapIndex], questionDeck[nextIndex]];
+        }
+      }
+    }
+
+    const pair = questionDeck.pop();
     lastPairKey = pair.key;
     return {
       verb: pair.verb,
@@ -328,6 +511,9 @@
       return;
     }
     currentQuestion = question;
+    recentQuestionVerbIds = [question.verb.id]
+      .concat(recentQuestionVerbIds.filter(function (verbId) { return verbId !== question.verb.id; }))
+      .slice(0, 3);
     elements.questionIndex.textContent = reviewingMistakes ? "错题重练" : "随机练习";
     elements.targetPill.textContent = getTargetLabel(question.voiceId, question.inflectionId);
     elements.questionGroup.textContent = GROUP_LABELS[question.verb.group];
@@ -351,10 +537,14 @@
     elements.ruleHint.hidden = true;
     elements.hintButton.textContent = "显示规律提示";
     elements.hintButton.setAttribute("aria-expanded", "false");
-    appendRuleText(
+    renderRuleExplanation(
       elements.ruleHint,
       engine.explain(question.verb, question.voiceId, question.inflectionId)
     );
+
+    elements.practiceCard.classList.remove("is-question-entering");
+    void elements.practiceCard.offsetWidth;
+    elements.practiceCard.classList.add("is-question-entering");
   }
 
   function newRandomQuestion() {
@@ -371,24 +561,6 @@
     return /^[a-z']+$/i.test(normalized)
       ? engine.toHiraganaFromRomaji(normalized)
       : normalized;
-  }
-
-  function appendRuleText(target, text) {
-    target.replaceChildren();
-    const parts = String(text).split(/(「[^」]*」|[あいうえお]段)/);
-    parts.forEach(function (part, index) {
-      if (!part) {
-        return;
-      }
-      if (index % 2 === 1) {
-        const mark = document.createElement("mark");
-        mark.className = "rule-highlight";
-        mark.textContent = part;
-        target.append(mark);
-      } else {
-        target.append(document.createTextNode(part));
-      }
-    });
   }
 
   function recordMistake(question, answer) {
@@ -457,13 +629,9 @@
     elements.feedbackVoiceMeaning.textContent = "语态：" + voice.meaning;
     elements.feedbackInflectionMeaning.textContent = (currentQuestion.voiceId === "base" ? "" : "活用：")
       + inflection.meaning;
-    appendRuleText(
+    renderRuleExplanation(
       elements.feedbackRule,
-      engine.explain(
-        currentQuestion.verb,
-        currentQuestion.voiceId,
-        currentQuestion.inflectionId
-      )
+      engine.explain(currentQuestion.verb, currentQuestion.voiceId, currentQuestion.inflectionId)
     );
     elements.nextQuestion.hidden = false;
 
@@ -478,6 +646,7 @@
     }
 
     updateMistakeCount();
+    updatePracticeStats(correct);
     elements.nextQuestion.focus();
   }
 
@@ -649,7 +818,7 @@
       meaningCell.textContent = form.meaning;
 
       const ruleCell = document.createElement("td");
-      appendRuleText(ruleCell, engine.explain(verb, voiceId, form.id));
+      renderRuleExplanation(ruleCell, engine.explain(verb, voiceId, form.id));
       row.append(formCell, answerCell, meaningCell, ruleCell);
       elements.referenceTableBody.append(row);
     });
@@ -669,6 +838,7 @@
   elements.answerForm.addEventListener("submit", submitAnswer);
   elements.newQuestion.addEventListener("click", newRandomQuestion);
   elements.nextQuestion.addEventListener("click", continueAfterAnswer);
+  elements.resetStats.addEventListener("click", resetPracticeStats);
   [elements.groupFilter, elements.voiceFilter, elements.inflectionFilter].forEach(function (select) {
     select.addEventListener("change", newRandomQuestion);
   });
@@ -691,6 +861,7 @@
   populateReferenceVoices();
   populateReferenceControls("");
   updateMistakeCount();
+  renderPracticeStats();
   renderMistakes();
   newRandomQuestion();
 })();

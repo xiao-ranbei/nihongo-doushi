@@ -129,29 +129,62 @@
             </section>
           </article>
 
-          <aside class="learning-card">
-            <p class="eyebrow">记住变化的方法</p>
-            <h2>先分组，再变形。</h2>
-            <div class="class-note">
-              <span class="class-note-mark">五</span>
-              <div><strong>五段动词</strong><p>辞书形以「う段」假名结尾。<br>活用时，词尾在「あ・い・う・え・お」各段之间变化。</p></div>
-            </div>
-            <div class="class-note">
-              <span class="class-note-mark">一</span>
-              <div><strong>一段动词</strong><p>通常以「る」结尾，前一个假名在「い段」或「え段」（有少数例外）。<br>活用时，通常去掉「る」，再接相应词尾。</p></div>
-            </div>
-            <div class="class-note">
-              <span class="class-note-mark">不</span>
-              <div><strong>不规则动词</strong><p>「する」「来る」及其复合词需要单独记忆。</p></div>
-            </div>
-            <button class="text-link" type="button" data-open-view="reference">
-              查一个动词的完整变化 <span aria-hidden="true">→</span>
-            </button>
-            <div class="scope-note">
-              <strong>包含的变形</strong>
-              <p>ます、て、た、条件、可能、受身、使役、使役受身等。</p>
-            </div>
-          </aside>
+          <div class="practice-sidebar">
+            <section class="practice-stats" role="group" aria-label="答题统计">
+              <div class="practice-stats-heading">
+                <span class="practice-stats-title">练习统计</span>
+                <button
+                  class="text-button reset-stats-button"
+                  id="reset-stats"
+                  type="button"
+                  aria-label="清零答题统计，不影响错题集"
+                  title="清零统计，不会清空错题集"
+                  disabled
+                >清零</button>
+              </div>
+              <div class="practice-stats-content">
+                <div class="practice-stats-counts">
+                  <div class="practice-stat practice-stat-correct">
+                    <span class="practice-stat-dot" aria-hidden="true"></span>
+                    <span>答对</span>
+                    <strong id="correct-answer-count" aria-live="polite">0</strong>
+                  </div>
+                  <div class="practice-stat practice-stat-incorrect">
+                    <span class="practice-stat-dot" aria-hidden="true"></span>
+                    <span>答错</span>
+                    <strong id="incorrect-answer-count" aria-live="polite">0</strong>
+                  </div>
+                </div>
+                <div class="practice-stats-track" id="answer-distribution" role="img" aria-label="尚未作答">
+                  <span class="practice-stats-segment practice-stats-segment-correct" id="correct-answer-segment"></span>
+                  <span class="practice-stats-segment practice-stats-segment-incorrect" id="incorrect-answer-segment"></span>
+                </div>
+                <div class="practice-stats-summary">
+                  <span>共 <strong id="total-answer-count">0</strong> 题</span>
+                  <span>正确率 <strong id="answer-accuracy">—</strong></span>
+                </div>
+              </div>
+            </section>
+            <aside class="learning-card">
+              <p class="eyebrow">记住变化的方法</p>
+              <h2>先分组，再变形。</h2>
+              <div class="class-note">
+                <span class="class-note-mark">五</span>
+                <div><strong>五段动词</strong><p>辞书形以「う段」假名结尾。<br>活用时，词尾在「あ・い・う・え・お」各段之间变化。</p></div>
+              </div>
+              <div class="class-note">
+                <span class="class-note-mark">一</span>
+                <div><strong>一段动词</strong><p>通常以「る」结尾，前一个假名在「い段」或「え段」（有少数例外）。<br>活用时，通常去掉「る」，再接相应词尾。</p></div>
+              </div>
+              <div class="class-note">
+                <span class="class-note-mark">不</span>
+                <div><strong>不规则动词</strong><p>「する」「来る」及其复合词需要单独记忆。</p></div>
+              </div>
+              <button class="text-link" type="button" data-open-view="reference">
+                查一个动词的完整变化 <span aria-hidden="true">→</span>
+              </button>
+            </aside>
+          </div>
         </div>
       </section>
 
