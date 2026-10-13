@@ -112,6 +112,7 @@
 
   const elements = {
     tabs: Array.from(document.querySelectorAll("[data-view]")),
+    adjSubtabs: Array.from(document.querySelectorAll("[data-adj-subview]")),
     views: {
       practice: document.getElementById("view-practice"),
       reference: document.getElementById("view-reference"),
@@ -178,8 +179,15 @@
     referenceTableBody: document.getElementById("reference-table-body"),
     reviewMistakes: document.getElementById("review-mistakes"),
     clearMistakes: document.getElementById("clear-mistakes"),
-    mistakesList: document.getElementById("mistakes-list"),
+    verbMistakesList: document.getElementById("verb-mistakes-list"),
+    verbMistakesGroup: document.getElementById("verb-mistakes-group"),
+    verbMistakesCount: document.getElementById("verb-mistakes-count"),
+    adjectiveMistakesGroup: document.getElementById("adjective-mistakes-group"),
+    adjectiveMistakesList: document.getElementById("adjective-mistakes-list"),
+    adjectiveMistakesCount: document.getElementById("adjective-mistakes-count"),
     mistakesEmpty: document.getElementById("mistakes-empty"),
+    adjSubviewPractice: document.getElementById("adj-subview-practice"),
+    adjSubviewReference: document.getElementById("adj-subview-reference"),
     toast: document.getElementById("toast"),
     // —— 形容词模块 ——
     adjGroupFilter: document.getElementById("adj-group-filter"),
@@ -1047,6 +1055,19 @@
     elements.introCopy.textContent = copy.copy;
   }
 
+  // 形容词模块二级切换：练习（做题训练）与速查（规则查阅）分视，
+  // 切换只改子视图可见性，不重置练习状态；跨模块入口一律显式指定子视图。
+  function setAdjectiveSubview(subview) {
+    const showPractice = subview !== "reference";
+    elements.adjSubviewPractice.hidden = !showPractice;
+    elements.adjSubviewReference.hidden = showPractice;
+    elements.adjSubtabs.forEach(function (subtab) {
+      const active = subtab.dataset.adjSubview === (showPractice ? "practice" : "reference");
+      subtab.classList.toggle("is-active", active);
+      subtab.setAttribute("aria-selected", String(active));
+    });
+  }
+
   function showView(viewId) {
     Object.keys(elements.views).forEach(function (id) {
       elements.views[id].hidden = id !== viewId;
@@ -1077,84 +1098,110 @@
     const adjectiveMistakes = mistakes.filter(function (mistake) {
       return isAdjectiveMistake(mistake);
     });
-    elements.mistakesList.replaceChildren();
+    renderMistakeGroup(
+      elements.verbMistakesList,
+      elements.verbMistakesGroup,
+      elements.verbMistakesCount,
+      verbMistakes
+    );
+    renderMistakeGroup(
+      elements.adjectiveMistakesList,
+      elements.adjectiveMistakesGroup,
+      elements.adjectiveMistakesCount,
+      adjectiveMistakes
+    );
     elements.mistakesEmpty.hidden = mistakes.length > 0;
     elements.reviewMistakes.disabled = verbMistakes.length === 0;
     elements.adjReviewMistakes.disabled = adjectiveMistakes.length === 0;
     elements.clearMistakes.disabled = mistakes.length === 0;
     elements.exportMistakes.disabled = mistakes.length === 0;
     updateMistakeCount();
+  }
 
-    mistakes.slice().sort(function (a, b) {
+  function renderMistakeGroup(listElement, groupElement, countElement, groupMistakes) {
+    groupElement.hidden = groupMistakes.length === 0;
+    countElement.textContent = groupMistakes.length
+      ? "共 " + groupMistakes.length + " 道"
+      : "";
+    listElement.replaceChildren();
+    groupMistakes.slice().sort(function (a, b) {
       return b.updatedAt.localeCompare(a.updatedAt);
     }).forEach(function (mistake) {
-      const question = questionFromMistake(mistake);
-      if (!question) {
+      const card = buildMistakeCard(mistake);
+      if (card) {
+        listElement.append(card);
+      }
+    });
+  }
+
+  function buildMistakeCard(mistake) {
+    const question = questionFromMistake(mistake);
+    if (!question) {
+      return null;
+    }
+    const isAdjective = isAdjectiveMistake(mistake);
+    const card = document.createElement("article");
+    card.className = "mistake-card";
+    const description = document.createElement("div");
+    const heading = document.createElement("h3");
+    heading.textContent = isAdjective ? question.adjective.word : question.verb.dictionary;
+    const reading = document.createElement("span");
+    reading.textContent = isAdjective
+      ? question.adjective.kana + " · " + getAdjectiveFormLabel(question.formId)
+      : question.verb.reading + " · " + getTargetLabel(question.voiceId, question.inflectionId);
+    heading.append(reading);
+    const meaning = document.createElement("p");
+    meaning.textContent = isAdjective
+      ? question.adjective.meaning + " · " + ADJ_GROUP_LABELS[question.adjective.kind] + " · 错 " + mistake.count + " 次"
+      : question.verb.meaning + " · " + GROUP_LABELS[question.verb.group] + " · 错 " + mistake.count + " 次";
+    const progress = document.createElement("p");
+    progress.className = "mistake-progress";
+    const remainingAnswers = Number.isFinite(mistake.sessionDueAtAnswerCount)
+      ? mistake.sessionDueAtAnswerCount - sessionAnswerCount
+      : 0;
+    progress.textContent = "连续答对 " + mistake.correctStreak + "/" + MASTERY_CORRECT_STREAK
+      + " · " + (remainingAnswers > 0
+        ? "本轮再答 " + remainingAnswers + " 题后重现"
+        : "下次复习：" + formatReviewDate(mistake.dueAt));
+    const correctAnswer = document.createElement("p");
+    correctAnswer.className = "mistake-answer";
+    correctAnswer.textContent = "正确答案：" + question.result.written
+      + (mistake.wrongAnswer ? " · 上次作答：" + mistake.wrongAnswer : "");
+    description.append(heading, meaning, progress, correctAnswer);
+
+    const actions = document.createElement("div");
+    actions.className = "mistake-card-actions";
+    const practiceButton = document.createElement("button");
+    practiceButton.type = "button";
+    practiceButton.textContent = "练这题";
+    practiceButton.addEventListener("click", function () {
+      reviewedMistakeKeys = new Set();
+      if (isAdjective) {
+        setReviewingMistakes(false);
+        setReviewingAdjectiveMistakes(true);
+        showView("adjective");
+        setAdjectiveSubview("practice");
+        startAdjectiveQuestion(questionFromMistake(mistake));
+        elements.adjAnswerInput.focus();
         return;
       }
-      const isAdjective = isAdjectiveMistake(mistake);
-      const card = document.createElement("article");
-      card.className = "mistake-card";
-      const description = document.createElement("div");
-      const heading = document.createElement("h3");
-      heading.textContent = isAdjective ? question.adjective.word : question.verb.dictionary;
-      const reading = document.createElement("span");
-      reading.textContent = isAdjective
-        ? question.adjective.kana + " · " + getAdjectiveFormLabel(question.formId)
-        : question.verb.reading + " · " + getTargetLabel(question.voiceId, question.inflectionId);
-      heading.append(reading);
-      const meaning = document.createElement("p");
-      meaning.textContent = isAdjective
-        ? question.adjective.meaning + " · " + ADJ_GROUP_LABELS[question.adjective.kind] + " · 错 " + mistake.count + " 次"
-        : question.verb.meaning + " · " + GROUP_LABELS[question.verb.group] + " · 错 " + mistake.count + " 次";
-      const progress = document.createElement("p");
-      progress.className = "mistake-progress";
-      const remainingAnswers = Number.isFinite(mistake.sessionDueAtAnswerCount)
-        ? mistake.sessionDueAtAnswerCount - sessionAnswerCount
-        : 0;
-      progress.textContent = "连续答对 " + mistake.correctStreak + "/" + MASTERY_CORRECT_STREAK
-        + " · " + (remainingAnswers > 0
-          ? "本轮再答 " + remainingAnswers + " 题后重现"
-          : "下次复习：" + formatReviewDate(mistake.dueAt));
-      const correctAnswer = document.createElement("p");
-      correctAnswer.className = "mistake-answer";
-      correctAnswer.textContent = "正确答案：" + question.result.written
-        + (mistake.wrongAnswer ? " · 上次作答：" + mistake.wrongAnswer : "");
-      description.append(heading, meaning, progress, correctAnswer);
-
-      const actions = document.createElement("div");
-      actions.className = "mistake-card-actions";
-      const practiceButton = document.createElement("button");
-      practiceButton.type = "button";
-      practiceButton.textContent = "练这题";
-      practiceButton.addEventListener("click", function () {
-        reviewedMistakeKeys = new Set();
-        if (isAdjective) {
-          setReviewingMistakes(false);
-          setReviewingAdjectiveMistakes(true);
-          showView("adjective");
-          startAdjectiveQuestion(questionFromMistake(mistake));
-          elements.adjAnswerInput.focus();
-          return;
-        }
-        setReviewingAdjectiveMistakes(false);
-        setReviewingMistakes(true);
-        showView("practice");
-        startQuestion(questionFromMistake(mistake));
-        elements.answerInput.focus();
-      });
-      const removeButton = document.createElement("button");
-      removeButton.type = "button";
-      removeButton.className = "remove-mistake";
-      removeButton.textContent = "移除";
-      removeButton.addEventListener("click", function () {
-        removeMistake(mistake.key);
-        renderMistakes();
-      });
-      actions.append(practiceButton, removeButton);
-      card.append(description, actions);
-      elements.mistakesList.append(card);
+      setReviewingAdjectiveMistakes(false);
+      setReviewingMistakes(true);
+      showView("practice");
+      startQuestion(questionFromMistake(mistake));
+      elements.answerInput.focus();
     });
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "remove-mistake";
+    removeButton.textContent = "移除";
+    removeButton.addEventListener("click", function () {
+      removeMistake(mistake.key);
+      renderMistakes();
+    });
+    actions.append(practiceButton, removeButton);
+    card.append(description, actions);
+    return card;
   }
 
   function clearMistakes() {
@@ -1314,6 +1361,7 @@
     setReviewingMistakes(false);
     setReviewingAdjectiveMistakes(true);
     showView("adjective");
+    setAdjectiveSubview("practice");
     const mistake = weightedItem(adjectiveMistakes, mistakeWeight);
     startAdjectiveQuestion(questionFromMistake(mistake));
     elements.adjAnswerInput.focus();
@@ -1330,6 +1378,7 @@
     }
     setReviewingMistakes(false);
     setReviewingAdjectiveMistakes(false);
+    setAdjectiveSubview("practice");
     startAdjectiveQuestion(question);
     elements.adjAnswerInput.focus();
   }
@@ -2087,10 +2136,12 @@
     elements.adjHintButton.textContent = expanded ? "显示规律提示" : "收起规律提示";
   });
   elements.adjGuideLink.addEventListener("click", function () {
-    const guide = document.getElementById("adjective-guide");
-    if (guide && typeof guide.scrollIntoView === "function") {
-      guide.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    setAdjectiveSubview("reference");
+  });
+  elements.adjSubtabs.forEach(function (subtab) {
+    subtab.addEventListener("click", function () {
+      setAdjectiveSubview(subtab.dataset.adjSubview);
+    });
   });
 
   populatePracticeFilters();
@@ -2102,6 +2153,7 @@
   renderAdjectiveStats();
   renderStreakNote();
   renderMistakes();
+  setAdjectiveSubview("practice");
   newRandomQuestion();
   newAdjectiveQuestion();
 })();

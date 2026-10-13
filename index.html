@@ -262,6 +262,11 @@
       </section>
 
       <section class="view" id="view-adjective" aria-labelledby="adjective-title" hidden>
+        <div class="subtabs" role="tablist" aria-label="形容词模块视图">
+          <button class="subtab is-active" type="button" role="tab" aria-selected="true" data-adj-subview="practice">练习</button>
+          <button class="subtab" type="button" role="tab" aria-selected="false" data-adj-subview="reference">速查</button>
+        </div>
+        <div id="adj-subview-practice">
         <div class="section-heading">
           <div>
             <p class="eyebrow">ADJECTIVE</p>
@@ -418,7 +423,9 @@
             </aside>
           </div>
         </div>
+        </div>
 
+        <div id="adj-subview-reference" hidden>
         <div class="section-heading adj-guide-heading" id="adjective-guide">
           <div>
             <p class="eyebrow">ADJECTIVE GUIDE</p>
@@ -562,6 +569,7 @@
             <span class="adj-pitfall-note">修饰动词时，な形容词要接「に」，い形容词变「く」</span>
           </div>
         </div>
+        </div>
       </section>
 
       <section class="view" id="view-mistakes" aria-labelledby="mistakes-title" hidden>
@@ -569,18 +577,29 @@
           <div>
             <p class="eyebrow">REVIEW</p>
             <h2 id="mistakes-title">错题重练</h2>
-            <p>答错的变形会保存在本机；答对后按 1、3、7、14、30 天逐步拉长间隔，连续完成 6 次正确复习后移出。</p>
+            <p>答错的变形会保存在本机；答对后按 1、3、7、14、30 天逐步拉长间隔，连续完成 6 次正确复习后移出。动词与形容词错题分开归类。</p>
           </div>
           <div class="mistake-actions">
-            <button class="outline-button" id="review-mistakes" type="button">随机重练</button>
-            <button class="outline-button" id="adj-review-mistakes" type="button">重练形容词错题</button>
             <button class="text-button" id="export-mistakes" type="button" disabled>导出</button>
             <button class="text-button" id="import-mistakes" type="button">导入</button>
             <button class="text-button danger-text" id="clear-mistakes" type="button">清空</button>
             <input type="file" id="import-mistakes-file" accept=".json,application/json" hidden>
           </div>
         </div>
-        <div class="mistakes-list" id="mistakes-list"></div>
+        <div class="mistake-group" id="verb-mistakes-group" hidden>
+          <div class="mistake-group-head">
+            <h3>动词错题<span class="mistake-group-count" id="verb-mistakes-count"></span></h3>
+            <button class="text-button" id="review-mistakes" type="button">随机重练</button>
+          </div>
+          <div class="mistakes-list" id="verb-mistakes-list"></div>
+        </div>
+        <div class="mistake-group" id="adjective-mistakes-group" hidden>
+          <div class="mistake-group-head">
+            <h3>形容词错题<span class="mistake-group-count" id="adjective-mistakes-count"></span></h3>
+            <button class="text-button" id="adj-review-mistakes" type="button">重练错题</button>
+          </div>
+          <div class="mistakes-list" id="adjective-mistakes-list"></div>
+        </div>
         <div class="empty-state" id="mistakes-empty" hidden>
           <span aria-hidden="true">◎</span>
           <strong>还没有错题</strong>

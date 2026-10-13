@@ -167,7 +167,7 @@ test("答错：记入错题、渲染卡片、写入本地存储", function () {
 
   tab(app, "mistakes");
   assert.equal(app.$("view-mistakes").hidden, false);
-  assert.equal(app.$("mistakes-list").querySelectorAll(".mistake-card").length, 1);
+  assert.equal(app.$("verb-mistakes-list").querySelectorAll(".mistake-card").length, 1);
 
   const stored = JSON.parse(app.window.localStorage.getItem(MISTAKES_KEY));
   assert.equal(stored.length, 1);
@@ -470,7 +470,7 @@ test("存档中的非法词条被丢弃，合法词条保留次数", function ()
 
   assert.equal(app.$("mistake-count").textContent, "1", "只应保留一条合法错题");
   tab(app, "mistakes");
-  const card = app.$("mistakes-list").querySelectorAll(".mistake-card")[0];
+  const card = app.$("verb-mistakes-list").querySelectorAll(".mistake-card")[0];
   assert.match(card.textContent, /错 3 次/);
 });
 
@@ -634,7 +634,7 @@ test("形容词：答错入共享错题本并渲染形容词卡片", function ()
   assert.equal(stored[0].wrongAnswer, "ぜったいにまちがい");
 
   tab(app, "mistakes");
-  const card = app.$("mistakes-list").querySelectorAll(".mistake-card")[0];
+  const card = app.$("adjective-mistakes-list").querySelectorAll(".mistake-card")[0];
   assert.match(card.textContent, /い形容词|な形容词/, "形容词卡片应标注词性分类");
   assert.match(card.textContent, /错 1 次/);
 });
@@ -700,8 +700,8 @@ test("形容词：错题卡「练这题」切到形容词视图重练", function
   const seed = JSON.stringify([adjectiveMistakeSeed()]);
   const app = createApp({ storage: { [ADJ_MISTAKES_KEY]: seed } });
   tab(app, "mistakes");
-  // 每张错题卡的按钮顺序：[0] 练这题、[1] 移除（dom-stub 不支持后代选择器，用标签选择）
-  app.click(app.$("mistakes-list").querySelectorAll("button")[0]);
+  // 形容词错题卡在独立分组容器里；按钮顺序：[0] 练这题、[1] 移除
+  app.click(app.$("adjective-mistakes-list").querySelectorAll("button")[0]);
 
   assert.equal(app.$("view-adjective").hidden, false);
   assert.equal(app.$("adj-review-banner").hidden, false, "单题重练应进入重练模式");
@@ -988,4 +988,75 @@ test("导出再导入：往返等价（剥离会话字段后可完整恢复）",
     assert.equal(item.intervalDays, original.intervalDays);
     assert.equal(item.dueAt, original.dueAt);
   });
+});
+
+// —— 形容词模块分区：练习/速查子视图 + 错题分组 ——
+
+function adjectiveSubviewOf(app) {
+  return app.$("adj-subview-practice").hidden ? "reference" : "practice";
+}
+
+test("形容词：练习与速查为两个独立子视图，默认练习", function () {
+  const app = createApp();
+  tab(app, "adjective");
+
+  assert.equal(adjectiveSubviewOf(app), "practice", "默认应为练习子视图");
+  assert.equal(app.$("adj-subview-reference").hidden, true);
+
+  app.click(app.document.querySelectorAll("[data-adj-subview]").filter(function (tab) {
+    return tab.dataset.adjSubview === "reference";
+  })[0]);
+  assert.equal(adjectiveSubviewOf(app), "reference", "点速查应切到速查子视图");
+  assert.equal(app.$("adj-subview-practice").hidden, true, "练习子视图应隐藏");
+
+  // 侧栏「查形容词速查资料」入口
+  const back = createApp();
+  tab(back, "adjective");
+  back.click(back.$("adj-guide-link"));
+  assert.equal(adjectiveSubviewOf(back), "reference", "侧栏入口应切到速查子视图");
+});
+
+test("形容词：速查总表「练这题」从速查子视图切回练习", function () {
+  const app = createApp();
+  tab(app, "adjective");
+  app.click(app.document.querySelectorAll("[data-adj-subview]").filter(function (tab) {
+    return tab.dataset.adjSubview === "reference";
+  })[0]);
+  assert.equal(adjectiveSubviewOf(app), "reference");
+
+  const button = app.document.querySelectorAll("[data-adj-practice]").filter(function (item) {
+    return item.dataset.adjPractice === "past";
+  })[0];
+  app.click(button);
+  assert.equal(adjectiveSubviewOf(app), "practice", "开练应切回练习子视图");
+  assert.equal(app.$("adj-target-pill").textContent, "过去肯定");
+});
+
+test("错题页：动词与形容词错题分组建卡，不混排", function () {
+  const seed = JSON.stringify([
+    dueMistakeSeed({ verbId: engine.VERBS[0].id, voiceId: "base", inflectionId: "te", count: 1 }),
+    adjectiveMistakeSeed(),
+    adjectiveMistakeSeed({ adjectiveId: "benri", formId: "present" })
+  ]);
+  const app = createApp({ storage: { [MISTAKES_KEY]: seed } });
+  tab(app, "mistakes");
+
+  const verbCards = app.$("verb-mistakes-list").querySelectorAll(".mistake-card");
+  const adjectiveCards = app.$("adjective-mistakes-list").querySelectorAll(".mistake-card");
+  assert.equal(verbCards.length, 1, "动词组应只有动词错题卡");
+  assert.equal(adjectiveCards.length, 2, "形容词组应只有形容词错题卡");
+  assert.equal(app.$("verb-mistakes-group").hidden, false);
+  assert.equal(app.$("adjective-mistakes-group").hidden, false);
+  assert.match(app.$("verb-mistakes-count").textContent, /共 1 道/);
+  assert.match(app.$("adjective-mistakes-count").textContent, /共 2 道/);
+});
+
+test("错题页：只有单模块错题时另一分组整体隐藏", function () {
+  const seed = JSON.stringify([adjectiveMistakeSeed()]);
+  const app = createApp({ storage: { [MISTAKES_KEY]: seed } });
+  tab(app, "mistakes");
+
+  assert.equal(app.$("verb-mistakes-group").hidden, true, "无动词错题时动词组应隐藏");
+  assert.equal(app.$("adjective-mistakes-group").hidden, false);
+  assert.equal(app.$("mistakes-empty").hidden, true, "仍有错题时不显示空态");
 });

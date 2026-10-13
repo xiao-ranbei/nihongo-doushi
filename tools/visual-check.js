@@ -150,12 +150,10 @@ async function main() {
     await page.waitForTimeout(450);
     await shoot(page, outDir, "09-adjective-correct");
 
-    // 形容词速查资料区（滚动到总表；保留滚动位置）
-    await page.evaluate(() => {
-      document.getElementById("adjective-guide").scrollIntoView();
-    });
+    // 形容词速查资料区（切到速查子视图）
+    await page.click('[data-adj-subview="reference"]');
     await page.waitForTimeout(300);
-    await shoot(page, outDir, "10-adjective-guide", { keepScroll: true });
+    await shoot(page, outDir, "10-adjective-guide");
 
     // 移动端练习视图
     const mobile = await browser.newContext({ viewport: { width: 390, height: 844 } });
