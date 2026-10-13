@@ -1211,6 +1211,23 @@ select {
   text-align: center;
 }
 
+/* 难度分组行：与练习页「难度」筛选共用同一套分类（基础活用/进阶活用）。 */
+.reference-table .reference-section-row th {
+  padding: 7px 13px;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--bg-pale-strong);
+  color: var(--text-green-deep);
+  font-size: 10px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.reference-section-count {
+  margin-left: 8px;
+  color: var(--text-faint-soft);
+  font-weight: 400;
+}
+
 .practice-link {
   font-size: 10px;
   font-weight: 600;

@@ -47,6 +47,9 @@
     basic: "基础活用",
     advanced: "进阶活用"
   };
+  // 速查表分组行需要跨全部列；列数以 index.html 表头为准（活用形式/变形结果/
+  // 常见表达大意/变化提示/练一练），改表头时同步这里。
+  const REFERENCE_COLUMN_COUNT = 5;
   // 难度档位从 INFLECTIONS.level 派生，新增档位时只需补上面的中文标签。
   INFLECTIONS.forEach(function (form) {
     const existing = LEVELS.some(function (level) { return level.id === form.level; });
@@ -861,6 +864,70 @@
     elements.answerInput.focus();
   }
 
+  function buildReferenceRow(verb, voiceId, form) {
+    const result = engine.conjugate(verb, voiceId, form.id);
+    const row = document.createElement("tr");
+    const formCell = document.createElement("td");
+    formCell.textContent = form.label;
+
+    const answerCell = document.createElement("td");
+    const answer = document.createElement("div");
+    answer.className = "reference-result";
+    const written = document.createElement("strong");
+    written.textContent = result.written;
+    answer.append(written);
+    if (result.kana !== result.written) {
+      const reading = document.createElement("small");
+      reading.textContent = result.kana;
+      answer.append(reading);
+    }
+    answerCell.append(answer);
+
+    const meaningCell = document.createElement("td");
+    meaningCell.className = "reference-form-meaning";
+    meaningCell.textContent = form.meaning;
+
+    const ruleCell = document.createElement("td");
+    renderRuleExplanation(ruleCell, engine.explain(verb, voiceId, form.id));
+
+    const actionCell = document.createElement("td");
+    actionCell.className = "reference-practice";
+    const practiceButton = document.createElement("button");
+    practiceButton.type = "button";
+    practiceButton.className = "inline-button practice-link";
+    practiceButton.textContent = "练这题";
+    practiceButton.setAttribute(
+      "aria-label",
+      "练习 " + verb.dictionary + " 的" + getTargetLabel(voiceId, form.id)
+    );
+    practiceButton.addEventListener("click", function () {
+      practiceFromReference(verb, voiceId, form.id);
+    });
+    actionCell.append(practiceButton);
+
+    row.append(formCell, answerCell, meaningCell, ruleCell, actionCell);
+    return row;
+  }
+
+  // 与练习页共用同一套 LEVELS 分类：速查表按 基础活用/进阶活用 分组展示，
+  // 组头为跨列表头，随后紧跟该组的活用形式行。
+  function appendReferenceSection(levelId, forms) {
+    const groupRow = document.createElement("tr");
+    groupRow.className = "reference-section-row";
+    const groupCell = document.createElement("th");
+    groupCell.colSpan = REFERENCE_COLUMN_COUNT;
+    groupCell.scope = "colgroup";
+    const groupLabel = document.createElement("span");
+    groupLabel.className = "reference-section-label";
+    groupLabel.textContent = LEVEL_LABELS[levelId];
+    const groupCount = document.createElement("span");
+    groupCount.className = "reference-section-count";
+    groupCount.textContent = forms.length + " 项";
+    groupCell.append(groupLabel, groupCount);
+    groupRow.append(groupCell);
+    elements.referenceTableBody.append(groupRow);
+  }
+
   function renderReferenceTable() {
     const verb = VERB_BY_ID.get(elements.referenceVerb.value);
     const voiceId = elements.referenceVoice.value || "base";
@@ -879,49 +946,14 @@
     elements.referenceVoiceMeaning.textContent = "语态大意：" + VOICE_BY_ID.get(voiceId).meaning;
     elements.referenceGroup.textContent = GROUP_LABELS[verb.group];
 
-    INFLECTIONS.forEach(function (form) {
-      const result = engine.conjugate(verb, voiceId, form.id);
-      const row = document.createElement("tr");
-      const formCell = document.createElement("td");
-      formCell.textContent = form.label;
-
-      const answerCell = document.createElement("td");
-      const answer = document.createElement("div");
-      answer.className = "reference-result";
-      const written = document.createElement("strong");
-      written.textContent = result.written;
-      answer.append(written);
-      if (result.kana !== result.written) {
-        const reading = document.createElement("small");
-        reading.textContent = result.kana;
-        answer.append(reading);
-      }
-      answerCell.append(answer);
-
-      const meaningCell = document.createElement("td");
-      meaningCell.className = "reference-form-meaning";
-      meaningCell.textContent = form.meaning;
-
-      const ruleCell = document.createElement("td");
-      renderRuleExplanation(ruleCell, engine.explain(verb, voiceId, form.id));
-
-      const actionCell = document.createElement("td");
-      actionCell.className = "reference-practice";
-      const practiceButton = document.createElement("button");
-      practiceButton.type = "button";
-      practiceButton.className = "inline-button practice-link";
-      practiceButton.textContent = "练这题";
-      practiceButton.setAttribute(
-        "aria-label",
-        "练习 " + verb.dictionary + " 的" + getTargetLabel(voiceId, form.id)
-      );
-      practiceButton.addEventListener("click", function () {
-        practiceFromReference(verb, voiceId, form.id);
+    LEVELS.forEach(function (level) {
+      const forms = INFLECTIONS.filter(function (form) {
+        return form.level === level.id;
       });
-      actionCell.append(practiceButton);
-
-      row.append(formCell, answerCell, meaningCell, ruleCell, actionCell);
-      elements.referenceTableBody.append(row);
+      appendReferenceSection(level.id, forms);
+      forms.forEach(function (form) {
+        elements.referenceTableBody.append(buildReferenceRow(verb, voiceId, form));
+      });
     });
   }
 

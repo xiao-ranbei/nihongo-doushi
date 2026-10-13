@@ -164,17 +164,57 @@ test("指定具体活用形式时难度筛选禁用且以具体形式为准", fu
   assert.equal(app.$("level-filter").disabled, false);
 });
 
+function formRowsOf(app) {
+  return app.$("reference-table-body").childNodes.filter(function (row) {
+    return !row.classList.contains("reference-section-row");
+  });
+}
+
+test("速查表按基础／进阶分组展示活用形式", function () {
+  const app = createApp();
+  tab(app, "reference");
+
+  const sections = app.$("reference-table-body").querySelectorAll(".reference-section-row");
+  assert.equal(sections.length, 2, "应有 基础活用/进阶活用 两个分组行");
+  assert.match(sections[0].textContent, /基础活用/);
+  assert.match(sections[0].textContent, /12 项/);
+  assert.match(sections[1].textContent, /进阶活用/);
+  assert.match(sections[1].textContent, /6 项/);
+
+  const rows = formRowsOf(app);
+  assert.equal(rows.length, engine.INFLECTIONS.length, "活用行总数不变");
+
+  const basicLabels = new Set(engine.INFLECTIONS.filter(function (form) {
+    return form.level === "basic";
+  }).map(function (form) {
+    return form.label;
+  }));
+  const advancedLabels = new Set(engine.INFLECTIONS.filter(function (form) {
+    return form.level === "advanced";
+  }).map(function (form) {
+    return form.label;
+  }));
+  assert.equal(basicLabels.size, 12);
+  assert.equal(advancedLabels.size, 6);
+
+  rows.slice(0, 12).forEach(function (row) {
+    assert.ok(basicLabels.has(row.childNodes[0].textContent), "分组头之后应先是基础活用");
+  });
+  rows.slice(12).forEach(function (row) {
+    assert.ok(advancedLabels.has(row.childNodes[0].textContent), "其后才是进阶活用");
+  });
+});
+
 test("速查表「练这题」切到练习并载入对应题目", function () {
   const app = createApp();
   tab(app, "reference");
 
-  const rows = app.$("reference-table-body").childNodes;
-  assert.equal(rows.length, engine.INFLECTIONS.length);
   const buttons = app.$("reference-table-body").querySelectorAll(".practice-link");
-  assert.equal(buttons.length, engine.INFLECTIONS.length, "每行都应有一个「练这题」");
+  assert.equal(buttons.length, engine.INFLECTIONS.length, "每个活用行都应有一个「练这题」");
 
-  const rowLabel = rows[3].childNodes[0].textContent;
-  app.click(buttons[3]);
+  const targetRow = formRowsOf(app)[4];
+  const rowLabel = targetRow.childNodes[0].textContent;
+  app.click(targetRow.querySelectorAll(".practice-link")[0]);
 
   assert.equal(app.$("view-practice").hidden, false);
   assert.equal(app.$("view-reference").hidden, true);
