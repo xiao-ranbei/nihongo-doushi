@@ -55,6 +55,20 @@ test("组件样式内不出现硬编码色值（#fff/#000 例外）", function (
   assert.deepEqual(offenders, [], "组件内出现硬编码色值:\n" + offenders.join("\n"));
 });
 
+test("答题结果扫过整张统计卡片且不阻挡操作", function () {
+  const sweepLayer = /\.practice-stats::after\s*\{([^}]*)\}/.exec(css);
+  assert.ok(sweepLayer, "统计卡片应有独立扫光层");
+  assert.match(sweepLayer[1], /inset:\s*0;/, "扫光层应覆盖整个统计卡片");
+  assert.match(sweepLayer[1], /pointer-events:\s*none;/, "扫光层不应拦截卡片内交互");
+  assert.match(css, /\.practice-stats\.is-answer-correct::after/);
+  assert.match(css, /\.practice-stats\.is-answer-incorrect::after/);
+  assert.match(css, /@keyframes\s+practice-stats-sweep/);
+  assert.match(
+    css,
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.practice-stats\.is-answer-correct::after[\s\S]*?animation:\s*none;/
+  );
+});
+
 test(":root 令牌按语义分组并有注释", function () {
   const root = extractRootBlock();
   assert.match(root, /\/\* .+ \*\//, ":root 中应有分组注释");

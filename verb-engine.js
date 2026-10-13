@@ -403,6 +403,15 @@
     return rules[voiceId];
   }
 
+  function explainVoice(verb, voiceId) {
+    if (!verb || !VOICE_IDS.has(voiceId)) {
+      throw new RangeError("A known verb and voice are required.");
+    }
+    return voiceId === "base"
+      ? "不做语态变化，保留辞书形。"
+      : voiceRule(verb, voiceId);
+  }
+
   function inflectionRule(kind, inflectionId, verb, voiceId) {
     if (voiceId === "base" && verb.kind === "iku" && (inflectionId === "te" || inflectionId === "past")) {
       return "「行く」是特殊变化：て形为「行って」，た形为「行った」。";
@@ -512,7 +521,7 @@
     if (voiceId === "base") {
       return "变「" + inflection.label + "」：" + baseRule;
     }
-    return "先变「" + voice.label + "」：" + voiceRule(verb, voiceId)
+    return "先变「" + voice.label + "」：" + explainVoice(verb, voiceId)
       + "\n再变「" + inflection.label + "」：" + baseRule;
   }
 
@@ -618,6 +627,7 @@
     INFLECTIONS: INFLECTIONS,
     VERBS: VERBS,
     conjugate: conjugate,
+    explainVoice: explainVoice,
     explain: explain,
     toHiraganaFromRomaji: toHiraganaFromRomaji,
     normalizeText: normalizeText,

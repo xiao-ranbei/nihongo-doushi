@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f6f5f0">
   <title>动词活用练习</title>
+  <link rel="icon" type="image/svg+xml" href="./icon/note-icon.svg">
   <link rel="stylesheet" href="styles.css">
   <script src="font/fonts.js" defer></script>
   <script src="verb-engine.js" defer></script>
@@ -86,13 +87,13 @@
               <span class="target-pill" id="target-pill">准备中</span>
             </div>
 
-            <div class="verb-prompt">
+            <div class="verb-prompt" role="button" tabindex="0" aria-expanded="false">
               <div class="verb-meta">
-                <span class="class-pill" id="question-group"></span>
+                <span class="class-pill" id="question-group">动词</span>
                 <span class="meaning" id="question-meaning"></span>
               </div>
               <h3 id="question-word"></h3>
-              <p class="reading" id="question-reading"></p>
+              <p class="reading" id="question-reading">假名</p>
             </div>
 
             <p class="question-instruction" id="question-instruction"></p>
@@ -231,6 +232,11 @@
           </div>
           <span class="class-pill" id="reference-group"></span>
         </div>
+        <details class="reference-voice-guide" id="reference-voice-guide" open>
+          <summary>变形类型规则</summary>
+          <p class="reference-voice-guide-caption" id="reference-voice-guide-caption"></p>
+          <ul class="reference-voice-guide-list" id="reference-voice-guide-list"></ul>
+        </details>
         <div class="table-wrap">
           <table class="reference-table">
             <thead>
@@ -252,7 +258,7 @@
           <div>
             <p class="eyebrow">REVIEW</p>
             <h2 id="mistakes-title">错题重练</h2>
-            <p>答错的变形会保存在本机，重练答对后自动移出。</p>
+            <p>答错的变形会保存在本机；答对后按 1、3、7、14、30 天逐步拉长间隔，连续完成 6 次正确复习后移出。</p>
           </div>
           <div class="mistake-actions">
             <button class="outline-button" id="review-mistakes" type="button">随机重练</button>

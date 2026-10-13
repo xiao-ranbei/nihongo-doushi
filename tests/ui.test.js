@@ -36,6 +36,27 @@ function currentAnswer(app) {
   return engine.conjugate(verb, voice.id, inflection.id).written;
 }
 
+function currentQuestionKey(app) {
+  const word = app.$("question-word").textContent;
+  const verb = engine.VERBS.filter(function (item) {
+    return item.dictionary === word;
+  })[0];
+  const parts = app.$("target-pill").textContent.split(" · ");
+  const inflectionLabel = parts[parts.length - 1];
+  const voiceLabel = parts.length > 1 ? parts[0] : "原形";
+  const voice = engine.VOICES.filter(function (item) {
+    return item.label === voiceLabel;
+  })[0];
+  const inflection = engine.INFLECTIONS.filter(function (item) {
+    return item.label === inflectionLabel;
+  })[0];
+
+  assert.ok(verb, "题目动词应存在于动词表：" + word);
+  assert.ok(voice, "目标 pill 的语态标签应可解析：" + app.$("target-pill").textContent);
+  assert.ok(inflection, "目标 pill 的活用标签应可解析：" + app.$("target-pill").textContent);
+  return [verb.id, voice.id, inflection.id].join("::");
+}
+
 function inflectionLabelOf(app) {
   const parts = app.$("target-pill").textContent.split(" · ");
   return parts[parts.length - 1];
@@ -64,11 +85,58 @@ test("初始化：注入字体、渲染首题、只显示练习视图", function
   assert.equal(app.$("review-banner").hidden, true);
   assert.equal(app.$("feedback-panel").hidden, true);
   assert.equal(app.$("question-index").textContent, "随机练习");
+  assert.equal(app.$("question-group").textContent, "动词");
+  assert.equal(app.$("question-reading").textContent, "假名");
+  assert.equal(app.document.querySelector(".verb-prompt").getAttribute("aria-expanded"), "false");
+  assert.equal(app.document.querySelector(".practice-stats").classList.contains("is-answer-correct"), false);
+  assert.equal(app.document.querySelector(".practice-stats").classList.contains("is-answer-incorrect"), false);
+});
+
+test("动词卡片点击或键盘可切换提示，检查后显示且下一题重置", function () {
+  const app = createApp();
+  const prompt = app.document.querySelector(".verb-prompt");
+  const word = app.$("question-word").textContent;
+  const verb = engine.VERBS.filter(function (item) {
+    return item.dictionary === word;
+  })[0];
+  const groupLabels = {
+    godan: "五段动词",
+    ichidan: "一段动词",
+    irregular: "不规则动词"
+  };
+
+  app.click(prompt);
+  assert.equal(app.$("question-group").textContent, groupLabels[verb.group]);
+  assert.equal(app.$("question-reading").textContent, verb.reading);
+  assert.equal(prompt.getAttribute("aria-expanded"), "true");
+
+  app.click(prompt);
+  assert.equal(app.$("question-group").textContent, "动词");
+  assert.equal(app.$("question-reading").textContent, "假名");
+  assert.equal(prompt.getAttribute("aria-expanded"), "false");
+
+  prompt.dispatch("keydown", { key: "Enter" });
+  assert.equal(prompt.getAttribute("aria-expanded"), "true");
+  prompt.dispatch("keydown", { key: " " });
+  assert.equal(prompt.getAttribute("aria-expanded"), "false");
+
+  app.answer(currentAnswer(app));
+  assert.equal(prompt.getAttribute("aria-expanded"), "true");
+  assert.equal(app.$("question-group").textContent, groupLabels[verb.group]);
+  assert.equal(app.$("question-reading").textContent, verb.reading);
+
+  app.click(app.$("next-question"));
+  assert.equal(app.$("question-group").textContent, "动词");
+  assert.equal(app.$("question-reading").textContent, "假名");
+  assert.equal(prompt.getAttribute("aria-expanded"), "false");
+  assert.equal(app.document.querySelector(".practice-stats").classList.contains("is-answer-correct"), false);
+  assert.equal(app.document.querySelector(".practice-stats").classList.contains("is-answer-incorrect"), false);
 });
 
 test("答对：显示 ✓、统计 +1、不记入错题", function () {
   const app = createApp();
   app.answer(currentAnswer(app));
+  const statsCard = app.document.querySelector(".practice-stats");
 
   assert.equal(app.$("feedback-panel").hidden, false);
   assert.equal(app.$("feedback-mark").textContent, "✓");
@@ -78,16 +146,23 @@ test("答对：显示 ✓、统计 +1、不记入错题", function () {
   assert.equal(app.$("mistake-count").textContent, "0");
   assert.equal(app.$("answer-input").disabled, true, "作答后输入框应锁定");
   assert.equal(app.$("next-question").hidden, false);
+  assert.equal(app.document.querySelector(".verb-prompt").getAttribute("aria-expanded"), "true");
+  assert.equal(statsCard.classList.contains("is-answer-correct"), true);
+  assert.equal(statsCard.classList.contains("is-answer-incorrect"), false);
 });
 
 test("答错：记入错题、渲染卡片、写入本地存储", function () {
   const app = createApp();
   app.answer("ぜったいにまちがい");
+  const statsCard = app.document.querySelector(".practice-stats");
 
   assert.equal(app.$("feedback-mark").textContent, "!");
   assert.equal(app.$("feedback-panel").classList.contains("is-wrong"), true);
   assert.equal(app.$("incorrect-answer-count").textContent, "1");
   assert.equal(app.$("mistake-count").textContent, "1");
+  assert.equal(app.document.querySelector(".verb-prompt").getAttribute("aria-expanded"), "true");
+  assert.equal(statsCard.classList.contains("is-answer-correct"), false);
+  assert.equal(statsCard.classList.contains("is-answer-incorrect"), true);
 
   tab(app, "mistakes");
   assert.equal(app.$("view-mistakes").hidden, false);
@@ -97,6 +172,69 @@ test("答错：记入错题、渲染卡片、写入本地存储", function () {
   assert.equal(stored.length, 1);
   assert.equal(stored[0].count, 1);
   assert.equal(stored[0].wrongAnswer, "ぜったいにまちがい");
+});
+
+test("答错后隔四道题重现，答题序号标为间隔复习", function () {
+  const app = createApp();
+  const firstQuestionKey = currentQuestionKey(app);
+  app.answer("ぜったいにまちがい");
+
+  for (let index = 0; index < 4; index += 1) {
+    app.click(app.$("next-question"));
+    assert.notEqual(currentQuestionKey(app), firstQuestionKey, "错题不应立刻重现");
+    app.answer(currentAnswer(app));
+  }
+
+  app.click(app.$("next-question"));
+  assert.equal(currentQuestionKey(app), firstQuestionKey);
+  assert.equal(app.$("question-index").textContent, "间隔复习");
+});
+
+test("到期复习按正确次数推进间隔", function () {
+  const verb = engine.VERBS[0];
+  const key = [verb.id, "base", "te"].join("::");
+  const stored = JSON.stringify([{
+    verbId: verb.id,
+    voiceId: "base",
+    inflectionId: "te",
+    count: 1,
+    wrongAnswer: "まちがい",
+    correctStreak: 1,
+    intervalDays: 1,
+    dueAt: new Date(Date.now() - 60000).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000).toISOString()
+  }]);
+  const app = createApp({ storage: { [MISTAKES_KEY]: stored } });
+
+  assert.equal(currentQuestionKey(app), key, "到期卡片应优先于随机新题");
+  assert.equal(app.$("question-index").textContent, "间隔复习");
+  app.answer(currentAnswer(app));
+
+  const updated = JSON.parse(app.window.localStorage.getItem(MISTAKES_KEY))[0];
+  assert.equal(updated.correctStreak, 2);
+  assert.equal(updated.intervalDays, 3);
+  const remainingMs = Date.parse(updated.dueAt) - Date.now();
+  assert.ok(remainingMs <= 3 * 86400000 && remainingMs > 3 * 86400000 - 5000);
+});
+
+test("完成六次连续正确复习后从错题集移出", function () {
+  const verb = engine.VERBS[0];
+  const stored = JSON.stringify([{
+    verbId: verb.id,
+    voiceId: "base",
+    inflectionId: "te",
+    count: 1,
+    wrongAnswer: "まちがい",
+    correctStreak: 5,
+    intervalDays: 30,
+    dueAt: new Date(Date.now() - 60000).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000).toISOString()
+  }]);
+  const app = createApp({ storage: { [MISTAKES_KEY]: stored } });
+
+  app.answer(currentAnswer(app));
+  assert.equal(app.$("mistake-count").textContent, "0");
+  assert.deepEqual(JSON.parse(app.window.localStorage.getItem(MISTAKES_KEY)), []);
 });
 
 test("空答案不进入判定", function () {
@@ -205,6 +343,41 @@ test("速查表按基础／进阶分组展示活用形式", function () {
   });
 });
 
+test("速查页展示当前动词的全部变形类型规则与示例", function () {
+  const app = createApp();
+  tab(app, "reference");
+
+  const list = app.$("reference-voice-guide-list");
+  let items = list.querySelectorAll("[data-voice-id]");
+  assert.equal(items.length, engine.VOICES.length);
+
+  const potentialItem = items.filter(function (item) {
+    return item.dataset.voiceId === "potential";
+  })[0];
+  assert.match(potentialItem.textContent, /行く → 行ける/);
+  assert.match(potentialItem.textContent, /五段动词词尾改为对应え段/);
+
+  const voiceSelect = app.$("reference-voice");
+  voiceSelect.value = "causative";
+  voiceSelect.dispatch("change");
+  items = list.querySelectorAll("[data-voice-id]");
+  const selectedItem = items.filter(function (item) {
+    return item.dataset.voiceId === "causative";
+  })[0];
+  assert.equal(selectedItem.classList.contains("is-selected"), true);
+
+  const verbSelect = app.$("reference-verb");
+  verbSelect.value = "taberu";
+  verbSelect.dispatch("change");
+  assert.match(app.$("reference-voice-guide-caption").textContent, /一段动词/);
+  items = list.querySelectorAll("[data-voice-id]");
+  const ichidanPotentialItem = items.filter(function (item) {
+    return item.dataset.voiceId === "potential";
+  })[0];
+  assert.match(ichidanPotentialItem.textContent, /食べる → 食べられる/);
+  assert.match(ichidanPotentialItem.textContent, /一段动词去掉「る」/);
+});
+
 test("速查表「练这题」切到练习并载入对应题目", function () {
   const app = createApp();
   tab(app, "reference");
@@ -233,7 +406,7 @@ test("错题重练：横幅常驻显示剩余量，退出后回到随机练习",
   app.click(app.$("review-mistakes"));
 
   assert.equal(app.$("review-banner").hidden, false);
-  assert.match(app.$("review-banner-count").textContent, /剩余 1 题/);
+  assert.match(app.$("review-banner-count").textContent, /本轮待练 1 题/);
   assert.equal(app.$("question-index").textContent, "错题重练");
 
   app.click(app.$("exit-review"));
@@ -252,18 +425,21 @@ test("换一题退出重练时会明确提示，不再静默离开", function ()
   assert.match(app.$("toast").textContent, /已退出错题重练/);
 });
 
-test("重练答对后移出错题，全部答完自动回错题页", function () {
+test("错题重练答对后推进间隔，单题本轮不会立刻重复", function () {
   const app = createApp();
   app.answer("まちがいです");
   app.click(app.$("review-mistakes"));
   app.answer(currentAnswer(app));
 
-  assert.equal(app.$("mistake-count").textContent, "0", "答对应从错题集移出");
-  assert.match(app.$("review-banner-count").textContent, /剩余 0 题/);
+  assert.equal(app.$("mistake-count").textContent, "1", "卡片应保留到完成间隔复习");
+  const stored = JSON.parse(app.window.localStorage.getItem(MISTAKES_KEY))[0];
+  assert.equal(stored.correctStreak, 1);
+  assert.equal(stored.intervalDays, 1);
 
   app.click(app.$("next-question"));
   assert.equal(app.$("view-mistakes").hidden, false, "错题清空后应回到错题页");
   assert.equal(app.$("review-banner").hidden, true, "离开重练后横幅应收起");
+  assert.match(app.$("toast").textContent, /本轮错题已复习/);
 });
 
 test("存档损坏时降级为空错题集并提示", function () {

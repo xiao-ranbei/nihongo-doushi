@@ -65,6 +65,28 @@ test("完整活用集合包含指定变形并可生成说明", function () {
   );
 });
 
+test("语态说明按动词类别返回对应变化规则", function () {
+  assert.equal(
+    engine.explainVoice(VERB_BY_ID.get("kaku"), "potential"),
+    "五段动词词尾改为对应え段，再接「る」。"
+  );
+  assert.equal(
+    engine.explainVoice(VERB_BY_ID.get("taberu"), "potential"),
+    "一段动词去掉「る」，再接「られる」。"
+  );
+  assert.equal(
+    engine.explainVoice(VERB_BY_ID.get("suru"), "potential"),
+    "「する」的可能形是「できる」。"
+  );
+  assert.equal(
+    engine.explainVoice(VERB_BY_ID.get("iku"), "base"),
+    "不做语态变化，保留辞书形。"
+  );
+  assert.throws(function () {
+    engine.explainVoice(VERB_BY_ID.get("iku"), "unknown");
+  }, RangeError);
+});
+
 test("所有语态与活用形式都提供常见表达大意", function () {
   assert.ok(engine.VOICES.every(function (voice) {
     return typeof voice.meaning === "string" && voice.meaning.trim().length > 0;

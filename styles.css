@@ -80,6 +80,8 @@
   --stat-correct-to: #66876d;
   --stat-incorrect-from: #e2b0a5;
   --stat-incorrect-to: #c97f74;
+  --stat-correct-sweep: rgba(102, 135, 109, 0.3);
+  --stat-incorrect-sweep: rgba(201, 127, 116, 0.3);
   --track-empty-from: #edf1eb;
   --track-empty-to: #f3eeea;
   --dot-correct: #78977c;
@@ -114,7 +116,8 @@ select {
 
 button:focus-visible,
 input:focus-visible,
-select:focus-visible {
+select:focus-visible,
+.verb-prompt[role="button"]:focus-visible {
   outline: 3px solid rgba(50, 97, 81, 0.3);
   outline-offset: 2px;
 }
@@ -293,7 +296,47 @@ button:not(:disabled):active {
 }
 
 .practice-stats {
+  position: relative;
+  isolation: isolate;
   padding: 13px;
+}
+
+.practice-stats::after {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  border-radius: inherit;
+  background-size: 250% 100%;
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+}
+
+.practice-stats.is-answer-correct::after {
+  background-image: linear-gradient(110deg, transparent 40%, var(--stat-correct-sweep) 50%, transparent 60%);
+  animation: practice-stats-sweep 700ms ease-out;
+}
+
+.practice-stats.is-answer-incorrect::after {
+  background-image: linear-gradient(110deg, transparent 40%, var(--stat-incorrect-sweep) 50%, transparent 60%);
+  animation: practice-stats-sweep 700ms ease-out;
+}
+
+@keyframes practice-stats-sweep {
+  0% {
+    background-position: 100% 0;
+    opacity: 0;
+  }
+
+  14%,
+  86% {
+    opacity: 1;
+  }
+
+  100% {
+    background-position: 0 0;
+    opacity: 0;
+  }
 }
 
 .practice-stats-content {
@@ -599,7 +642,6 @@ select {
 }
 
 .practice-card {
-  min-height: 490px;
   padding: 21px 23px;
 }
 
@@ -636,6 +678,7 @@ select {
   padding: 20px 15px 17px;
   border: 1px solid var(--line-prompt);
   border-radius: 12px;
+  cursor: pointer;
   background:
     radial-gradient(circle at 50% 0%, rgba(222, 235, 220, 0.53), transparent 65%),
     var(--bg-pale-cool);
@@ -1152,6 +1195,81 @@ select {
   color: var(--meaning-text);
 }
 
+.reference-voice-guide {
+  margin-bottom: 11px;
+  border: 1px solid var(--line-control);
+  border-radius: 13px;
+  background: var(--surface);
+}
+
+.reference-voice-guide > summary {
+  padding: 10px 13px;
+  color: var(--text-green-deep);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reference-voice-guide[open] > summary {
+  border-bottom: 1px solid var(--line-faint);
+}
+
+.reference-voice-guide-caption {
+  margin: 9px 13px;
+  color: var(--text-muted-soft);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.reference-voice-guide-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0;
+  padding: 0 12px 12px;
+  list-style: none;
+}
+
+.reference-voice-guide-item {
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid var(--line-faint);
+  border-radius: 9px;
+  background: var(--bg-pale-cool);
+}
+
+.reference-voice-guide-item.is-selected {
+  border-color: var(--line-accent);
+  background: var(--bg-pale-green);
+}
+
+.reference-voice-guide-item-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 3px 8px;
+}
+
+.reference-voice-guide-item-heading strong {
+  color: var(--text-green-mid);
+  font-size: 9px;
+}
+
+.reference-voice-guide-example {
+  color: var(--green-dark);
+  font-size: 10px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.reference-voice-guide-rule {
+  margin: 4px 0 0;
+  color: var(--text-muted-soft);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
 .table-wrap {
   overflow: auto;
   border: 1px solid rgba(65, 84, 68, 0.11);
@@ -1532,7 +1650,6 @@ select:disabled {
   }
 
   .practice-card {
-    min-height: 0;
     padding: 16px 14px;
   }
 
@@ -1569,6 +1686,10 @@ select:disabled {
   }
 
   .reference-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .reference-voice-guide-list {
     grid-template-columns: 1fr;
   }
 
@@ -1646,6 +1767,11 @@ select:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .practice-stats.is-answer-correct::after,
+  .practice-stats.is-answer-incorrect::after {
+    animation: none;
+  }
+
   *,
   *::before,
   *::after {
