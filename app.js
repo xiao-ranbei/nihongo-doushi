@@ -190,6 +190,9 @@
     adjReviewBannerCount: document.getElementById("adj-review-banner-count"),
     adjExitReview: document.getElementById("adj-exit-review"),
     adjReviewMistakes: document.getElementById("adj-review-mistakes"),
+    exportMistakes: document.getElementById("export-mistakes"),
+    importMistakes: document.getElementById("import-mistakes"),
+    importMistakesFile: document.getElementById("import-mistakes-file"),
     adjQuestionIndex: document.getElementById("adj-question-index"),
     adjTargetPill: document.getElementById("adj-target-pill"),
     adjQuestionKind: document.getElementById("adj-question-kind"),
@@ -289,33 +292,13 @@
     return [verbId, voiceId, inflectionId].join("::");
   }
 
-  function loadMistakes() {
-    let raw;
-    try {
-      raw = window.localStorage.getItem(STORAGE_KEY);
-    } catch (error) {
-      storageAvailable = false;
-      showToast("浏览器不允许访问本地存储；错题、复习计划和答题统计仅保留在当前页面。", true);
-      return [];
-    }
-
-    if (!raw) {
-      return [];
-    }
-
-    let stored;
-    try {
-      stored = JSON.parse(raw);
-    } catch (error) {
-      showToast("本地错题记录无法解析，本次先从空列表开始。", true);
-      return [];
-    }
-
+  // 错题记录校验与规范化：本地存档与导入文件共用同一套防御性过滤。
+  // 只做结构校验与字段兜底，不弹 toast（提示语由调用方按场景决定）。
+  function sanitizeMistakeList(stored) {
     const voiceIds = new Set(VOICES.map(function (voice) { return voice.id; }));
     const inflectionIds = new Set(INFLECTIONS.map(function (form) { return form.id; }));
     const adjFormIds = new Set(ADJ_FORMS.map(function (form) { return form.id; }));
     if (!Array.isArray(stored)) {
-      showToast("本地错题数据格式无效，本次先从空列表开始。", true);
       return [];
     }
 
@@ -360,6 +343,35 @@
         inflectionId: item.inflectionId
       }, common);
     });
+  }
+
+  function loadMistakes() {
+    let raw;
+    try {
+      raw = window.localStorage.getItem(STORAGE_KEY);
+    } catch (error) {
+      storageAvailable = false;
+      showToast("浏览器不允许访问本地存储；错题、复习计划和答题统计仅保留在当前页面。", true);
+      return [];
+    }
+
+    if (!raw) {
+      return [];
+    }
+
+    let stored;
+    try {
+      stored = JSON.parse(raw);
+    } catch (error) {
+      showToast("本地错题记录无法解析，本次先从空列表开始。", true);
+      return [];
+    }
+
+    if (!Array.isArray(stored)) {
+      showToast("本地错题数据格式无效，本次先从空列表开始。", true);
+      return [];
+    }
+    return sanitizeMistakeList(stored);
   }
 
   function saveMistakes() {
@@ -1070,6 +1082,7 @@
     elements.reviewMistakes.disabled = verbMistakes.length === 0;
     elements.adjReviewMistakes.disabled = adjectiveMistakes.length === 0;
     elements.clearMistakes.disabled = mistakes.length === 0;
+    elements.exportMistakes.disabled = mistakes.length === 0;
     updateMistakeCount();
 
     mistakes.slice().sort(function (a, b) {
@@ -1176,6 +1189,117 @@
     const mistake = weightedItem(verbMistakes, mistakeWeight);
     startQuestion(questionFromMistake(mistake));
     elements.answerInput.focus();
+  }
+
+  // ===================== 错题导出 / 导入 =====================
+
+  function buildMistakesExport() {
+    // sessionDueAtAnswerCount 属于当前会话的调度状态，不随文件跨设备。
+    return JSON.stringify(mistakes.map(function (mistake) {
+      const copy = Object.assign({}, mistake);
+      delete copy.sessionDueAtAnswerCount;
+      return copy;
+    }), null, 2);
+  }
+
+  function exportMistakes() {
+    if (!mistakes.length) {
+      return;
+    }
+    const text = buildMistakesExport();
+    try {
+      const blob = new window.Blob([text], { type: "application/json" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "japanese-mistakes-" + localDateString(new Date()) + ".json";
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      showToast("已导出 " + mistakes.length + " 道错题。", false);
+    } catch (error) {
+      showToast("当前浏览器不支持文件下载。", true);
+    }
+  }
+
+  function mergeMistakes(incoming) {
+    let added = 0;
+    let merged = 0;
+    incoming.forEach(function (item) {
+      const existing = mistakes.find(function (mistake) { return mistake.key === item.key; });
+      if (!existing) {
+        mistakes.push(item);
+        added += 1;
+        return;
+      }
+      merged += 1;
+      // 错误次数取两边较大值；复习进度整体取更先进的记录（correctStreak 大者），
+      // 上次作答与时间取较新的一方。会话内调度字段一律重置。
+      existing.count = Math.max(existing.count, item.count);
+      if (item.correctStreak > existing.correctStreak) {
+        existing.correctStreak = item.correctStreak;
+        existing.intervalDays = item.intervalDays;
+        existing.dueAt = item.dueAt;
+      }
+      if (item.updatedAt > existing.updatedAt) {
+        existing.wrongAnswer = item.wrongAnswer;
+        existing.updatedAt = item.updatedAt;
+      }
+      existing.sessionDueAtAnswerCount = null;
+    });
+    return { added: added, merged: merged };
+  }
+
+  function importMistakeText(text) {
+    let parsed;
+    try {
+      parsed = JSON.parse(String(text));
+    } catch (error) {
+      showToast("导入文件无法解析，请确认是本工具导出的 JSON。", true);
+      return;
+    }
+    if (!Array.isArray(parsed)) {
+      showToast("导入文件格式无效，应为由错题记录组成的数组。", true);
+      return;
+    }
+    const incoming = sanitizeMistakeList(parsed);
+    if (!incoming.length) {
+      showToast("文件里没有合法的错题记录。", true);
+      return;
+    }
+    const result = mergeMistakes(incoming);
+    saveMistakes();
+    renderMistakes();
+    if (result.added) {
+      showToast("导入 " + result.added + " 道新错题"
+        + (result.merged ? "，合并 " + result.merged + " 道已有错题。" : "。"), false);
+    } else {
+      showToast("导入的 " + result.merged + " 道错题均已存在，复习进度已取更先进的记录。", false);
+    }
+  }
+
+  function handleImportFile(event) {
+    const input = event.target;
+    const file = input.files && input.files[0];
+    if (!file) {
+      return;
+    }
+    try {
+      const reader = new window.FileReader();
+      reader.onload = function (loadEvent) {
+        importMistakeText(loadEvent.target.result);
+        input.value = "";
+      };
+      reader.onerror = function () {
+        showToast("读取导入文件失败。", true);
+        input.value = "";
+      };
+      reader.readAsText(file);
+    } catch (error) {
+      showToast("读取导入文件失败。", true);
+      input.value = "";
+    }
   }
 
   function startAdjectiveMistakeReview() {
@@ -1920,6 +2044,11 @@
   elements.referenceVoice.addEventListener("change", renderReferenceTable);
   elements.reviewMistakes.addEventListener("click", startMistakeReview);
   elements.clearMistakes.addEventListener("click", clearMistakes);
+  elements.exportMistakes.addEventListener("click", exportMistakes);
+  elements.importMistakes.addEventListener("click", function () {
+    elements.importMistakesFile.click();
+  });
+  elements.importMistakesFile.addEventListener("change", handleImportFile);
 
   // —— 形容词模块事件 ——
   elements.adjAnswerForm.addEventListener("submit", submitAdjectiveAnswer);

@@ -574,7 +574,10 @@
           <div class="mistake-actions">
             <button class="outline-button" id="review-mistakes" type="button">随机重练</button>
             <button class="outline-button" id="adj-review-mistakes" type="button">重练形容词错题</button>
+            <button class="text-button" id="export-mistakes" type="button" disabled>导出</button>
+            <button class="text-button" id="import-mistakes" type="button">导入</button>
             <button class="text-button danger-text" id="clear-mistakes" type="button">清空</button>
+            <input type="file" id="import-mistakes-file" accept=".json,application/json" hidden>
           </div>
         </div>
         <div class="mistakes-list" id="mistakes-list"></div>

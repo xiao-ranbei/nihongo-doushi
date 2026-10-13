@@ -251,6 +251,10 @@ function createElement(tag) {
     });
     return event;
   };
+  // 真实 DOM 的程序化点击（如导出时临时 anchor.click()）。
+  element.click = function () {
+    element.dispatch("click");
+  };
 
   // <select> 补齐选项后浏览器会自动选中第一项，桩需跟随，否则筛选初值为空串。
   if (element.tagName === "SELECT") {
@@ -366,10 +370,13 @@ function createWindow() {
   const document = createDocument(parseHtml(html));
   const store = new Map();
   const timers = [];
+  // 导出下载桩：记录每次 createObjectURL 的 blob，供测试断言导出内容。
+  const downloads = [];
 
   return {
     document: document,
     timers: timers,
+    __mistakeDownloads: downloads,
     localStorage: {
       getItem: function (key) {
         return store.has(String(key)) ? store.get(String(key)) : null;
@@ -391,6 +398,28 @@ function createWindow() {
     clearTimeout: function () {},
     confirm: function () {
       return true;
+    },
+    Blob: function (parts, options) {
+      this._text = parts.map(String).join("");
+      this.type = options && options.type;
+    },
+    URL: {
+      createObjectURL: function (blob) {
+        const url = "blob:stub-" + (downloads.length + 1);
+        downloads.push({ url: url, blob: blob });
+        return url;
+      },
+      revokeObjectURL: function () {}
+    },
+    // FileReader 同步触发 onload：导入测试直接构造 { _content } 伪 File。
+    FileReader: function () {
+      this.readAsText = function (file) {
+        this.result = file && file._content !== undefined ? String(file._content) : "";
+        if (typeof this.onload === "function") {
+          this.onload({ target: this });
+        }
+      };
+      this.onerror = null;
     },
     JapaneseVerbEngine: require(path.join(PROJECT_ROOT, "verb-engine.js")),
     JapaneseAdjectiveEngine: require(path.join(PROJECT_ROOT, "adjective-engine.js")),

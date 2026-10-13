@@ -855,3 +855,137 @@ test("打卡：存档损坏降级为从零开始", function () {
   app.answer(currentAnswer(app));
   assert.match(app.$("streak-note-text").textContent, /连续练习 1 天 · 最佳 1 天/);
 });
+
+// —— 错题导出 / 导入 ——
+
+test("导出：下载文件含全部错题且剥离会话内调度字段", function () {
+  const seed = JSON.stringify([
+    dueMistakeSeed({ verbId: engine.VERBS[0].id, voiceId: "base", inflectionId: "te", count: 2 }),
+    adjectiveMistakeSeed()
+  ]);
+  const app = createApp({ storage: { [MISTAKES_KEY]: seed } });
+  tab(app, "mistakes");
+
+  assert.equal(app.$("export-mistakes").disabled, false);
+  app.click(app.$("export-mistakes"));
+
+  const download = app.window.__mistakeDownloads[0];
+  assert.ok(download, "应触发一次文件下载");
+  const exported = JSON.parse(download.blob._text);
+  assert.equal(exported.length, 2);
+  assert.ok(exported.some(function (item) { return item.module === "adjective"; }));
+  exported.forEach(function (item) {
+    assert.equal(item.sessionDueAtAnswerCount, undefined, "会话内调度字段不应导出");
+  });
+  assert.match(app.$("toast").textContent, /已导出 2 道错题/);
+});
+
+test("导入：新增错题入库并持久化", function () {
+  const app = createApp();
+  tab(app, "mistakes");
+  const incoming = JSON.stringify([
+    dueMistakeSeed({ verbId: engine.VERBS[0].id, voiceId: "base", inflectionId: "te", count: 1 }),
+    adjectiveMistakeSeed()
+  ]);
+  const input = app.$("import-mistakes-file");
+  input.files = [{ _content: incoming, name: "mistakes.json" }];
+  input.dispatch("change");
+
+  assert.equal(app.$("mistake-count").textContent, "2");
+  const stored = JSON.parse(app.window.localStorage.getItem(MISTAKES_KEY));
+  assert.equal(stored.length, 2);
+  assert.match(app.$("toast").textContent, /导入 2 道新错题/);
+  assert.equal(input.value, "", "导入完成后应清空 file input");
+});
+
+test("导入：同 key 合并，复习进度取更先进记录且次数取较大值", function () {
+  const verb = engine.VERBS[0];
+  const localSeed = JSON.stringify([
+    dueMistakeSeed({ verbId: verb.id, voiceId: "base", inflectionId: "te", count: 1, correctStreak: 0, intervalDays: 1 })
+  ]);
+  const app = createApp({ storage: { [MISTAKES_KEY]: localSeed } });
+  tab(app, "mistakes");
+
+  const incoming = JSON.stringify([
+    dueMistakeSeed({
+      verbId: verb.id, voiceId: "base", inflectionId: "te",
+      count: 3, correctStreak: 2, intervalDays: 7,
+      dueAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+      wrongAnswer: "かきませんでした",
+      updatedAt: new Date().toISOString()
+    })
+  ]);
+  const input = app.$("import-mistakes-file");
+  input.files = [{ _content: incoming, name: "mistakes.json" }];
+  input.dispatch("change");
+
+  assert.equal(app.$("mistake-count").textContent, "1", "同 key 不应产生重复卡片");
+  const stored = JSON.parse(app.window.localStorage.getItem(MISTAKES_KEY))[0];
+  assert.equal(stored.count, 3, "错误次数应取较大值");
+  assert.equal(stored.correctStreak, 2, "复习进度应取更先进记录");
+  assert.equal(stored.intervalDays, 7);
+  assert.match(app.$("toast").textContent, /均已存在，复习进度已取更先进的记录/);
+});
+
+test("导入：非法记录被丢弃，全部非法时提示", function () {
+  const app = createApp();
+  tab(app, "mistakes");
+  const input = app.$("import-mistakes-file");
+  input.files = [{ _content: JSON.stringify([
+    { verbId: "不存在的动词", voiceId: "base", inflectionId: "te", count: 1 }
+  ]), name: "bad.json" }];
+  input.dispatch("change");
+  assert.match(app.$("toast").textContent, /没有合法的错题记录/);
+  assert.equal(app.$("mistake-count").textContent, "0");
+
+  const empty = createApp();
+  tab(empty, "mistakes");
+  const emptyInput = empty.$("import-mistakes-file");
+  emptyInput.files = [{ _content: JSON.stringify([]), name: "empty.json" }];
+  emptyInput.dispatch("change");
+  assert.match(empty.$("toast").textContent, /没有合法的错题记录/);
+});
+
+test("导入：解析失败与格式无效均有提示且不动错题集", function () {
+  const app = createApp();
+  tab(app, "mistakes");
+  const input = app.$("import-mistakes-file");
+
+  input.files = [{ _content: "{ 不是合法 JSON", name: "broken.json" }];
+  input.dispatch("change");
+  assert.match(app.$("toast").textContent, /导入文件无法解析/);
+
+  input.files = [{ _content: JSON.stringify({ correct: 1 }), name: "object.json" }];
+  input.dispatch("change");
+  assert.match(app.$("toast").textContent, /导入文件格式无效/);
+  assert.equal(app.$("mistake-count").textContent, "0");
+});
+
+test("导出再导入：往返等价（剥离会话字段后可完整恢复）", function () {
+  const seed = JSON.stringify([
+    dueMistakeSeed({ verbId: engine.VERBS[0].id, voiceId: "base", inflectionId: "te", count: 2, correctStreak: 1, intervalDays: 3 }),
+    adjectiveMistakeSeed({ correctStreak: 2, intervalDays: 7 })
+  ]);
+  const first = createApp({ storage: { [MISTAKES_KEY]: seed } });
+  tab(first, "mistakes");
+  first.click(first.$("export-mistakes"));
+  const exportedText = first.window.__mistakeDownloads[0].blob._text;
+
+  const second = createApp();
+  tab(second, "mistakes");
+  const input = second.$("import-mistakes-file");
+  input.files = [{ _content: exportedText, name: "mistakes.json" }];
+  input.dispatch("change");
+
+  assert.equal(second.$("mistake-count").textContent, "2");
+  const restored = JSON.parse(second.window.localStorage.getItem(MISTAKES_KEY));
+  assert.equal(restored.length, 2);
+  restored.forEach(function (item) {
+    const original = JSON.parse(exportedText).filter(function (candidate) {
+      return candidate.key === item.key;
+    })[0];
+    assert.equal(item.correctStreak, original.correctStreak, "复习进度应完整恢复");
+    assert.equal(item.intervalDays, original.intervalDays);
+    assert.equal(item.dueAt, original.dueAt);
+  });
+});
