@@ -80,8 +80,8 @@
   --stat-correct-to: #66876d;
   --stat-incorrect-from: #e2b0a5;
   --stat-incorrect-to: #c97f74;
-  --stat-correct-sweep: rgba(102, 135, 109, 0.3);
-  --stat-incorrect-sweep: rgba(201, 127, 116, 0.3);
+  --stat-correct-sweep: rgba(102, 135, 109, 0.42);
+  --stat-incorrect-sweep: rgba(201, 127, 116, 0.42);
   --track-empty-from: #edf1eb;
   --track-empty-to: #f3eeea;
   --dot-correct: #78977c;
@@ -314,12 +314,12 @@ button:not(:disabled):active {
 
 .practice-stats.is-answer-correct::after {
   background-image: linear-gradient(110deg, transparent 40%, var(--stat-correct-sweep) 50%, transparent 60%);
-  animation: practice-stats-sweep 700ms ease-out;
+  animation: practice-stats-sweep 1200ms ease-out;
 }
 
 .practice-stats.is-answer-incorrect::after {
   background-image: linear-gradient(110deg, transparent 40%, var(--stat-incorrect-sweep) 50%, transparent 60%);
-  animation: practice-stats-sweep 700ms ease-out;
+  animation: practice-stats-sweep 1200ms ease-out;
 }
 
 @keyframes practice-stats-sweep {
@@ -1767,11 +1767,6 @@ select:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .practice-stats.is-answer-correct::after,
-  .practice-stats.is-answer-incorrect::after {
-    animation: none;
-  }
-
   *,
   *::before,
   *::after {
@@ -1780,5 +1775,11 @@ select:disabled {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* 答题反馈保留完整扫光，其余动效仍遵循系统减少动态效果设置。 */
+  .practice-stats.is-answer-correct::after,
+  .practice-stats.is-answer-incorrect::after {
+    animation-duration: 1200ms !important;
   }
 }

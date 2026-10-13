@@ -63,9 +63,12 @@ test("答题结果扫过整张统计卡片且不阻挡操作", function () {
   assert.match(css, /\.practice-stats\.is-answer-correct::after/);
   assert.match(css, /\.practice-stats\.is-answer-incorrect::after/);
   assert.match(css, /@keyframes\s+practice-stats-sweep/);
+  assert.equal((css.match(/animation:\s*practice-stats-sweep 1200ms ease-out;/g) || []).length, 2);
+  assert.match(css, /--stat-correct-sweep:\s*rgba\(102,\s*135,\s*109,\s*0\.42\)/);
+  assert.match(css, /--stat-incorrect-sweep:\s*rgba\(201,\s*127,\s*116,\s*0\.42\)/);
   assert.match(
     css,
-    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.practice-stats\.is-answer-correct::after[\s\S]*?animation:\s*none;/
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.practice-stats\.is-answer-correct::after,[\s\S]*?\.practice-stats\.is-answer-incorrect::after\s*\{\s*animation-duration:\s*1200ms !important;/
   );
 });
 
