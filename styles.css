@@ -1974,6 +1974,12 @@ select:disabled {
   border-bottom: none;
 }
 
+.adj-table .adj-practice-col {
+  width: 72px;
+  text-align: center;
+  white-space: nowrap;
+}
+
 /* 三种接续方式 */
 .adj-usage-grid {
   display: grid;

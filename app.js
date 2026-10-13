@@ -73,7 +73,15 @@
   const ADJECTIVES = adjEngine.ADJECTIVES;
   const ADJ_FORMS = adjEngine.FORMS;
   const ADJ_GROUP_LABELS = { i: "い形容词", na: "な形容词" };
+  const ADJ_BY_ID = new Map(ADJECTIVES.map(function (adjective) { return [adjective.id, adjective]; }));
   const ADJ_STATS_STORAGE_KEY = "japanese-verb-practice-adj-stats-v1";
+  // 形容词错题与动词错题共用一本错题集：记录带 module 字段区分，
+  // 旧存档没有 module 字段（即动词错题），缺失即视为 verb 的兼容迁移。
+  const ADJ_MISTAKE_KEY_PREFIX = "adj::";
+
+  function isAdjectiveMistake(mistake) {
+    return mistake.module === "adjective";
+  }
   // 与动词模块共用 LEVEL_LABELS；档位同样从 FORMS.level 派生。
   const ADJ_LEVELS = [];
   ADJ_FORMS.forEach(function (form) {
@@ -172,6 +180,10 @@
     adjInflectionFilter: document.getElementById("adj-inflection-filter"),
     adjLevelFilter: document.getElementById("adj-level-filter"),
     adjNewQuestion: document.getElementById("adj-new-question"),
+    adjReviewBanner: document.getElementById("adj-review-banner"),
+    adjReviewBannerCount: document.getElementById("adj-review-banner-count"),
+    adjExitReview: document.getElementById("adj-exit-review"),
+    adjReviewMistakes: document.getElementById("adj-review-mistakes"),
     adjQuestionIndex: document.getElementById("adj-question-index"),
     adjTargetPill: document.getElementById("adj-target-pill"),
     adjQuestionKind: document.getElementById("adj-question-kind"),
@@ -226,6 +238,7 @@
   let adjQuestionDeck = [];
   let adjQuestionDeckFilterKey = "";
   let adjPracticeStats = loadAdjectiveStats();
+  let reviewingAdjectiveMistakes = false;
 
   function showToast(message, isError) {
     elements.toast.textContent = message;
@@ -293,6 +306,7 @@
 
     const voiceIds = new Set(VOICES.map(function (voice) { return voice.id; }));
     const inflectionIds = new Set(INFLECTIONS.map(function (form) { return form.id; }));
+    const adjFormIds = new Set(ADJ_FORMS.map(function (form) { return form.id; }));
     if (!Array.isArray(stored)) {
       showToast("本地错题数据格式无效，本次先从空列表开始。", true);
       return [];
@@ -300,19 +314,20 @@
 
     const now = new Date().toISOString();
     return stored.filter(function (item) {
-      return isObject(item)
-        && VERB_BY_ID.has(item.verbId)
+      if (!isObject(item)) {
+        return false;
+      }
+      if (item.module === "adjective") {
+        return ADJ_BY_ID.has(item.adjectiveId) && adjFormIds.has(item.formId);
+      }
+      return VERB_BY_ID.has(item.verbId)
         && voiceIds.has(item.voiceId)
         && inflectionIds.has(item.inflectionId);
     }).map(function (item) {
       const storedCorrectStreak = Number(item.correctStreak);
       const storedIntervalDays = Number(item.intervalDays);
       const storedDueAt = typeof item.dueAt === "string" ? Date.parse(item.dueAt) : NaN;
-      return {
-        key: mistakeKey(item.verbId, item.voiceId, item.inflectionId),
-        verbId: item.verbId,
-        voiceId: item.voiceId,
-        inflectionId: item.inflectionId,
+      const common = {
         count: Math.max(1, Number.isFinite(Number(item.count)) ? Math.floor(Number(item.count)) : 1),
         wrongAnswer: typeof item.wrongAnswer === "string" ? item.wrongAnswer.slice(0, 120) : "",
         updatedAt: typeof item.updatedAt === "string" ? item.updatedAt : "",
@@ -323,6 +338,20 @@
         dueAt: Number.isFinite(storedDueAt) ? new Date(storedDueAt).toISOString() : now,
         sessionDueAtAnswerCount: null
       };
+      if (item.module === "adjective") {
+        return Object.assign({
+          key: ADJ_MISTAKE_KEY_PREFIX + [item.adjectiveId, item.formId].join("::"),
+          module: "adjective",
+          adjectiveId: item.adjectiveId,
+          formId: item.formId
+        }, common);
+      }
+      return Object.assign({
+        key: mistakeKey(item.verbId, item.voiceId, item.inflectionId),
+        verbId: item.verbId,
+        voiceId: item.voiceId,
+        inflectionId: item.inflectionId
+      }, common);
     });
   }
 
@@ -612,6 +641,9 @@
   }
 
   function questionFromMistake(mistake) {
+    if (isAdjectiveMistake(mistake)) {
+      return buildAdjectiveQuestionById(mistake.adjectiveId, mistake.formId);
+    }
     return buildQuestion(VERB_BY_ID.get(mistake.verbId), mistake.voiceId, mistake.inflectionId);
   }
 
@@ -813,6 +845,20 @@
       existing.count += 1;
       existing.wrongAnswer = answer || "（未作答）";
       existing.updatedAt = updatedAt;
+    } else if (question.key.indexOf(ADJ_MISTAKE_KEY_PREFIX) === 0) {
+      mistakes.push({
+        key: question.key,
+        module: "adjective",
+        adjectiveId: question.adjective.id,
+        formId: question.formId,
+        count: 1,
+        wrongAnswer: answer || "（未作答）",
+        updatedAt: updatedAt,
+        correctStreak: 0,
+        intervalDays: 1,
+        dueAt: addDays(now, 1),
+        sessionDueAtAnswerCount: null
+      });
     } else {
       mistakes.push({
         key: question.key,
@@ -985,9 +1031,16 @@
   }
 
   function renderMistakes() {
+    const verbMistakes = mistakes.filter(function (mistake) {
+      return !isAdjectiveMistake(mistake);
+    });
+    const adjectiveMistakes = mistakes.filter(function (mistake) {
+      return isAdjectiveMistake(mistake);
+    });
     elements.mistakesList.replaceChildren();
     elements.mistakesEmpty.hidden = mistakes.length > 0;
-    elements.reviewMistakes.disabled = mistakes.length === 0;
+    elements.reviewMistakes.disabled = verbMistakes.length === 0;
+    elements.adjReviewMistakes.disabled = adjectiveMistakes.length === 0;
     elements.clearMistakes.disabled = mistakes.length === 0;
     updateMistakeCount();
 
@@ -998,17 +1051,21 @@
       if (!question) {
         return;
       }
+      const isAdjective = isAdjectiveMistake(mistake);
       const card = document.createElement("article");
       card.className = "mistake-card";
       const description = document.createElement("div");
       const heading = document.createElement("h3");
-      heading.textContent = question.verb.dictionary;
+      heading.textContent = isAdjective ? question.adjective.word : question.verb.dictionary;
       const reading = document.createElement("span");
-      reading.textContent = question.verb.reading + " · " + getTargetLabel(question.voiceId, question.inflectionId);
+      reading.textContent = isAdjective
+        ? question.adjective.kana + " · " + getAdjectiveFormLabel(question.formId)
+        : question.verb.reading + " · " + getTargetLabel(question.voiceId, question.inflectionId);
       heading.append(reading);
       const meaning = document.createElement("p");
-      meaning.textContent = question.verb.meaning + " · " + GROUP_LABELS[question.verb.group]
-        + " · 错 " + mistake.count + " 次";
+      meaning.textContent = isAdjective
+        ? question.adjective.meaning + " · " + ADJ_GROUP_LABELS[question.adjective.kind] + " · 错 " + mistake.count + " 次"
+        : question.verb.meaning + " · " + GROUP_LABELS[question.verb.group] + " · 错 " + mistake.count + " 次";
       const progress = document.createElement("p");
       progress.className = "mistake-progress";
       const remainingAnswers = Number.isFinite(mistake.sessionDueAtAnswerCount)
@@ -1031,6 +1088,15 @@
       practiceButton.textContent = "练这题";
       practiceButton.addEventListener("click", function () {
         reviewedMistakeKeys = new Set();
+        if (isAdjective) {
+          setReviewingMistakes(false);
+          setReviewingAdjectiveMistakes(true);
+          showView("adjective");
+          startAdjectiveQuestion(questionFromMistake(mistake));
+          elements.adjAnswerInput.focus();
+          return;
+        }
+        setReviewingAdjectiveMistakes(false);
         setReviewingMistakes(true);
         showView("practice");
         startQuestion(questionFromMistake(mistake));
@@ -1054,28 +1120,66 @@
     if (!mistakes.length) {
       return;
     }
-    if (!window.confirm("确定清空所有错题吗？")) {
+    if (!window.confirm("确定清空所有错题吗？（含动词与形容词错题）")) {
       return;
     }
     mistakes = [];
     reviewedMistakeKeys = new Set();
     saveMistakes();
     setReviewingMistakes(false);
+    setReviewingAdjectiveMistakes(false);
     renderMistakes();
     showToast("错题已清空。", false);
   }
 
   function startMistakeReview() {
-    if (!mistakes.length) {
-      showToast("目前没有错题可以重练。", false);
+    // 只重练动词错题；形容词错题走形容词视图内的「重练形容词错题」。
+    const verbMistakes = mistakes.filter(function (mistake) {
+      return !isAdjectiveMistake(mistake);
+    });
+    if (!verbMistakes.length) {
+      showToast("没有动词错题；形容词错题请在形容词练习里重练。", false);
       return;
     }
     reviewedMistakeKeys = new Set();
+    setReviewingAdjectiveMistakes(false);
     setReviewingMistakes(true);
     showView("practice");
-    const mistake = randomItem(mistakes);
+    const mistake = randomItem(verbMistakes);
     startQuestion(questionFromMistake(mistake));
     elements.answerInput.focus();
+  }
+
+  function startAdjectiveMistakeReview() {
+    const adjectiveMistakes = mistakes.filter(function (mistake) {
+      return isAdjectiveMistake(mistake);
+    });
+    if (!adjectiveMistakes.length) {
+      showToast("目前没有形容词错题。", false);
+      return;
+    }
+    reviewedMistakeKeys = new Set();
+    setReviewingMistakes(false);
+    setReviewingAdjectiveMistakes(true);
+    showView("adjective");
+    const mistake = randomItem(adjectiveMistakes);
+    startAdjectiveQuestion(questionFromMistake(mistake));
+    elements.adjAnswerInput.focus();
+  }
+
+  // 从形容词速查表直接开练：不进入重练模式，用该行形式 × 两个主例词随机一题。
+  function practiceFromAdjectiveReference(formId) {
+    const sampleWords = ["高い", "静か"];
+    const sample = sampleWords[Math.random() < 0.5 ? 0 : 1];
+    const adjective = ADJECTIVES.filter(function (item) { return item.word === sample; })[0];
+    const question = buildAdjectiveQuestionById(adjective.id, formId);
+    if (!question) {
+      return;
+    }
+    setReviewingMistakes(false);
+    setReviewingAdjectiveMistakes(false);
+    startAdjectiveQuestion(question);
+    elements.adjAnswerInput.focus();
   }
 
   function continueAfterAnswer() {
@@ -1229,6 +1333,44 @@
     return form ? form.label : formId;
   }
 
+  function buildAdjectiveQuestionById(adjectiveId, formId) {
+    const adjective = ADJ_BY_ID.get(adjectiveId);
+    if (!adjective || !ADJ_FORMS.some(function (form) { return form.id === formId; })) {
+      return null;
+    }
+    return {
+      adjective: adjective,
+      formId: formId,
+      result: adjEngine.conjugate(adjective, formId),
+      key: ADJ_MISTAKE_KEY_PREFIX + [adjectiveId, formId].join("::")
+    };
+  }
+
+  // 形容词到期错题优先插入：与动词 chooseDueReviewQuestion 同构，尊重当前筛选。
+  function chooseAdjectiveDueReview() {
+    const groupId = elements.adjGroupFilter.value;
+    const allowedFormIds = new Set(buildAdjectiveTargets().map(function (target) {
+      return target.formId;
+    }));
+    const now = Date.now();
+    const dueMistakes = mistakes.filter(function (mistake) {
+      const adjective = isAdjectiveMistake(mistake) && ADJ_BY_ID.get(mistake.adjectiveId);
+      return adjective
+        && isReviewDue(mistake, now)
+        && (!adjCurrentQuestion || adjCurrentQuestion.key !== mistake.key)
+        && (groupId === "all" || adjective.kind === groupId)
+        && allowedFormIds.has(mistake.formId);
+    });
+    if (!dueMistakes.length) {
+      return null;
+    }
+    const question = questionFromMistake(randomItem(dueMistakes));
+    if (question) {
+      question.isScheduledReview = true;
+    }
+    return question;
+  }
+
   function buildAdjectiveTargets() {
     const groupId = elements.adjGroupFilter.value;
     const adjectives = ADJECTIVES.filter(function (adjective) {
@@ -1261,13 +1403,19 @@
     }
 
     if (!adjQuestionDeck.length) {
-      const pairs = buildAdjectiveTargets().map(function (target) {
-        return {
-          adjective: target.adjective,
-          formId: target.formId,
-          key: [target.adjective.id, target.formId].join("::")
-        };
-      });
+      const activeAdjectiveMistakeKeys = new Set(mistakes.filter(function (mistake) {
+        return isAdjectiveMistake(mistake);
+      }).map(function (mistake) { return mistake.key; }));
+      // 题目 key 统一带 adj:: 前缀：与错题 key 同构，判定入库/复习推进才能对上。
+      const pairs = buildAdjectiveTargets()
+        .map(function (target) {
+          return {
+            adjective: target.adjective,
+            formId: target.formId,
+            key: ADJ_MISTAKE_KEY_PREFIX + [target.adjective.id, target.formId].join("::")
+          };
+        })
+        .filter(function (pair) { return !activeAdjectiveMistakeKeys.has(pair.key); });
       if (!pairs.length) {
         showToast("当前筛选范围没有可练习的形容词题目。", true);
         return null;
@@ -1323,7 +1471,10 @@
     adjRecentWordIds = [question.adjective.id]
       .concat(adjRecentWordIds.filter(function (id) { return id !== question.adjective.id; }))
       .slice(0, 3);
-    elements.adjQuestionIndex.textContent = "随机练习";
+    renderAdjectiveReviewBanner();
+    elements.adjQuestionIndex.textContent = reviewingAdjectiveMistakes
+      ? "错题重练"
+      : question.isScheduledReview ? "间隔复习" : "随机练习";
     elements.adjTargetPill.textContent = getAdjectiveFormLabel(question.formId);
     elements.adjQuestionKind.textContent = ADJ_GROUP_LABELS[question.adjective.kind];
     elements.adjQuestionMeaning.textContent = question.adjective.meaning;
@@ -1353,7 +1504,30 @@
   }
 
   function newAdjectiveQuestion() {
-    startAdjectiveQuestion(chooseAdjectiveQuestion());
+    const wasReviewing = reviewingAdjectiveMistakes;
+    setReviewingAdjectiveMistakes(false);
+    // 到期形容词错题优先插入，与动词练习同一节奏。
+    startAdjectiveQuestion(chooseAdjectiveDueReview() || chooseAdjectiveQuestion());
+    if (wasReviewing) {
+      showToast("已退出错题重练，回到练习。", false);
+    }
+  }
+
+  // 形容词重练模式的常驻横幅：与动词侧 setReviewingMistakes 同一纪律。
+  function renderAdjectiveReviewBanner() {
+    elements.adjReviewBanner.hidden = !reviewingAdjectiveMistakes;
+    if (reviewingAdjectiveMistakes) {
+      const remaining = mistakes.filter(function (mistake) {
+        return isAdjectiveMistake(mistake) && !reviewedMistakeKeys.has(mistake.key);
+      }).length;
+      elements.adjReviewBannerCount.textContent = "本轮待练 " + remaining
+        + " 题，完成 " + MASTERY_CORRECT_STREAK + " 次正确复习后移出";
+    }
+  }
+
+  function setReviewingAdjectiveMistakes(value) {
+    reviewingAdjectiveMistakes = Boolean(value);
+    renderAdjectiveReviewBanner();
   }
 
   function submitAdjectiveAnswer(event) {
@@ -1376,6 +1550,7 @@
       return normalizeAnswer(text);
     }));
     const correct = expected.has(normalizedAnswer);
+    sessionAnswerCount += 1;
 
     elements.adjAnswerInput.disabled = true;
     elements.adjSubmitAnswer.disabled = true;
@@ -1400,16 +1575,42 @@
     elements.adjNextQuestion.hidden = false;
 
     if (correct) {
+      recordSuccessfulReview(adjCurrentQuestion);
       showToast("正确。留意上面的接续规则。", false);
     } else {
-      showToast("答错了。看看下面的速查资料，稍后再来。", false);
+      recordMistake(adjCurrentQuestion, rawAnswer);
+      showToast("已加入错题，稍后可以重练。", false);
     }
 
+    updateMistakeCount();
     updateAdjectiveStats(correct);
     elements.adjNextQuestion.focus();
   }
 
   function continueAdjectiveAfterAnswer() {
+    if (reviewingAdjectiveMistakes) {
+      if (adjCurrentQuestion) {
+        reviewedMistakeKeys.add(adjCurrentQuestion.key);
+      }
+      const alternatives = mistakes.filter(function (mistake) {
+        return isAdjectiveMistake(mistake) && !reviewedMistakeKeys.has(mistake.key);
+      });
+      if (alternatives.length) {
+        startAdjectiveQuestion(questionFromMistake(randomItem(alternatives)));
+        elements.adjAnswerInput.focus();
+        return;
+      }
+
+      setReviewingAdjectiveMistakes(false);
+      showView("adjective");
+      const remainingAdjectiveMistakes = mistakes.filter(function (mistake) {
+        return isAdjectiveMistake(mistake);
+      }).length;
+      showToast(remainingAdjectiveMistakes
+        ? "本轮错题已复习，剩余题目会按间隔继续复习。"
+        : "错题已全部完成间隔复习。", false);
+      return;
+    }
     newAdjectiveQuestion();
     elements.adjAnswerInput.focus();
   }
@@ -1611,6 +1812,18 @@
   elements.adjNewQuestion.addEventListener("click", newAdjectiveQuestion);
   elements.adjNextQuestion.addEventListener("click", continueAdjectiveAfterAnswer);
   elements.adjResetStats.addEventListener("click", resetAdjectiveStats);
+  elements.adjReviewMistakes.addEventListener("click", startAdjectiveMistakeReview);
+  elements.adjExitReview.addEventListener("click", function () {
+    if (!reviewingAdjectiveMistakes) {
+      return;
+    }
+    newAdjectiveQuestion();
+  });
+  document.querySelectorAll("[data-adj-practice]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      practiceFromAdjectiveReference(button.dataset.adjPractice);
+    });
+  });
   [elements.adjGroupFilter, elements.adjInflectionFilter, elements.adjLevelFilter]
     .forEach(function (select) {
       select.addEventListener("change", function () {

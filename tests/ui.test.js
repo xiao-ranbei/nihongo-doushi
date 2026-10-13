@@ -599,3 +599,142 @@ test("形容词：统计清零不影响动词统计", function () {
   const stored = JSON.parse(app.window.localStorage.getItem("japanese-verb-practice-adj-stats-v1"));
   assert.deepEqual(stored, { correct: 0, incorrect: 0 });
 });
+
+const ADJ_MISTAKES_KEY = MISTAKES_KEY; // 两模块共用一本错题集
+
+function adjectiveMistakeSeed(overrides) {
+  return Object.assign({
+    module: "adjective",
+    adjectiveId: "shizuka",
+    formId: "pastNegative",
+    count: 1,
+    wrongAnswer: "しずかくない",
+    correctStreak: 0,
+    intervalDays: 1,
+    dueAt: new Date(Date.now() - 60000).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000).toISOString()
+  }, overrides || {});
+}
+
+test("形容词：答错入共享错题本并渲染形容词卡片", function () {
+  const app = createApp();
+  tab(app, "adjective");
+  app.document.getElementById("adj-answer-input").value = "ぜったいにまちがい";
+  app.document.getElementById("adj-answer-form").dispatch("submit");
+
+  assert.equal(app.$("mistake-count").textContent, "1", "形容词答错应计入共享错题角标");
+  assert.match(app.$("toast").textContent, /已加入错题/);
+
+  const stored = JSON.parse(app.window.localStorage.getItem(ADJ_MISTAKES_KEY));
+  assert.equal(stored.length, 1);
+  assert.equal(stored[0].module, "adjective");
+  assert.equal(stored[0].adjectiveId, adjEngine.ADJECTIVES.filter(function (a) {
+    return a.word === app.$("adj-question-word").textContent;
+  })[0].id);
+  assert.equal(stored[0].wrongAnswer, "ぜったいにまちがい");
+
+  tab(app, "mistakes");
+  const card = app.$("mistakes-list").querySelectorAll(".mistake-card")[0];
+  assert.match(card.textContent, /い形容词|な形容词/, "形容词卡片应标注词性分类");
+  assert.match(card.textContent, /错 1 次/);
+});
+
+test("形容词：到期错题优先插入随机练习，答对推进间隔", function () {
+  const seed = JSON.stringify([adjectiveMistakeSeed({ correctStreak: 1 })]);
+  const app = createApp({ storage: { [ADJ_MISTAKES_KEY]: seed } });
+  tab(app, "adjective");
+
+  assert.equal(app.$("adj-question-word").textContent, "静か", "到期形容词错题应优先出题");
+  assert.equal(app.$("adj-question-index").textContent, "间隔复习");
+
+  app.document.getElementById("adj-answer-input").value = "静かではなかった";
+  app.document.getElementById("adj-answer-form").dispatch("submit");
+  const stored = JSON.parse(app.window.localStorage.getItem(ADJ_MISTAKES_KEY))[0];
+  assert.equal(stored.correctStreak, 2, "答对应推进复习进度");
+  assert.equal(stored.intervalDays, 3);
+});
+
+test("形容词：完成六次正确复习后从错题集移出", function () {
+  const seed = JSON.stringify([adjectiveMistakeSeed({ correctStreak: 5, intervalDays: 30 })]);
+  const app = createApp({ storage: { [ADJ_MISTAKES_KEY]: seed } });
+  tab(app, "adjective");
+  assert.equal(app.$("adj-question-word").textContent, "静か");
+
+  app.document.getElementById("adj-answer-input").value = "静かではなかった";
+  app.document.getElementById("adj-answer-form").dispatch("submit");
+  assert.equal(app.$("mistake-count").textContent, "0", "毕业错题应移出");
+  assert.deepEqual(JSON.parse(app.window.localStorage.getItem(ADJ_MISTAKES_KEY)), []);
+});
+
+test("形容词：重练模式横幅常驻，换一题退出有提示", function () {
+  const app = createApp();
+  tab(app, "adjective");
+  app.document.getElementById("adj-answer-input").value = "まちがいです";
+  app.document.getElementById("adj-answer-form").dispatch("submit");
+  app.click(app.$("adj-review-mistakes"));
+
+  assert.equal(app.$("adj-review-banner").hidden, false);
+  assert.match(app.$("adj-review-banner-count").textContent, /本轮待练 1 题/);
+  assert.equal(app.$("adj-question-index").textContent, "错题重练");
+
+  app.click(app.$("adj-new-question"));
+  assert.equal(app.$("adj-review-banner").hidden, true);
+  assert.match(app.$("toast").textContent, /已退出错题重练/);
+});
+
+test("错题页：重练按钮按模块分流，verb 重练不含形容词错题", function () {
+  const seed = JSON.stringify([adjectiveMistakeSeed()]);
+  const app = createApp({ storage: { [ADJ_MISTAKES_KEY]: seed } });
+  tab(app, "mistakes");
+
+  assert.equal(app.$("adj-review-mistakes").disabled, false, "有形容词错题时应可重练");
+  assert.equal(app.$("review-mistakes").disabled, true, "仅形容词错题时动词重练应禁用");
+
+  app.click(app.$("adj-review-mistakes"));
+  assert.equal(app.$("view-adjective").hidden, false);
+  assert.equal(app.$("adj-question-index").textContent, "错题重练");
+  assert.equal(app.$("adj-question-word").textContent, "静か");
+});
+
+test("形容词：错题卡「练这题」切到形容词视图重练", function () {
+  const seed = JSON.stringify([adjectiveMistakeSeed()]);
+  const app = createApp({ storage: { [ADJ_MISTAKES_KEY]: seed } });
+  tab(app, "mistakes");
+  // 每张错题卡的按钮顺序：[0] 练这题、[1] 移除（dom-stub 不支持后代选择器，用标签选择）
+  app.click(app.$("mistakes-list").querySelectorAll("button")[0]);
+
+  assert.equal(app.$("view-adjective").hidden, false);
+  assert.equal(app.$("adj-review-banner").hidden, false, "单题重练应进入重练模式");
+  assert.equal(app.$("adj-question-word").textContent, "静か");
+});
+
+test("形容词：速查总表「练这题」载入对应形式", function () {
+  const app = createApp();
+  tab(app, "adjective");
+
+  const button = app.document.querySelectorAll("[data-adj-practice]").filter(function (item) {
+    return item.dataset.adjPractice === "pastNegative";
+  })[0];
+  assert.ok(button, "过去否定行应有练这题按钮");
+  app.click(button);
+
+  const word = app.$("adj-question-word").textContent;
+  assert.ok(["高い", "静か"].includes(word), "应使用该行主例词出题：" + word);
+  assert.equal(app.$("adj-target-pill").textContent, "过去否定");
+
+  const adjective = adjEngine.ADJECTIVES.filter(function (item) { return item.word === word; })[0];
+  const expected = adjEngine.conjugate(adjective, "pastNegative").written;
+  app.document.getElementById("adj-answer-input").value = expected;
+  app.document.getElementById("adj-answer-form").dispatch("submit");
+  assert.equal(app.$("adj-feedback-mark").textContent, "✓", "总表开练的题目应可判对");
+});
+
+test("错题存档：形容词记录校验与 verb 兼容迁移", function () {
+  const seed = JSON.stringify([
+    adjectiveMistakeSeed(),
+    { module: "adjective", adjectiveId: "不存在的词", formId: "past", count: 1 },
+    { module: "adjective", adjectiveId: "takai", formId: "不存在的形式", count: 1 }
+  ]);
+  const app = createApp({ storage: { [ADJ_MISTAKES_KEY]: seed } });
+  assert.equal(app.$("mistake-count").textContent, "1", "非法形容词错题应被丢弃");
+});

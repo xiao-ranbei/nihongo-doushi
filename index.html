@@ -285,6 +285,15 @@
           </button>
         </div>
 
+        <div class="review-banner" id="adj-review-banner" role="status" hidden>
+          <span class="review-banner-dot" aria-hidden="true"></span>
+          <span class="review-banner-text">
+            <strong>错题重练中</strong>
+            <span id="adj-review-banner-count"></span>
+          </span>
+          <button class="text-button review-banner-exit" id="adj-exit-review" type="button">退出重练</button>
+        </div>
+
         <div class="practice-layout">
           <article class="practice-card">
             <div class="card-topline">
@@ -443,43 +452,51 @@
                 <th scope="col">活用形式</th>
                 <th scope="col">い形容词 · 例：高い</th>
                 <th scope="col">な形容词 · 例：静か</th>
+                <th scope="col" class="adj-practice-col">练一练</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
+              <tr data-adj-form="attributive">
                 <th scope="row">修饰名词<small>い直接接 · な加「な」</small></th>
                 <td><strong>高い山</strong></td>
                 <td><strong>静か<em class="adj-tail-na">な</em>部屋</strong></td>
+                <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="attributive">练这题</button></td>
               </tr>
-              <tr>
+              <tr data-adj-form="present">
                 <th scope="row">现在肯定<small>い直接结句 · な加「だ・です」</small></th>
                 <td><strong>高い</strong><small>（です）</small></td>
                 <td><strong>静か<em class="adj-tail-na">だ（です）</em></strong></td>
+                <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="present">练这题</button></td>
               </tr>
-              <tr>
+              <tr data-adj-form="presentNegative">
                 <th scope="row">现在否定<small>い→くない · な＋じゃない</small></th>
                 <td><strong>高<em class="adj-tail-i">くない</em></strong></td>
                 <td><strong>静か<em class="adj-tail-na">じゃない</em></strong></td>
+                <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="presentNegative">练这题</button></td>
               </tr>
-              <tr>
+              <tr data-adj-form="past">
                 <th scope="row">过去肯定<small>い→かった · な＋だった</small></th>
                 <td><strong>高<em class="adj-tail-i">かった</em></strong></td>
                 <td><strong>静か<em class="adj-tail-na">だった</em></strong></td>
+                <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="past">练这题</button></td>
               </tr>
-              <tr>
+              <tr data-adj-form="pastNegative">
                 <th scope="row">过去否定<small>い→くなかった · な＋ではなかった</small></th>
                 <td><strong>高<em class="adj-tail-i">くなかった</em></strong></td>
                 <td><strong>静か<em class="adj-tail-na">ではなかった</em></strong></td>
+                <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="pastNegative">练这题</button></td>
               </tr>
-              <tr>
+              <tr data-adj-form="te">
                 <th scope="row">て形<small>い→くて · な＋で</small></th>
                 <td><strong>高<em class="adj-tail-i">くて</em></strong></td>
                 <td><strong>静か<em class="adj-tail-na">で</em></strong></td>
+                <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="te">练这题</button></td>
               </tr>
-              <tr>
+              <tr data-adj-form="adverbial">
                 <th scope="row">状语<small>い→く · な→に</small></th>
                 <td><strong>高<em class="adj-tail-i">く</em></strong></td>
                 <td><strong>静か<em class="adj-tail-na">に</em></strong></td>
+                <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="adverbial">练这题</button></td>
               </tr>
             </tbody>
           </table>
@@ -550,6 +567,7 @@
           </div>
           <div class="mistake-actions">
             <button class="outline-button" id="review-mistakes" type="button">随机重练</button>
+            <button class="outline-button" id="adj-review-mistakes" type="button">重练形容词错题</button>
             <button class="text-button danger-text" id="clear-mistakes" type="button">清空</button>
           </div>
         </div>
