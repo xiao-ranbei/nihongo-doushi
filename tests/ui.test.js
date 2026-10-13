@@ -738,3 +738,120 @@ test("错题存档：形容词记录校验与 verb 兼容迁移", function () {
   const app = createApp({ storage: { [ADJ_MISTAKES_KEY]: seed } });
   assert.equal(app.$("mistake-count").textContent, "1", "非法形容词错题应被丢弃");
 });
+
+// —— 错题加权与每日打卡 ——
+
+function localDateKey(offsetDays) {
+  const date = new Date();
+  date.setDate(date.getDate() + (offsetDays || 0));
+  const month = "0" + (date.getMonth() + 1);
+  const day = "0" + date.getDate();
+  return date.getFullYear() + "-" + month.slice(-2) + "-" + day.slice(-2);
+}
+
+function dueMistakeSeed(overrides) {
+  return Object.assign({
+    count: 1,
+    wrongAnswer: "まちがい",
+    correctStreak: 0,
+    intervalDays: 1,
+    dueAt: new Date(Date.now() - 60000).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000).toISOString()
+  }, overrides || {});
+}
+
+test("错题加权：verb 到期题按错次加权出现", function () {
+  // 到期池至少 3 条：两条时会因「排除当前题」变成完美交替，加权差异被掩盖
+  const verbA = engine.VERBS[0];
+  const verbB = engine.VERBS[1];
+  const verbC = engine.VERBS[2];
+  const seed = JSON.stringify([
+    dueMistakeSeed({ verbId: verbA.id, voiceId: "base", inflectionId: "te", count: 1 }),
+    dueMistakeSeed({ verbId: verbB.id, voiceId: "base", inflectionId: "te", count: 1 }),
+    dueMistakeSeed({ verbId: verbC.id, voiceId: "base", inflectionId: "te", count: 3 })
+  ]);
+  const app = createApp({ storage: { [MISTAKES_KEY]: seed } });
+
+  const counts = {};
+  for (let index = 0; index < 400; index += 1) {
+    app.click(app.$("new-question"));
+    const key = currentQuestionKey(app);
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  const keyC = [verbC.id, "base", "te"].join("::");
+  const keyA = [verbA.id, "base", "te"].join("::");
+  assert.ok((counts[keyC] || 0) > (counts[keyA] || 0),
+    "错 3 次的到期题应比错 1 次的更常被抽出：" + JSON.stringify(counts));
+  assert.ok((counts[keyA] || 0) > 0, "低频错题仍应有机会出现");
+});
+
+test("错题加权：形容词到期题按错次加权出现", function () {
+  const seed = JSON.stringify([
+    adjectiveMistakeSeed({ adjectiveId: "shizuka", count: 1 }),
+    adjectiveMistakeSeed({ adjectiveId: "genki", count: 1 }),
+    adjectiveMistakeSeed({ adjectiveId: "benri", count: 3 })
+  ]);
+  const app = createApp({ storage: { [ADJ_MISTAKES_KEY]: seed } });
+  tab(app, "adjective");
+
+  const counts = {};
+  for (let index = 0; index < 400; index += 1) {
+    app.click(app.$("adj-new-question"));
+    const word = app.$("adj-question-word").textContent;
+    counts[word] = (counts[word] || 0) + 1;
+  }
+  assert.ok((counts["便利"] || 0) > (counts["静か"] || 0),
+    "错 3 次的形容词应更常被抽出：" + JSON.stringify(counts));
+  assert.ok((counts["静か"] || 0) > 0, "低频错题仍应有机会出现");
+});
+
+const DAILY_KEY = "japanese-verb-practice-daily-v1";
+
+test("打卡：首次作答记连续 1 天并写入存档", function () {
+  const app = createApp();
+  assert.equal(app.$("streak-note").hidden, true, "无记录时徽章应隐藏");
+  app.answer(currentAnswer(app));
+
+  assert.equal(app.$("streak-note").hidden, false);
+  assert.match(app.$("streak-note-text").textContent, /连续练习 1 天 · 最佳 1 天/);
+  const stored = JSON.parse(app.window.localStorage.getItem(DAILY_KEY));
+  assert.equal(stored.streak, 1);
+  assert.equal(stored.best, 1);
+  assert.equal(stored.lastDate, localDateKey(0));
+});
+
+test("打卡：昨天练过今天续上，中断则重新计数但保留最佳", function () {
+  const continued = createApp({ storage: {
+    [DAILY_KEY]: JSON.stringify({ lastDate: localDateKey(-1), streak: 4, best: 4 })
+  } });
+  continued.answer(currentAnswer(continued));
+  assert.match(continued.$("streak-note-text").textContent, /连续练习 5 天 · 最佳 5 天/);
+
+  const broken = createApp({ storage: {
+    [DAILY_KEY]: JSON.stringify({ lastDate: localDateKey(-2), streak: 4, best: 6 })
+  } });
+  broken.answer(currentAnswer(broken));
+  assert.match(broken.$("streak-note-text").textContent, /连续练习 1 天 · 最佳 6 天/);
+});
+
+test("打卡：同一天多次作答不重复计数，形容词作答同样打卡", function () {
+  const app = createApp();
+  app.answer(currentAnswer(app));
+  app.answer(currentAnswer(app));
+  const afterVerb = JSON.parse(app.window.localStorage.getItem(DAILY_KEY));
+  assert.equal(afterVerb.streak, 1);
+
+  tab(app, "adjective");
+  app.document.getElementById("adj-answer-input").value = currentAdjectiveAnswer(app);
+  app.document.getElementById("adj-answer-form").dispatch("submit");
+  const stored = JSON.parse(app.window.localStorage.getItem(DAILY_KEY));
+  assert.equal(stored.streak, 1, "同一天只记一次");
+  assert.equal(stored.lastDate, localDateKey(0));
+});
+
+test("打卡：存档损坏降级为从零开始", function () {
+  const app = createApp({ storage: { [DAILY_KEY]: "{ 不是合法 JSON" } });
+  assert.match(app.$("toast").textContent, /打卡记录无法解析/);
+  app.answer(currentAnswer(app));
+  assert.match(app.$("streak-note-text").textContent, /连续练习 1 天 · 最佳 1 天/);
+});

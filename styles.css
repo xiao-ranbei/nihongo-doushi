@@ -295,6 +295,38 @@ button:not(:disabled):active {
   background: var(--dot-online);
 }
 
+/* 每日连续打卡徽章：与离线徽章并排，绿点绿字承载「连续天数」信息 */
+.intro-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.intro-badges .offline-note {
+  margin-top: 0;
+}
+
+.streak-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-accent);
+  border-radius: 999px;
+  background: rgba(255, 254, 250, 0.7);
+  color: var(--toast-text);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.streak-note-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dot-online);
+}
+
 .practice-stats {
   position: relative;
   isolation: isolate;

@@ -46,6 +46,9 @@
   const REVIEW_INTERVALS_DAYS = [1, 3, 7, 14, 30];
   const MASTERY_CORRECT_STREAK = REVIEW_INTERVALS_DAYS.length + 1;
   const SESSION_RETRY_AFTER_ANSWERS = 4;
+  // 错题加权：到期题与重练队列按错次加权抽取，高频错题更早重现。
+  // 权重按错次封顶，避免反复答错的题彻底挤占其他错题的复习机会。
+  const MAX_MISTAKE_WEIGHT = 3;
   const GROUP_LABELS = {
     godan: "五段动词",
     ichidan: "一段动词",
@@ -75,6 +78,7 @@
   const ADJ_GROUP_LABELS = { i: "い形容词", na: "な形容词" };
   const ADJ_BY_ID = new Map(ADJECTIVES.map(function (adjective) { return [adjective.id, adjective]; }));
   const ADJ_STATS_STORAGE_KEY = "japanese-verb-practice-adj-stats-v1";
+  const DAILY_STORAGE_KEY = "japanese-verb-practice-daily-v1";
   // 形容词错题与动词错题共用一本错题集：记录带 module 字段区分，
   // 旧存档没有 module 字段（即动词错题），缺失即视为 verb 的兼容迁移。
   const ADJ_MISTAKE_KEY_PREFIX = "adj::";
@@ -117,6 +121,8 @@
     introEyebrow: document.getElementById("intro-eyebrow"),
     introTitle: document.getElementById("intro-title"),
     introCopy: document.getElementById("intro-copy"),
+    streakNote: document.getElementById("streak-note"),
+    streakNoteText: document.getElementById("streak-note-text"),
     mistakeCount: document.getElementById("mistake-count"),
     correctAnswerCount: document.getElementById("correct-answer-count"),
     incorrectAnswerCount: document.getElementById("incorrect-answer-count"),
@@ -239,6 +245,7 @@
   let adjQuestionDeckFilterKey = "";
   let adjPracticeStats = loadAdjectiveStats();
   let reviewingAdjectiveMistakes = false;
+  let dailyRecord = loadDailyRecord();
 
   function showToast(message, isError) {
     elements.toast.textContent = message;
@@ -567,6 +574,26 @@
     return items[Math.floor(Math.random() * items.length)];
   }
 
+  // 按权重随机抽取：权重大的条目出现概率成比例放大（权重必须为正整数）。
+  function weightedItem(items, weightOf) {
+    let total = 0;
+    items.forEach(function (item) {
+      total += weightOf(item);
+    });
+    let roll = Math.random() * total;
+    for (let index = 0; index < items.length; index += 1) {
+      roll -= weightOf(items[index]);
+      if (roll < 0) {
+        return items[index];
+      }
+    }
+    return items[items.length - 1];
+  }
+
+  function mistakeWeight(mistake) {
+    return Math.max(1, Math.min(MAX_MISTAKE_WEIGHT, mistake.count));
+  }
+
   function shuffleItems(items) {
     for (let index = items.length - 1; index > 0; index -= 1) {
       const randomIndex = Math.floor(Math.random() * (index + 1));
@@ -620,7 +647,7 @@
       return null;
     }
 
-    const question = questionFromMistake(randomItem(dueMistakes));
+    const question = questionFromMistake(weightedItem(dueMistakes, mistakeWeight));
     if (question) {
       question.isScheduledReview = true;
     }
@@ -972,6 +999,7 @@
 
     updateMistakeCount();
     updatePracticeStats(correct);
+    updateDailyStreak();
     elements.nextQuestion.focus();
   }
 
@@ -1145,7 +1173,7 @@
     setReviewingAdjectiveMistakes(false);
     setReviewingMistakes(true);
     showView("practice");
-    const mistake = randomItem(verbMistakes);
+    const mistake = weightedItem(verbMistakes, mistakeWeight);
     startQuestion(questionFromMistake(mistake));
     elements.answerInput.focus();
   }
@@ -1162,7 +1190,7 @@
     setReviewingMistakes(false);
     setReviewingAdjectiveMistakes(true);
     showView("adjective");
-    const mistake = randomItem(adjectiveMistakes);
+    const mistake = weightedItem(adjectiveMistakes, mistakeWeight);
     startAdjectiveQuestion(questionFromMistake(mistake));
     elements.adjAnswerInput.focus();
   }
@@ -1304,6 +1332,97 @@
     }
   }
 
+  // ===================== 每日连续打卡 =====================
+  // 「练习日」以本地日期为准（跨时区/深夜作答不串日）；任一模块作答都算打卡。
+
+  function localDateString(date) {
+    const month = "0" + (date.getMonth() + 1);
+    const day = "0" + date.getDate();
+    return date.getFullYear() + "-" + month.slice(-2) + "-" + day.slice(-2);
+  }
+
+  function previousDateString(date) {
+    return localDateString(
+      new Date(date.getFullYear(), date.getMonth(), date.getDate() - 1)
+    );
+  }
+
+  function createEmptyDailyRecord() {
+    return { lastDate: "", streak: 0, best: 0 };
+  }
+
+  function loadDailyRecord() {
+    if (!storageAvailable) {
+      return createEmptyDailyRecord();
+    }
+    let raw;
+    try {
+      raw = window.localStorage.getItem(DAILY_STORAGE_KEY);
+    } catch (error) {
+      return createEmptyDailyRecord();
+    }
+    if (!raw) {
+      return createEmptyDailyRecord();
+    }
+    let stored;
+    try {
+      stored = JSON.parse(raw);
+    } catch (error) {
+      showToast("打卡记录无法解析，本次从零开始。", true);
+      return createEmptyDailyRecord();
+    }
+    if (!isObject(stored)
+      || typeof stored.lastDate !== "string"
+      || !Number.isSafeInteger(stored.streak)
+      || stored.streak < 0
+      || !Number.isSafeInteger(stored.best)
+      || stored.best < 0) {
+      showToast("打卡记录格式无效，本次从零开始。", true);
+      return createEmptyDailyRecord();
+    }
+    return { lastDate: stored.lastDate, streak: stored.streak, best: stored.best };
+  }
+
+  function saveDailyRecord() {
+    if (!storageAvailable) {
+      return false;
+    }
+    try {
+      window.localStorage.setItem(DAILY_STORAGE_KEY, JSON.stringify(dailyRecord));
+      return true;
+    } catch (error) {
+      storageAvailable = false;
+      showToast("浏览器无法保存本地数据；打卡记录仅保留在当前页面。", true);
+      return false;
+    }
+  }
+
+  function updateDailyStreak() {
+    const now = new Date();
+    const todayKey = localDateString(now);
+    if (dailyRecord.lastDate === todayKey) {
+      return;
+    }
+    if (dailyRecord.lastDate === previousDateString(now)) {
+      dailyRecord.streak += 1;
+    } else {
+      dailyRecord.streak = 1;
+    }
+    dailyRecord.lastDate = todayKey;
+    dailyRecord.best = Math.max(dailyRecord.best, dailyRecord.streak);
+    renderStreakNote();
+    saveDailyRecord();
+  }
+
+  function renderStreakNote() {
+    const hasRecord = dailyRecord.streak > 0;
+    elements.streakNote.hidden = !hasRecord;
+    if (hasRecord) {
+      elements.streakNoteText.textContent = "连续练习 " + dailyRecord.streak
+        + " 天 · 最佳 " + dailyRecord.best + " 天";
+    }
+  }
+
   function populateAdjectiveFilters() {
     addOption(elements.adjInflectionFilter, "all", "全部活用");
     ADJ_FORMS.forEach(function (form) {
@@ -1364,7 +1483,7 @@
     if (!dueMistakes.length) {
       return null;
     }
-    const question = questionFromMistake(randomItem(dueMistakes));
+    const question = questionFromMistake(weightedItem(dueMistakes, mistakeWeight));
     if (question) {
       question.isScheduledReview = true;
     }
@@ -1584,6 +1703,7 @@
 
     updateMistakeCount();
     updateAdjectiveStats(correct);
+    updateDailyStreak();
     elements.adjNextQuestion.focus();
   }
 
@@ -1851,6 +1971,7 @@
   updateMistakeCount();
   renderPracticeStats();
   renderAdjectiveStats();
+  renderStreakNote();
   renderMistakes();
   newRandomQuestion();
   newAdjectiveQuestion();
