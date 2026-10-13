@@ -393,6 +393,7 @@ function createWindow() {
       return true;
     },
     JapaneseVerbEngine: require(path.join(PROJECT_ROOT, "verb-engine.js")),
+    JapaneseAdjectiveEngine: require(path.join(PROJECT_ROOT, "adjective-engine.js")),
     // 与 font/fonts.js 产出的结构一致，用于覆盖动态 @font-face 注入路径。
     JapaneseFontManifest: [
       {

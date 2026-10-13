@@ -1766,6 +1766,318 @@ select:disabled {
   }
 }
 
+/* ===================== 形容词模块 ===================== */
+
+/* 视图内部统一纵向节奏，区块间距由 gap 控制 */
+#view-adjective {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+#view-adjective > .adj-guide-heading {
+  margin-top: 12px;
+}
+
+/* 形容词题面为静态展示，不提供折叠 */
+.adj-prompt {
+  cursor: default;
+}
+
+.adj-guide-heading {
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.adj-class-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.adj-class-card {
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.adj-class-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.adj-class-head h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 17px;
+}
+
+.adj-class-mark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.adj-mark-i {
+  background: var(--green-pale);
+  color: var(--green);
+}
+
+.adj-mark-na {
+  background: var(--orange-pale);
+  color: var(--orange);
+}
+
+.adj-class-card > p {
+  margin: 0 0 12px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.adj-class-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.adj-class-card-i .adj-class-words span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-pale-green);
+  color: var(--text-green-deep);
+  font-size: 12px;
+}
+
+.adj-class-card-na .adj-class-words span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--orange-pale);
+  color: var(--orange-text-deep);
+  font-size: 12px;
+}
+
+.adj-class-example {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+
+.adj-class-example strong {
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.adj-class-example small {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+/* 警示条（きれい类分类陷阱）与特例条（いい→よく） */
+.adj-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 13px 16px;
+  border: 1px solid var(--line-accent);
+  border-radius: 12px;
+  background: var(--bg-pale-green);
+  color: var(--text-green-deep);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.adj-note strong {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.adj-note-warn {
+  border-color: var(--line-orange);
+  background: var(--bg-orange-pale);
+  color: var(--orange-text-deep);
+}
+
+/* い／な 对照总表：绿色为词尾变化，橙色为接续词 */
+.adj-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.adj-table th,
+.adj-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line-faint);
+  vertical-align: top;
+}
+
+.adj-table thead th {
+  background: var(--bg-pale-green);
+  color: var(--text-green-deep);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.adj-table tbody th {
+  width: 190px;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.adj-table tbody th small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.adj-table td strong {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.adj-table td small {
+  margin-left: 4px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.adj-tail-i {
+  font-style: normal;
+  color: var(--text-green-deep);
+}
+
+.adj-tail-na {
+  font-style: normal;
+  color: var(--orange-text-deep);
+}
+
+.adj-table tbody tr:last-child th,
+.adj-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* 三种接续方式 */
+.adj-usage-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.adj-usage-card {
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.adj-usage-card h3 {
+  margin: 0 0 6px;
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.adj-usage-formula {
+  margin: 0 0 10px;
+  color: var(--text-green-deep);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.adj-usage-jp {
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.adj-usage-cn {
+  margin: 2px 0 10px;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.adj-usage-tip {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+/* 易错点对比：错误示例 → 正确示例 + 一句话规则 */
+.adj-pitfalls {
+  display: grid;
+  gap: 10px;
+}
+
+.adj-pitfall {
+  display: grid;
+  grid-template-columns: 150px 20px auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.adj-wrong {
+  color: var(--text-red);
+  font-size: 13px;
+}
+
+.adj-arrow {
+  color: var(--text-placeholder);
+  font-size: 13px;
+}
+
+.adj-right {
+  color: var(--text-green-deep);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.adj-pitfall-note {
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+@media (max-width: 840px) {
+  .adj-class-grid,
+  .adj-usage-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .adj-pitfall {
+    grid-template-columns: auto 20px auto;
+  }
+
+  .adj-pitfall-note {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

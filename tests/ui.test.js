@@ -8,6 +8,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 const engine = require("../verb-engine.js");
+const adjEngine = require("../adjective-engine.js");
 const { createApp } = require("./helpers/dom-stub.js");
 
 const MISTAKES_KEY = "japanese-verb-practice-mistakes-v1";
@@ -481,4 +482,120 @@ test("统计存档非法时从零开始，且不影响错题集", function () {
   assert.match(app.$("toast").textContent, /格式无效/);
   app.answer("まちがいです");
   assert.equal(app.$("mistake-count").textContent, "1", "统计异常不应连带清掉错题");
+});
+
+// —— 形容词模块 ——
+
+function currentAdjectiveAnswer(app) {
+  const word = app.$("adj-question-word").textContent;
+  const adjective = adjEngine.ADJECTIVES.filter(function (item) {
+    return item.word === word;
+  })[0];
+  assert.ok(adjective, "题目形容词应存在于词库：" + word);
+
+  const formLabel = app.$("adj-target-pill").textContent;
+  const form = adjEngine.FORMS.filter(function (item) {
+    return item.label === formLabel;
+  })[0];
+  assert.ok(form, "目标 pill 的形式标签应可解析：" + formLabel);
+
+  return adjEngine.conjugate(adjective, form.id).written;
+}
+
+test("形容词：初始化出题且视图默认隐藏", function () {
+  const app = createApp();
+  assert.equal(app.$("view-adjective").hidden, true, "形容词视图默认隐藏");
+  assert.match(app.$("adj-question-word").textContent, /\S/, "首道形容词题应已渲染");
+  assert.ok(
+    ["い形容词", "な形容词"].includes(app.$("adj-question-kind").textContent),
+    "题面应标出形容词分类"
+  );
+  assert.match(app.$("adj-question-reading").textContent, /\S/, "题面应展示假名读音");
+});
+
+test("形容词：页签切换视图与标语文案", function () {
+  const app = createApp();
+  tab(app, "adjective");
+
+  assert.equal(app.$("view-adjective").hidden, false);
+  assert.equal(app.$("view-practice").hidden, true);
+  assert.match(app.$("intro-title").textContent, /看见形容词，想起接续。/);
+  assert.match(app.$("intro-eyebrow").textContent, /先分い・な/);
+
+  tab(app, "practice");
+  assert.match(app.$("intro-title").textContent, /看见动词，想起变化。/, "切回应恢复动词标语");
+});
+
+test("形容词：答对计入独立统计且不进错题本", function () {
+  const app = createApp();
+  tab(app, "adjective");
+  app.document.getElementById("adj-answer-input").value = currentAdjectiveAnswer(app);
+  app.document.getElementById("adj-answer-form").dispatch("submit");
+
+  const statsCard = app.$("adj-practice-stats");
+  assert.equal(app.$("adj-feedback-panel").hidden, false);
+  assert.equal(app.$("adj-feedback-mark").textContent, "✓");
+  assert.equal(app.$("adj-correct-count").textContent, "1");
+  assert.equal(app.$("adj-incorrect-count").textContent, "0");
+  assert.equal(app.$("mistake-count").textContent, "0", "形容词答错答对都不应写入动词错题本");
+  assert.equal(app.$("adj-answer-input").disabled, true, "作答后输入框应锁定");
+  assert.equal(app.$("adj-next-question").hidden, false);
+  assert.equal(statsCard.classList.contains("is-answer-correct"), true);
+  assert.equal(statsCard.classList.contains("is-answer-incorrect"), false);
+  assert.equal(app.$("correct-answer-count").textContent, "0", "动词统计不应被形容词作答污染");
+});
+
+test("形容词：礼貌变体与罗马字输入同样判对", function () {
+  const app = createApp();
+  tab(app, "adjective");
+  // 收窄到 な形容词 × 过去否定：7 题一轮内必抽到 静か，测试确定性
+  app.$("adj-group-filter").value = "na";
+  app.$("adj-group-filter").dispatch("change");
+  app.$("adj-inflection-filter").value = "pastNegative";
+  app.$("adj-inflection-filter").dispatch("change");
+
+  let answered = false;
+  for (let attempt = 0; attempt < 10 && !answered; attempt += 1) {
+    if (app.$("adj-question-word").textContent === "静か") {
+      app.document.getElementById("adj-answer-input").value = "しずかじゃありませんでした";
+      app.document.getElementById("adj-answer-form").dispatch("submit");
+      assert.equal(app.$("adj-feedback-mark").textContent, "✓", "礼貌变体应判对");
+      answered = true;
+    } else {
+      app.click(app.$("adj-new-question"));
+    }
+  }
+  assert.ok(answered, "过去否定×な筛选下应抽到 静か");
+});
+
+test("形容词：类别筛选只出对应词性", function () {
+  const app = createApp();
+  tab(app, "adjective");
+  app.$("adj-group-filter").value = "na";
+  app.$("adj-group-filter").dispatch("change");
+
+  for (let index = 0; index < 10; index += 1) {
+    const word = app.$("adj-question-word").textContent;
+    const adjective = adjEngine.ADJECTIVES.filter(function (item) {
+      return item.word === word;
+    })[0];
+    assert.ok(adjective, "题目形容词应存在：" + word);
+    assert.equal(adjective.kind, "na", "な类别筛选不应出い形容词");
+    app.click(app.$("adj-new-question"));
+  }
+});
+
+test("形容词：统计清零不影响动词统计", function () {
+  const app = createApp();
+  tab(app, "adjective");
+  app.document.getElementById("adj-answer-input").value = currentAdjectiveAnswer(app);
+  app.document.getElementById("adj-answer-form").dispatch("submit");
+  assert.equal(app.$("adj-total-count").textContent, "1");
+
+  app.click(app.$("adj-reset-stats"));
+  assert.equal(app.$("adj-correct-count").textContent, "0");
+  assert.equal(app.$("adj-reset-stats").disabled, true, "清零后按钮应禁用");
+
+  const stored = JSON.parse(app.window.localStorage.getItem("japanese-verb-practice-adj-stats-v1"));
+  assert.deepEqual(stored, { correct: 0, incorrect: 0 });
 });

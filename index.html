@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="font/fonts.js" defer></script>
   <script src="verb-engine.js" defer></script>
+  <script src="adjective-engine.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -24,6 +25,7 @@
       <nav class="tabs" aria-label="工具页面">
         <button class="tab is-active" type="button" data-view="practice" aria-current="page">练习</button>
         <button class="tab" type="button" data-view="reference">活用速查</button>
+        <button class="tab" type="button" data-view="adjective">形容词</button>
         <button class="tab" type="button" data-view="mistakes">
           错题 <span class="tab-count" id="mistake-count">0</span>
         </button>
@@ -33,9 +35,9 @@
     <main>
       <section class="page-intro">
         <div>
-          <p class="eyebrow">一题一变，练到熟悉</p>
-          <h1>看见动词，<span>想起变化。</span></h1>
-          <p class="intro-copy">主动写出答案，再用变化规律记住它。支持五段、一段和不规则动词。</p>
+          <p class="eyebrow" id="intro-eyebrow">一题一变，练到熟悉</p>
+          <h1 id="intro-title">看见动词，<span id="intro-title-accent">想起变化。</span></h1>
+          <p class="intro-copy" id="intro-copy">主动写出答案，再用变化规律记住它。支持五段、一段和不规则动词。</p>
         </div>
         <div class="offline-note"><span aria-hidden="true"></span> 离线可用 · 记录保存在本机</div>
       </section>
@@ -250,6 +252,292 @@
             </thead>
             <tbody id="reference-table-body"></tbody>
           </table>
+        </div>
+      </section>
+
+      <section class="view" id="view-adjective" aria-labelledby="adjective-title" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">ADJECTIVE</p>
+            <h2 id="adjective-title">形容词练习</h2>
+            <p>先分「い・な」两类，再记词尾变化。支持修饰名词、谓语、状语与常用时态。</p>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <label>
+            <span>形容词类别</span>
+            <select id="adj-group-filter">
+              <option value="all">全部类别</option>
+              <option value="i">い形容词</option>
+              <option value="na">な形容词</option>
+            </select>
+          </label>
+          <label>
+            <span>活用形式</span>
+            <select id="adj-inflection-filter"></select>
+          </label>
+          <label>
+            <span>难度</span>
+            <select id="adj-level-filter"></select>
+          </label>
+          <button class="outline-button new-question-button" id="adj-new-question" type="button">
+            <span aria-hidden="true">↻</span> 换一题
+          </button>
+        </div>
+
+        <div class="practice-layout">
+          <article class="practice-card">
+            <div class="card-topline">
+              <div>
+                <p class="eyebrow" id="adj-question-index">随机练习</p>
+                <h2 id="adj-practice-title">把变化写出来</h2>
+              </div>
+              <span class="target-pill" id="adj-target-pill">准备中</span>
+            </div>
+
+            <div class="verb-prompt adj-prompt">
+              <div class="verb-meta">
+                <span class="class-pill" id="adj-question-kind">形容词</span>
+                <span class="meaning" id="adj-question-meaning"></span>
+              </div>
+              <h3 id="adj-question-word"></h3>
+              <p class="reading" id="adj-question-reading">假名</p>
+            </div>
+
+            <p class="question-instruction" id="adj-question-instruction"></p>
+
+            <form class="answer-form" id="adj-answer-form">
+              <label for="adj-answer-input">写出日语答案</label>
+              <div class="answer-row">
+                <input
+                  id="adj-answer-input"
+                  name="adj-answer"
+                  type="text"
+                  autocomplete="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  placeholder="可输入汉字、假名或罗马字"
+                  required
+                >
+                <button class="primary-button" id="adj-submit-answer" type="submit">检查答案</button>
+              </div>
+              <div class="answer-help">
+                <span>例如：静かじゃない、しずかじゃない或 shizukajyanai</span>
+                <button class="inline-button" id="adj-hint-button" type="button" aria-expanded="false">显示规律提示</button>
+              </div>
+              <p class="hint-text" id="adj-rule-hint" hidden></p>
+            </form>
+
+            <section class="feedback-panel" id="adj-feedback-panel" aria-live="polite" hidden>
+              <div class="feedback-heading">
+                <span class="feedback-mark" id="adj-feedback-mark" aria-hidden="true"></span>
+                <strong id="adj-feedback-title"></strong>
+              </div>
+              <p class="feedback-user-answer" id="adj-feedback-user-answer"></p>
+              <div class="correct-answer">
+                <span>正确形态</span>
+                <strong id="adj-feedback-correct-answer"></strong>
+                <small id="adj-feedback-reading"></small>
+              </div>
+              <div class="feedback-meaning">
+                <strong>接续提示</strong>
+                <p id="adj-feedback-form-meaning"></p>
+              </div>
+              <p class="feedback-rule" id="adj-feedback-rule"></p>
+              <button class="primary-button next-button" id="adj-next-question" type="button">
+                下一题 <span aria-hidden="true">→</span>
+              </button>
+            </section>
+          </article>
+
+          <div class="practice-sidebar">
+            <section class="practice-stats" id="adj-practice-stats" role="group" aria-label="形容词答题统计">
+              <div class="practice-stats-heading">
+                <span class="practice-stats-title">练习统计</span>
+                <button
+                  class="text-button reset-stats-button"
+                  id="adj-reset-stats"
+                  type="button"
+                  aria-label="清零形容词答题统计"
+                  title="清零统计，不会清空错题集"
+                  disabled
+                >清零</button>
+              </div>
+              <div class="practice-stats-content">
+                <div class="practice-stats-counts">
+                  <div class="practice-stat practice-stat-correct">
+                    <span class="practice-stat-dot" aria-hidden="true"></span>
+                    <span>答对</span>
+                    <strong id="adj-correct-count" aria-live="polite">0</strong>
+                  </div>
+                  <div class="practice-stat practice-stat-incorrect">
+                    <span class="practice-stat-dot" aria-hidden="true"></span>
+                    <span>答错</span>
+                    <strong id="adj-incorrect-count" aria-live="polite">0</strong>
+                  </div>
+                </div>
+                <div class="practice-stats-track" id="adj-answer-distribution" role="img" aria-label="尚未作答">
+                  <span class="practice-stats-segment practice-stats-segment-correct" id="adj-correct-segment"></span>
+                  <span class="practice-stats-segment practice-stats-segment-incorrect" id="adj-incorrect-segment"></span>
+                </div>
+                <div class="practice-stats-summary">
+                  <span>共 <strong id="adj-total-count">0</strong> 题</span>
+                  <span>正确率 <strong id="adj-accuracy">—</strong></span>
+                </div>
+              </div>
+            </section>
+            <aside class="learning-card">
+              <p class="eyebrow">记住分类的方法</p>
+              <h2>先分类，再变形。</h2>
+              <div class="class-note">
+                <span class="class-note-mark">い</span>
+                <div><strong>い形容词</strong><p>以「い」结尾，词尾直接变化。<br>注意「きれい」等是な形容词。</p></div>
+              </div>
+              <div class="class-note">
+                <span class="class-note-mark">な</span>
+                <div><strong>な形容词</strong><p>靠「な・に・だ」接续。<br>作谓语时要加「だ／です」。</p></div>
+              </div>
+              <button class="text-link" type="button" id="adj-guide-link">
+                查形容词速查资料 <span aria-hidden="true">→</span>
+              </button>
+            </aside>
+          </div>
+        </div>
+
+        <div class="section-heading adj-guide-heading" id="adjective-guide">
+          <div>
+            <p class="eyebrow">ADJECTIVE GUIDE</p>
+            <h2>形容词速查</h2>
+            <p>以「高い・静か」为例；表中绿色是词尾变化，橙色是接续词。</p>
+          </div>
+        </div>
+        <div class="adj-class-grid">
+          <article class="adj-class-card adj-class-card-i">
+            <div class="adj-class-head">
+              <span class="adj-class-mark adj-mark-i" aria-hidden="true">い</span>
+              <h3>い形容词</h3>
+            </div>
+            <p>以「い」结尾，词尾本身发生变化。可以直接放在名词前，也可以直接作谓语。</p>
+            <p class="adj-class-words"><span>高い</span><span>長い</span><span>寒い</span><span>おいしい</span></p>
+            <p class="adj-class-example"><strong>高い山</strong><small>高高的山</small></p>
+          </article>
+          <article class="adj-class-card adj-class-card-na">
+            <div class="adj-class-head">
+              <span class="adj-class-mark adj-mark-na" aria-hidden="true">な</span>
+              <h3>な形容词</h3>
+            </div>
+            <p>词干本身不变，靠「な・に・だ」等接续词连接。作谓语时要加「だ／です」。</p>
+            <p class="adj-class-words"><span>静か</span><span>便利</span><span>好き</span><span>きれい</span></p>
+            <p class="adj-class-example"><strong>静かな部屋</strong><small>安静的房间</small></p>
+          </article>
+        </div>
+        <p class="adj-note adj-note-warn">
+          <strong aria-hidden="true">!</strong>
+          <span>别只看结尾：きれい・ゆうめい・しんせつ 都是な形容词，需要按词记忆。</span>
+        </p>
+
+        <div class="table-wrap">
+          <table class="adj-table">
+            <thead>
+              <tr>
+                <th scope="col">活用形式</th>
+                <th scope="col">い形容词 · 例：高い</th>
+                <th scope="col">な形容词 · 例：静か</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">修饰名词<small>い直接接 · な加「な」</small></th>
+                <td><strong>高い山</strong></td>
+                <td><strong>静か<em class="adj-tail-na">な</em>部屋</strong></td>
+              </tr>
+              <tr>
+                <th scope="row">现在肯定<small>い直接结句 · な加「だ・です」</small></th>
+                <td><strong>高い</strong><small>（です）</small></td>
+                <td><strong>静か<em class="adj-tail-na">だ（です）</em></strong></td>
+              </tr>
+              <tr>
+                <th scope="row">现在否定<small>い→くない · な＋じゃない</small></th>
+                <td><strong>高<em class="adj-tail-i">くない</em></strong></td>
+                <td><strong>静か<em class="adj-tail-na">じゃない</em></strong></td>
+              </tr>
+              <tr>
+                <th scope="row">过去肯定<small>い→かった · な＋だった</small></th>
+                <td><strong>高<em class="adj-tail-i">かった</em></strong></td>
+                <td><strong>静か<em class="adj-tail-na">だった</em></strong></td>
+              </tr>
+              <tr>
+                <th scope="row">过去否定<small>い→くなかった · な＋ではなかった</small></th>
+                <td><strong>高<em class="adj-tail-i">くなかった</em></strong></td>
+                <td><strong>静か<em class="adj-tail-na">ではなかった</em></strong></td>
+              </tr>
+              <tr>
+                <th scope="row">て形<small>い→くて · な＋で</small></th>
+                <td><strong>高<em class="adj-tail-i">くて</em></strong></td>
+                <td><strong>静か<em class="adj-tail-na">で</em></strong></td>
+              </tr>
+              <tr>
+                <th scope="row">状语<small>い→く · な→に</small></th>
+                <td><strong>高<em class="adj-tail-i">く</em></strong></td>
+                <td><strong>静か<em class="adj-tail-na">に</em></strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="adj-note">
+          <strong>特例</strong>
+          <span>「いい」不参与变形——よくない・よかった・よくなかった，全部换成「よく」系列。</span>
+        </p>
+
+        <div class="adj-usage-grid">
+          <article class="adj-usage-card">
+            <h3>修饰名词</h3>
+            <p class="adj-usage-formula">形容词 + 名词</p>
+            <p class="adj-usage-jp">高い山 ／ 静かな部屋</p>
+            <p class="adj-usage-cn">高高的山 ／ 安静的房间</p>
+            <p class="adj-usage-tip">い直接接名词；な要加「な」再接。</p>
+          </article>
+          <article class="adj-usage-card">
+            <h3>作谓语</h3>
+            <p class="adj-usage-formula">名词は + 形容词</p>
+            <p class="adj-usage-jp">富士山は高い ／ 部屋は静かだ</p>
+            <p class="adj-usage-cn">富士山很高 ／ 房间很安静</p>
+            <p class="adj-usage-tip">い直接结句；な要加「だ／です」。</p>
+          </article>
+          <article class="adj-usage-card">
+            <h3>修饰动词（状语）</h3>
+            <p class="adj-usage-formula">形容词 + 动词</p>
+            <p class="adj-usage-jp">高く飛ぶ ／ 静かに話す</p>
+            <p class="adj-usage-cn">飞得很高 ／ 轻声说话</p>
+            <p class="adj-usage-tip">い变「く」；な变「に」。</p>
+          </article>
+        </div>
+
+        <div class="adj-pitfalls">
+          <div class="adj-pitfall">
+            <span class="adj-wrong">静かくない</span>
+            <span class="adj-arrow" aria-hidden="true">→</span>
+            <span class="adj-right">静かじゃない</span>
+            <span class="adj-pitfall-note">な形容词的否定不加「くない」，直接接「じゃない」</span>
+          </div>
+          <div class="adj-pitfall">
+            <span class="adj-wrong">高いだ</span>
+            <span class="adj-arrow" aria-hidden="true">→</span>
+            <span class="adj-right">高い</span>
+            <span class="adj-pitfall-note">「だ」只接在名词和な形容词后面，い形容词直接结句</span>
+          </div>
+          <div class="adj-pitfall">
+            <span class="adj-wrong">いかった</span>
+            <span class="adj-arrow" aria-hidden="true">→</span>
+            <span class="adj-right">よかった</span>
+            <span class="adj-pitfall-note">「いい」变形全部换成「よく」系列：よくない・よかった・よくなかった</span>
+          </div>
+          <div class="adj-pitfall">
+            <span class="adj-wrong">静か話す</span>
+            <span class="adj-arrow" aria-hidden="true">→</span>
+            <span class="adj-right">静かに話す</span>
+            <span class="adj-pitfall-note">修饰动词时，な形容词要接「に」，い形容词变「く」</span>
+          </div>
         </div>
       </section>
 

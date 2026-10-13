@@ -48,10 +48,14 @@ async function readQuestion(page) {
   }));
 }
 
-async function shoot(page, outDir, name) {
-  // 归零滚动：提交后 nextQuestion.focus() 会滚动到按钮，若不归零两次运行会错位
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(150);
+async function shoot(page, outDir, name, options) {
+  // 归零滚动：提交后 nextQuestion.focus() 会滚动到按钮，若不归零两次运行会错位。
+  // keepScroll 为 true 时保留当前位置（用于拍摄页内锚点区域）。
+  const keepScroll = Boolean(options && options.keepScroll);
+  if (!keepScroll) {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(150);
+  }
   const file = path.join(outDir, name + ".png");
   await page.screenshot({ path: file, fullPage: false });
   console.log("  " + name);
@@ -64,9 +68,12 @@ async function main() {
   fs.mkdirSync(outDir, { recursive: true });
 
   const engine = require(path.join(dir, "verb-engine.js"));
+  const adjectiveEngine = require(path.join(dir, "adjective-engine.js"));
   const verbByDictionary = new Map(engine.VERBS.map((v) => [v.dictionary, v]));
   const labelToVoice = new Map(engine.VOICES.map((v) => [v.label, v.id]));
   const labelToInflection = new Map(engine.INFLECTIONS.map((f) => [f.label, f.id]));
+  const adjectiveByWord = new Map(adjectiveEngine.ADJECTIVES.map((a) => [a.word, a]));
+  const labelToForm = new Map(adjectiveEngine.FORMS.map((f) => [f.label, f.id]));
 
   const browser = await chromium.launch({ executablePath: EXECUTABLE });
   try {
@@ -116,6 +123,39 @@ async function main() {
     await page.click('[data-view="reference"]');
     await page.waitForTimeout(350);
     await shoot(page, outDir, "05-reference");
+
+    // 形容词练习视图（初始）
+    await page.click('[data-view="adjective"]');
+    await page.waitForTimeout(400);
+    await shoot(page, outDir, "08-adjective-practice");
+
+    // 形容词答对态：读题面 -> 计算正确答案 -> 真实提交
+    const adjQuestion = await page.evaluate(() => ({
+      word: document.getElementById("adj-question-word").textContent,
+      target: document.getElementById("adj-target-pill").textContent
+    }));
+    const adjective = adjectiveByWord.get(adjQuestion.word);
+    // labelToForm 映射为 label -> formId（与 verb 侧 labelToInflection 同构）
+    const formId = labelToForm.get(adjQuestion.target);
+    if (!adjective || !formId) {
+      throw new Error("无法解析形容词题面: " + JSON.stringify({
+        question: adjQuestion,
+        hasAdjective: Boolean(adjective),
+        formId: formId === undefined ? null : formId
+      }));
+    }
+    const adjExpected = adjectiveEngine.conjugate(adjective, formId).kana;
+    await page.fill("#adj-answer-input", adjExpected);
+    await page.click("#adj-submit-answer");
+    await page.waitForTimeout(450);
+    await shoot(page, outDir, "09-adjective-correct");
+
+    // 形容词速查资料区（滚动到总表；保留滚动位置）
+    await page.evaluate(() => {
+      document.getElementById("adjective-guide").scrollIntoView();
+    });
+    await page.waitForTimeout(300);
+    await shoot(page, outDir, "10-adjective-guide", { keepScroll: true });
 
     // 移动端练习视图
     const mobile = await browser.newContext({ viewport: { width: 390, height: 844 } });

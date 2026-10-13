@@ -29,6 +29,11 @@
     throw new Error("The verb conjugation engine did not load.");
   }
 
+  const adjEngine = window.JapaneseAdjectiveEngine;
+  if (!adjEngine) {
+    throw new Error("The adjective engine did not load.");
+  }
+
   const VOICES = engine.VOICES;
   const INFLECTIONS = engine.INFLECTIONS;
   const VERBS = engine.VERBS;
@@ -62,15 +67,48 @@
   });
   const RULE_FORM_LABELS = new Set(VOICES.concat(INFLECTIONS).map(function (form) {
     return form.label;
-  }));
+  }).concat(adjEngine.FORMS.map(function (form) { return form.label; })));
+
+  // —— 形容词模块 ——
+  const ADJECTIVES = adjEngine.ADJECTIVES;
+  const ADJ_FORMS = adjEngine.FORMS;
+  const ADJ_GROUP_LABELS = { i: "い形容词", na: "な形容词" };
+  const ADJ_STATS_STORAGE_KEY = "japanese-verb-practice-adj-stats-v1";
+  // 与动词模块共用 LEVEL_LABELS；档位同样从 FORMS.level 派生。
+  const ADJ_LEVELS = [];
+  ADJ_FORMS.forEach(function (form) {
+    const existing = ADJ_LEVELS.some(function (level) { return level.id === form.level; });
+    if (!existing && LEVEL_LABELS[form.level]) {
+      ADJ_LEVELS.push({ id: form.level, label: LEVEL_LABELS[form.level] });
+    }
+  });
+  // 标语区文案随视图切换：动词视图与形容词视图各有品牌句，速查/错题沿用动词文案。
+  const INTRO_COPY = {
+    verb: {
+      eyebrow: "一题一变，练到熟悉",
+      main: "看见动词，",
+      accent: "想起变化。",
+      copy: "主动写出答案，再用变化规律记住它。支持五段、一段和不规则动词。"
+    },
+    adjective: {
+      eyebrow: "先分い・な，再记变形",
+      main: "看见形容词，",
+      accent: "想起接续。",
+      copy: "和动词同一套练法：主动写出答案，再用变化规律记住它。支持い形容词与な形容词的常用变形与三种接续。"
+    }
+  };
 
   const elements = {
     tabs: Array.from(document.querySelectorAll("[data-view]")),
     views: {
       practice: document.getElementById("view-practice"),
       reference: document.getElementById("view-reference"),
+      adjective: document.getElementById("view-adjective"),
       mistakes: document.getElementById("view-mistakes")
     },
+    introEyebrow: document.getElementById("intro-eyebrow"),
+    introTitle: document.getElementById("intro-title"),
+    introCopy: document.getElementById("intro-copy"),
     mistakeCount: document.getElementById("mistake-count"),
     correctAnswerCount: document.getElementById("correct-answer-count"),
     incorrectAnswerCount: document.getElementById("incorrect-answer-count"),
@@ -128,7 +166,43 @@
     clearMistakes: document.getElementById("clear-mistakes"),
     mistakesList: document.getElementById("mistakes-list"),
     mistakesEmpty: document.getElementById("mistakes-empty"),
-    toast: document.getElementById("toast")
+    toast: document.getElementById("toast"),
+    // —— 形容词模块 ——
+    adjGroupFilter: document.getElementById("adj-group-filter"),
+    adjInflectionFilter: document.getElementById("adj-inflection-filter"),
+    adjLevelFilter: document.getElementById("adj-level-filter"),
+    adjNewQuestion: document.getElementById("adj-new-question"),
+    adjQuestionIndex: document.getElementById("adj-question-index"),
+    adjTargetPill: document.getElementById("adj-target-pill"),
+    adjQuestionKind: document.getElementById("adj-question-kind"),
+    adjQuestionMeaning: document.getElementById("adj-question-meaning"),
+    adjQuestionWord: document.getElementById("adj-question-word"),
+    adjQuestionReading: document.getElementById("adj-question-reading"),
+    adjQuestionInstruction: document.getElementById("adj-question-instruction"),
+    adjAnswerForm: document.getElementById("adj-answer-form"),
+    adjAnswerInput: document.getElementById("adj-answer-input"),
+    adjSubmitAnswer: document.getElementById("adj-submit-answer"),
+    adjHintButton: document.getElementById("adj-hint-button"),
+    adjRuleHint: document.getElementById("adj-rule-hint"),
+    adjFeedbackPanel: document.getElementById("adj-feedback-panel"),
+    adjFeedbackMark: document.getElementById("adj-feedback-mark"),
+    adjFeedbackTitle: document.getElementById("adj-feedback-title"),
+    adjFeedbackUserAnswer: document.getElementById("adj-feedback-user-answer"),
+    adjFeedbackCorrectAnswer: document.getElementById("adj-feedback-correct-answer"),
+    adjFeedbackReading: document.getElementById("adj-feedback-reading"),
+    adjFeedbackFormMeaning: document.getElementById("adj-feedback-form-meaning"),
+    adjFeedbackRule: document.getElementById("adj-feedback-rule"),
+    adjNextQuestion: document.getElementById("adj-next-question"),
+    adjPracticeStatsCard: document.getElementById("adj-practice-stats"),
+    adjResetStats: document.getElementById("adj-reset-stats"),
+    adjCorrectCount: document.getElementById("adj-correct-count"),
+    adjIncorrectCount: document.getElementById("adj-incorrect-count"),
+    adjTotalCount: document.getElementById("adj-total-count"),
+    adjAccuracy: document.getElementById("adj-accuracy"),
+    adjAnswerDistribution: document.getElementById("adj-answer-distribution"),
+    adjCorrectSegment: document.getElementById("adj-correct-segment"),
+    adjIncorrectSegment: document.getElementById("adj-incorrect-segment"),
+    adjGuideLink: document.getElementById("adj-guide-link")
   };
 
   let storageAvailable = true;
@@ -144,6 +218,14 @@
   let reviewedMistakeKeys = new Set();
   let mistakes = loadMistakes();
   let practiceStats = loadPracticeStats();
+
+  // —— 形容词模块状态 ——
+  let adjCurrentQuestion = null;
+  let adjLastPairKey = "";
+  let adjRecentWordIds = [];
+  let adjQuestionDeck = [];
+  let adjQuestionDeckFilterKey = "";
+  let adjPracticeStats = loadAdjectiveStats();
 
   function showToast(message, isError) {
     elements.toast.textContent = message;
@@ -869,6 +951,16 @@
     renderReviewBanner();
   }
 
+  // 标语区文案随视图切换：形容词视图换成品牌姊妹句，其余视图沿用动词文案。
+  function renderIntro(viewId) {
+    const copy = viewId === "adjective" ? INTRO_COPY.adjective : INTRO_COPY.verb;
+    elements.introEyebrow.textContent = copy.eyebrow;
+    const accent = document.createElement("span");
+    accent.textContent = copy.accent;
+    elements.introTitle.replaceChildren(document.createTextNode(copy.main), accent);
+    elements.introCopy.textContent = copy.copy;
+  }
+
   function showView(viewId) {
     Object.keys(elements.views).forEach(function (id) {
       elements.views[id].hidden = id !== viewId;
@@ -882,6 +974,7 @@
         tab.removeAttribute("aria-current");
       }
     });
+    renderIntro(viewId);
 
     if (viewId === "mistakes") {
       renderMistakes();
@@ -1008,6 +1101,317 @@
     }
     newRandomQuestion();
     elements.answerInput.focus();
+  }
+
+  // ===================== 形容词模块 =====================
+  // 与动词练习同构但相互独立：独立题池、独立统计（adj-stats-v1）。
+  // 形容词错题暂不入错题本（recordMistake 与动词题库结构耦合），作为下一批接入。
+
+  function createEmptyAdjectiveStats() {
+    return { correct: 0, incorrect: 0 };
+  }
+
+  function loadAdjectiveStats() {
+    if (!storageAvailable) {
+      return createEmptyAdjectiveStats();
+    }
+    let raw;
+    try {
+      raw = window.localStorage.getItem(ADJ_STATS_STORAGE_KEY);
+    } catch (error) {
+      return createEmptyAdjectiveStats();
+    }
+    if (!raw) {
+      return createEmptyAdjectiveStats();
+    }
+    let stored;
+    try {
+      stored = JSON.parse(raw);
+    } catch (error) {
+      showToast("形容词答题统计无法解析，本次从零开始。", true);
+      return createEmptyAdjectiveStats();
+    }
+    if (!isObject(stored)
+      || !Number.isSafeInteger(stored.correct)
+      || stored.correct < 0
+      || !Number.isSafeInteger(stored.incorrect)
+      || stored.incorrect < 0) {
+      showToast("形容词答题统计格式无效，本次从零开始。", true);
+      return createEmptyAdjectiveStats();
+    }
+    return { correct: stored.correct, incorrect: stored.incorrect };
+  }
+
+  function saveAdjectiveStats() {
+    if (!storageAvailable) {
+      return false;
+    }
+    try {
+      window.localStorage.setItem(ADJ_STATS_STORAGE_KEY, JSON.stringify(adjPracticeStats));
+      return true;
+    } catch (error) {
+      storageAvailable = false;
+      showToast("浏览器无法保存本地数据；答题统计仅保留在当前页面。", true);
+      return false;
+    }
+  }
+
+  function renderAdjectiveStats() {
+    elements.adjCorrectCount.textContent = String(adjPracticeStats.correct);
+    elements.adjIncorrectCount.textContent = String(adjPracticeStats.incorrect);
+    const total = adjPracticeStats.correct + adjPracticeStats.incorrect;
+    const correctRatio = total === 0 ? 0 : adjPracticeStats.correct / total;
+    const incorrectRatio = total === 0 ? 0 : adjPracticeStats.incorrect / total;
+    const correctPercent = Math.round(correctRatio * 100);
+    const incorrectPercent = 100 - correctPercent;
+    elements.adjTotalCount.textContent = String(total);
+    elements.adjAccuracy.textContent = total === 0 ? "—" : correctPercent + "%";
+    elements.adjCorrectSegment.style.width = correctRatio * 100 + "%";
+    elements.adjIncorrectSegment.style.width = incorrectRatio * 100 + "%";
+    elements.adjAnswerDistribution.classList.toggle("is-empty", total === 0);
+    elements.adjAnswerDistribution.setAttribute(
+      "aria-label",
+      total === 0
+        ? "尚未作答"
+        : "答题比例：答对 " + adjPracticeStats.correct + " 题，占 " + correctPercent
+          + "%；答错 " + adjPracticeStats.incorrect + " 题，占 " + incorrectPercent + "%。"
+    );
+    elements.adjResetStats.disabled = adjPracticeStats.correct === 0 && adjPracticeStats.incorrect === 0;
+  }
+
+  function updateAdjectiveStats(correct) {
+    const key = correct ? "correct" : "incorrect";
+    adjPracticeStats[key] = Math.min(Number.MAX_SAFE_INTEGER, adjPracticeStats[key] + 1);
+    renderAdjectiveStats();
+    saveAdjectiveStats();
+    elements.adjPracticeStatsCard.classList.remove("is-answer-correct");
+    elements.adjPracticeStatsCard.classList.remove("is-answer-incorrect");
+    void elements.adjPracticeStatsCard.offsetWidth;
+    elements.adjPracticeStatsCard.classList.add(
+      correct ? "is-answer-correct" : "is-answer-incorrect"
+    );
+  }
+
+  function resetAdjectiveStats() {
+    adjPracticeStats = createEmptyAdjectiveStats();
+    renderAdjectiveStats();
+    if (saveAdjectiveStats()) {
+      showToast("形容词答题统计已清零。", false);
+    }
+  }
+
+  function populateAdjectiveFilters() {
+    addOption(elements.adjInflectionFilter, "all", "全部活用");
+    ADJ_FORMS.forEach(function (form) {
+      addOption(elements.adjInflectionFilter, form.id, form.label);
+    });
+    addOption(elements.adjLevelFilter, "all", "全部难度");
+    ADJ_LEVELS.forEach(function (level) {
+      addOption(elements.adjLevelFilter, level.id, level.label);
+    });
+    syncAdjectiveLevelFilterState();
+  }
+
+  function syncAdjectiveLevelFilterState() {
+    const overridden = elements.adjInflectionFilter.value !== "all";
+    elements.adjLevelFilter.disabled = overridden;
+    if (overridden) {
+      elements.adjLevelFilter.title = "已指定具体活用形式，难度筛选暂不生效";
+      elements.adjLevelFilter.setAttribute("aria-disabled", "true");
+    } else {
+      elements.adjLevelFilter.title = "按基础／进阶筛选活用形式";
+      elements.adjLevelFilter.removeAttribute("aria-disabled");
+    }
+  }
+
+  function getAdjectiveFormLabel(formId) {
+    const form = ADJ_FORMS.find(function (item) { return item.id === formId; });
+    return form ? form.label : formId;
+  }
+
+  function buildAdjectiveTargets() {
+    const groupId = elements.adjGroupFilter.value;
+    const adjectives = ADJECTIVES.filter(function (adjective) {
+      return groupId === "all" || adjective.kind === groupId;
+    });
+    // 具体活用形式优先于难度：与动词筛选同一规则，不会筛出空题库。
+    const forms = elements.adjInflectionFilter.value !== "all"
+      ? ADJ_FORMS.filter(function (form) { return form.id === elements.adjInflectionFilter.value; })
+      : elements.adjLevelFilter.value === "all"
+        ? ADJ_FORMS
+        : ADJ_FORMS.filter(function (form) { return form.level === elements.adjLevelFilter.value; });
+    const targets = [];
+    adjectives.forEach(function (adjective) {
+      forms.forEach(function (form) {
+        targets.push({ adjective: adjective, formId: form.id });
+      });
+    });
+    return targets;
+  }
+
+  function chooseAdjectiveQuestion() {
+    const filterKey = JSON.stringify([
+      elements.adjGroupFilter.value,
+      elements.adjInflectionFilter.value,
+      elements.adjLevelFilter.value
+    ]);
+    if (filterKey !== adjQuestionDeckFilterKey) {
+      adjQuestionDeck = [];
+      adjQuestionDeckFilterKey = filterKey;
+    }
+
+    if (!adjQuestionDeck.length) {
+      const pairs = buildAdjectiveTargets().map(function (target) {
+        return {
+          adjective: target.adjective,
+          formId: target.formId,
+          key: [target.adjective.id, target.formId].join("::")
+        };
+      });
+      if (!pairs.length) {
+        showToast("当前筛选范围没有可练习的形容词题目。", true);
+        return null;
+      }
+      adjQuestionDeck = shuffleItems(pairs);
+    }
+
+    const nextIndex = adjQuestionDeck.length - 1;
+    if (nextIndex > 0) {
+      const nextPair = adjQuestionDeck[nextIndex];
+      const repeatsQuestion = nextPair.key === adjLastPairKey;
+      const repeatsRecentWord = adjRecentWordIds.includes(nextPair.adjective.id);
+      if (repeatsQuestion || repeatsRecentWord) {
+        let alternatives = [];
+        for (let index = 0; index < nextIndex; index += 1) {
+          const candidate = adjQuestionDeck[index];
+          if (candidate.key !== adjLastPairKey && !adjRecentWordIds.includes(candidate.adjective.id)) {
+            alternatives.push(index);
+          }
+        }
+        if (!alternatives.length && repeatsQuestion) {
+          for (let index = 0; index < nextIndex; index += 1) {
+            if (adjQuestionDeck[index].key !== adjLastPairKey) {
+              alternatives.push(index);
+            }
+          }
+        }
+        if (alternatives.length) {
+          const swapIndex = randomItem(alternatives);
+          [adjQuestionDeck[nextIndex], adjQuestionDeck[swapIndex]] =
+            [adjQuestionDeck[swapIndex], adjQuestionDeck[nextIndex]];
+        }
+      }
+    }
+
+    const pair = adjQuestionDeck.pop();
+    adjLastPairKey = pair.key;
+    return {
+      adjective: pair.adjective,
+      formId: pair.formId,
+      result: adjEngine.conjugate(pair.adjective, pair.formId),
+      key: pair.key
+    };
+  }
+
+  function startAdjectiveQuestion(question) {
+    if (!question) {
+      return;
+    }
+    adjCurrentQuestion = question;
+    elements.adjPracticeStatsCard.classList.remove("is-answer-correct");
+    elements.adjPracticeStatsCard.classList.remove("is-answer-incorrect");
+    adjRecentWordIds = [question.adjective.id]
+      .concat(adjRecentWordIds.filter(function (id) { return id !== question.adjective.id; }))
+      .slice(0, 3);
+    elements.adjQuestionIndex.textContent = "随机练习";
+    elements.adjTargetPill.textContent = getAdjectiveFormLabel(question.formId);
+    elements.adjQuestionKind.textContent = ADJ_GROUP_LABELS[question.adjective.kind];
+    elements.adjQuestionMeaning.textContent = question.adjective.meaning;
+    elements.adjQuestionWord.textContent = question.adjective.word;
+    elements.adjQuestionReading.textContent = question.adjective.kana;
+    elements.adjQuestionInstruction.innerHTML = "请写出 <strong>" + question.adjective.word
+      + "</strong> 的<strong>" + getAdjectiveFormLabel(question.formId) + "</strong>形式。";
+
+    elements.adjAnswerInput.value = "";
+    elements.adjAnswerInput.disabled = false;
+    elements.adjSubmitAnswer.disabled = false;
+    elements.adjFeedbackPanel.hidden = true;
+    elements.adjFeedbackPanel.classList.remove("is-wrong");
+    elements.adjNextQuestion.hidden = true;
+    elements.adjRuleHint.hidden = true;
+    elements.adjHintButton.textContent = "显示规律提示";
+    elements.adjHintButton.setAttribute("aria-expanded", "false");
+    renderRuleExplanation(
+      elements.adjRuleHint,
+      adjEngine.explain(question.adjective, question.formId)
+    );
+
+    const card = elements.adjAnswerForm.closest(".practice-card");
+    card.classList.remove("is-question-entering");
+    void card.offsetWidth;
+    card.classList.add("is-question-entering");
+  }
+
+  function newAdjectiveQuestion() {
+    startAdjectiveQuestion(chooseAdjectiveQuestion());
+  }
+
+  function submitAdjectiveAnswer(event) {
+    event.preventDefault();
+    if (composing || (event && event.isComposing)) {
+      return;
+    }
+    if (!adjCurrentQuestion) {
+      return;
+    }
+
+    const rawAnswer = elements.adjAnswerInput.value.trim();
+    if (!rawAnswer) {
+      elements.adjAnswerInput.reportValidity();
+      return;
+    }
+
+    const normalizedAnswer = normalizeAnswer(rawAnswer);
+    const expected = new Set(adjEngine.answerVariants(adjCurrentQuestion.result).map(function (text) {
+      return normalizeAnswer(text);
+    }));
+    const correct = expected.has(normalizedAnswer);
+
+    elements.adjAnswerInput.disabled = true;
+    elements.adjSubmitAnswer.disabled = true;
+    elements.adjFeedbackPanel.hidden = false;
+    elements.adjFeedbackPanel.classList.toggle("is-wrong", !correct);
+    elements.adjFeedbackMark.textContent = correct ? "✓" : "!";
+    elements.adjFeedbackTitle.textContent = correct ? "答对了" : "再记一下这个接续";
+    const romajiInput = /^[a-z']+$/i.test(rawAnswer);
+    elements.adjFeedbackUserAnswer.textContent = correct && romajiInput
+      ? "你的答案：" + rawAnswer + "（" + normalizedAnswer + "）"
+      : "你的答案：" + rawAnswer;
+    elements.adjFeedbackCorrectAnswer.textContent = adjCurrentQuestion.result.written;
+    elements.adjFeedbackReading.textContent = adjCurrentQuestion.result.kana === adjCurrentQuestion.result.written
+      ? ""
+      : "读音：" + adjCurrentQuestion.result.kana;
+    const form = ADJ_FORMS.find(function (item) { return item.id === adjCurrentQuestion.formId; });
+    elements.adjFeedbackFormMeaning.textContent = form.meaning;
+    renderRuleExplanation(
+      elements.adjFeedbackRule,
+      adjEngine.explain(adjCurrentQuestion.adjective, adjCurrentQuestion.formId)
+    );
+    elements.adjNextQuestion.hidden = false;
+
+    if (correct) {
+      showToast("正确。留意上面的接续规则。", false);
+    } else {
+      showToast("答错了。看看下面的速查资料，稍后再来。", false);
+    }
+
+    updateAdjectiveStats(correct);
+    elements.adjNextQuestion.focus();
+  }
+
+  function continueAdjectiveAfterAnswer() {
+    newAdjectiveQuestion();
+    elements.adjAnswerInput.focus();
   }
 
   function buildReferenceRow(verb, voiceId, form) {
@@ -1196,11 +1600,45 @@
   elements.reviewMistakes.addEventListener("click", startMistakeReview);
   elements.clearMistakes.addEventListener("click", clearMistakes);
 
+  // —— 形容词模块事件 ——
+  elements.adjAnswerForm.addEventListener("submit", submitAdjectiveAnswer);
+  elements.adjAnswerInput.addEventListener("compositionstart", function () {
+    composing = true;
+  });
+  elements.adjAnswerInput.addEventListener("compositionend", function () {
+    composing = false;
+  });
+  elements.adjNewQuestion.addEventListener("click", newAdjectiveQuestion);
+  elements.adjNextQuestion.addEventListener("click", continueAdjectiveAfterAnswer);
+  elements.adjResetStats.addEventListener("click", resetAdjectiveStats);
+  [elements.adjGroupFilter, elements.adjInflectionFilter, elements.adjLevelFilter]
+    .forEach(function (select) {
+      select.addEventListener("change", function () {
+        syncAdjectiveLevelFilterState();
+        newAdjectiveQuestion();
+      });
+    });
+  elements.adjHintButton.addEventListener("click", function () {
+    const expanded = elements.adjHintButton.getAttribute("aria-expanded") === "true";
+    elements.adjHintButton.setAttribute("aria-expanded", String(!expanded));
+    elements.adjRuleHint.hidden = expanded;
+    elements.adjHintButton.textContent = expanded ? "显示规律提示" : "收起规律提示";
+  });
+  elements.adjGuideLink.addEventListener("click", function () {
+    const guide = document.getElementById("adjective-guide");
+    if (guide && typeof guide.scrollIntoView === "function") {
+      guide.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
+
   populatePracticeFilters();
   populateReferenceVoices();
   populateReferenceControls("");
+  populateAdjectiveFilters();
   updateMistakeCount();
   renderPracticeStats();
+  renderAdjectiveStats();
   renderMistakes();
   newRandomQuestion();
+  newAdjectiveQuestion();
 })();
