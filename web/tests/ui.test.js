@@ -64,6 +64,19 @@ function inflectionLabelOf(app) {
 }
 
 function tab(app, viewId) {
+  if (viewId === "practice" || viewId === "reference") {
+    const moduleTab = app.document.querySelectorAll("[data-view]").filter(function (node) {
+      return node.dataset.view === "verb";
+    })[0];
+    assert.ok(moduleTab, "应存在动词模块导航");
+    app.click(moduleTab);
+    const subtab = app.document.querySelectorAll("[data-verb-subview]").filter(function (node) {
+      return node.dataset.verbSubview === viewId;
+    })[0];
+    assert.ok(subtab, "应存在动词模块视图：" + viewId);
+    app.click(subtab);
+    return subtab;
+  }
   const found = app.document.querySelectorAll("[data-view]").filter(function (node) {
     return node.dataset.view === viewId;
   })[0];
@@ -72,7 +85,7 @@ function tab(app, viewId) {
   return found;
 }
 
-test("初始化：注入字体、渲染首题、只显示练习视图", function () {
+test("初始化：注入字体、渲染首题并默认显示学习主页", function () {
   const app = createApp();
   const injected = app.document.head.querySelectorAll("style").filter(function (node) {
     return /@font-face/.test(node.textContent);
@@ -80,17 +93,61 @@ test("初始化：注入字体、渲染首题、只显示练习视图", function
   assert.equal(injected.length, 1, "应根据字体清单注入一条 @font-face 样式");
 
   assert.match(app.$("question-word").textContent, /\S/, "首题应渲染出动词");
-  assert.equal(app.$("view-practice").hidden, false);
+  assert.equal(app.$("view-home").hidden, false);
+  assert.equal(app.$("view-verb").hidden, true);
+  assert.equal(app.$("view-practice").hidden, false, "动词模块默认子视图为练习");
   assert.equal(app.$("view-reference").hidden, true);
+  assert.equal(app.$("view-adjective").hidden, true);
   assert.equal(app.$("view-mistakes").hidden, true);
+  assert.equal(app.$("home-today-total").textContent, "0 题");
+  assert.equal(app.$("home-active-module-count").textContent, "0");
   assert.equal(app.$("review-banner").hidden, true);
   assert.equal(app.$("feedback-panel").hidden, true);
   assert.equal(app.$("question-index").textContent, "随机练习");
   assert.equal(app.$("question-group").textContent, "动词");
   assert.equal(app.$("question-reading").textContent, "假名");
   assert.equal(app.document.querySelector(".verb-prompt").getAttribute("aria-expanded"), "false");
-  assert.equal(app.document.querySelector(".practice-stats").classList.contains("is-answer-correct"), false);
-  assert.equal(app.document.querySelector(".practice-stats").classList.contains("is-answer-incorrect"), false);
+  assert.equal(app.document.querySelector(".practice-card").classList.contains("is-answer-correct"), false);
+  assert.equal(app.document.querySelector(".practice-card").classList.contains("is-answer-incorrect"), false);
+});
+
+test("导航：侧栏可折叠，窄屏抽屉可打开并关闭", function () {
+  const app = createApp();
+  const homeNav = app.document.querySelectorAll("[data-view]").filter(function (node) {
+    return node.dataset.view === "home";
+  })[0];
+  assert.equal(homeNav.getAttribute("aria-label"), "学习主页");
+  assert.ok(homeNav.querySelector(".nav-label"), "展开侧栏时应显示主页文字");
+  assert.ok(homeNav.querySelector(".home-icon-shape"), "主页导航应有可视图标");
+  assert.ok(app.$("sidebar-collapse").querySelector("svg"), "侧栏控制应使用箭头图标");
+  assert.equal(app.$("sidebar-collapse").querySelector(".nav-label"), null);
+  assert.equal(app.$("sidebar-collapse").getAttribute("aria-label"), "折叠侧栏");
+
+  app.click(app.$("sidebar-collapse"));
+  assert.equal(app.$("app-shell").classList.contains("is-sidebar-collapsed"), true);
+  assert.equal(app.$("sidebar-collapse").getAttribute("aria-pressed"), "true");
+  assert.equal(app.$("sidebar-collapse").title, "展开侧栏");
+  app.click(app.$("sidebar-collapse"));
+  assert.equal(app.$("app-shell").classList.contains("is-sidebar-collapsed"), false);
+  assert.equal(app.$("sidebar-collapse").title, "折叠侧栏");
+
+  app.click(app.$("mobile-nav-toggle"));
+  assert.equal(app.$("mobile-nav-toggle").getAttribute("aria-expanded"), "true");
+  assert.equal(app.$("sidebar-backdrop").hidden, false);
+  tab(app, "verb");
+  assert.equal(app.$("mobile-nav-toggle").getAttribute("aria-expanded"), "false");
+  assert.equal(app.$("sidebar-backdrop").hidden, true);
+  assert.equal(app.$("view-verb").hidden, false);
+});
+
+test("练习统计位于各自随机练习卡片的标题区", function () {
+  const app = createApp();
+  const verbStats = app.document.querySelector(".practice-stats");
+  const adjectiveStats = app.$("adj-practice-stats");
+
+  assert.equal(verbStats.parentNode.classList.contains("practice-card-head"), true);
+  assert.equal(adjectiveStats.parentNode.classList.contains("practice-card-head"), true);
+  assert.equal(app.document.querySelectorAll(".practice-stats-title").length, 0);
 });
 
 test("动词卡片点击或键盘可切换提示，检查后显示且下一题重置", function () {
@@ -130,14 +187,14 @@ test("动词卡片点击或键盘可切换提示，检查后显示且下一题�
   assert.equal(app.$("question-group").textContent, "动词");
   assert.equal(app.$("question-reading").textContent, "假名");
   assert.equal(prompt.getAttribute("aria-expanded"), "false");
-  assert.equal(app.document.querySelector(".practice-stats").classList.contains("is-answer-correct"), false);
-  assert.equal(app.document.querySelector(".practice-stats").classList.contains("is-answer-incorrect"), false);
+  assert.equal(app.document.querySelector(".practice-card").classList.contains("is-answer-correct"), false);
+  assert.equal(app.document.querySelector(".practice-card").classList.contains("is-answer-incorrect"), false);
 });
 
 test("答对：显示 ✓、统计 +1、不记入错题", function () {
   const app = createApp();
   app.answer(currentAnswer(app));
-  const statsCard = app.document.querySelector(".practice-stats");
+  const practiceCard = app.document.querySelector(".practice-card");
 
   assert.equal(app.$("feedback-panel").hidden, false);
   assert.equal(app.$("feedback-mark").textContent, "✓");
@@ -148,22 +205,22 @@ test("答对：显示 ✓、统计 +1、不记入错题", function () {
   assert.equal(app.$("answer-input").disabled, true, "作答后输入框应锁定");
   assert.equal(app.$("next-question").hidden, false);
   assert.equal(app.document.querySelector(".verb-prompt").getAttribute("aria-expanded"), "true");
-  assert.equal(statsCard.classList.contains("is-answer-correct"), true);
-  assert.equal(statsCard.classList.contains("is-answer-incorrect"), false);
+  assert.equal(practiceCard.classList.contains("is-answer-correct"), true);
+  assert.equal(practiceCard.classList.contains("is-answer-incorrect"), false);
 });
 
 test("答错：记入错题、渲染卡片、写入本地存储", function () {
   const app = createApp();
   app.answer("ぜったいにまちがい");
-  const statsCard = app.document.querySelector(".practice-stats");
+  const practiceCard = app.document.querySelector(".practice-card");
 
   assert.equal(app.$("feedback-mark").textContent, "!");
   assert.equal(app.$("feedback-panel").classList.contains("is-wrong"), true);
   assert.equal(app.$("incorrect-answer-count").textContent, "1");
   assert.equal(app.$("mistake-count").textContent, "1");
   assert.equal(app.document.querySelector(".verb-prompt").getAttribute("aria-expanded"), "true");
-  assert.equal(statsCard.classList.contains("is-answer-correct"), false);
-  assert.equal(statsCard.classList.contains("is-answer-incorrect"), true);
+  assert.equal(practiceCard.classList.contains("is-answer-correct"), false);
+  assert.equal(practiceCard.classList.contains("is-answer-incorrect"), true);
 
   tab(app, "mistakes");
   assert.equal(app.$("view-mistakes").hidden, false);
@@ -518,11 +575,13 @@ test("形容词：页签切换视图与标语文案", function () {
   tab(app, "adjective");
 
   assert.equal(app.$("view-adjective").hidden, false);
-  assert.equal(app.$("view-practice").hidden, true);
+  assert.equal(app.$("view-verb").hidden, true);
   assert.match(app.$("intro-title").textContent, /看见形容词，想起接续。/);
   assert.match(app.$("intro-eyebrow").textContent, /先分い・な/);
 
   tab(app, "practice");
+  assert.equal(app.$("view-verb").hidden, false);
+  assert.equal(app.$("view-adjective").hidden, true);
   assert.match(app.$("intro-title").textContent, /看见动词，想起变化。/, "切回应恢复动词标语");
 });
 
@@ -532,7 +591,7 @@ test("形容词：答对计入独立统计且不进错题本", function () {
   app.document.getElementById("adj-answer-input").value = currentAdjectiveAnswer(app);
   app.document.getElementById("adj-answer-form").dispatch("submit");
 
-  const statsCard = app.$("adj-practice-stats");
+  const practiceCard = app.$("adj-practice-card");
   assert.equal(app.$("adj-feedback-panel").hidden, false);
   assert.equal(app.$("adj-feedback-mark").textContent, "✓");
   assert.equal(app.$("adj-correct-count").textContent, "1");
@@ -540,8 +599,8 @@ test("形容词：答对计入独立统计且不进错题本", function () {
   assert.equal(app.$("mistake-count").textContent, "0", "形容词答错答对都不应写入动词错题本");
   assert.equal(app.$("adj-answer-input").disabled, true, "作答后输入框应锁定");
   assert.equal(app.$("adj-next-question").hidden, false);
-  assert.equal(statsCard.classList.contains("is-answer-correct"), true);
-  assert.equal(statsCard.classList.contains("is-answer-incorrect"), false);
+  assert.equal(practiceCard.classList.contains("is-answer-correct"), true);
+  assert.equal(practiceCard.classList.contains("is-answer-incorrect"), false);
   assert.equal(app.$("correct-answer-count").textContent, "0", "动词统计不应被形容词作答污染");
 });
 
@@ -807,6 +866,50 @@ test("错题加权：形容词到期题按错次加权出现", function () {
 
 const DAILY_KEY = "japanese-verb-practice-daily-v1";
 
+test("主页：昨日活动不冒充今日答题量，连续天数保留到当天", function () {
+  const app = createApp({ storage: {
+    [DAILY_KEY]: JSON.stringify({
+      lastDate: localDateKey(-1),
+      streak: 4,
+      best: 6,
+      verbAnswers: 5,
+      adjectiveAnswers: 2
+    })
+  } });
+
+  assert.equal(app.$("home-today-total").textContent, "0 题");
+  assert.equal(app.$("home-today-breakdown").textContent, "动词 0 题 · 形容词 0 题");
+  assert.equal(app.$("home-active-module-count").textContent, "0");
+  assert.equal(app.$("home-streak-count").textContent, "4");
+});
+
+test("主页：汇总今日答题并提供独立模块入口", function () {
+  const app = createApp();
+  tab(app, "verb");
+  app.answer(currentAnswer(app));
+
+  let stored = JSON.parse(app.window.localStorage.getItem(DAILY_KEY));
+  assert.equal(stored.verbAnswers, 1);
+  assert.equal(stored.adjectiveAnswers, 0);
+  assert.equal(app.$("home-today-total").textContent, "1 题");
+  assert.equal(app.$("home-verb-status").textContent, "今日已练");
+
+  tab(app, "home");
+  assert.equal(app.$("view-home").hidden, false);
+  assert.equal(app.$("view-verb").hidden, true);
+  tab(app, "adjective");
+  app.$("adj-answer-input").value = currentAdjectiveAnswer(app);
+  app.$("adj-answer-form").dispatch("submit");
+
+  stored = JSON.parse(app.window.localStorage.getItem(DAILY_KEY));
+  assert.equal(stored.verbAnswers, 1);
+  assert.equal(stored.adjectiveAnswers, 1);
+  assert.equal(app.$("home-today-total").textContent, "2 题");
+  assert.equal(app.$("home-today-breakdown").textContent, "动词 1 题 · 形容词 1 题");
+  assert.equal(app.$("home-active-module-count").textContent, "2");
+  assert.equal(app.$("home-adjective-status").textContent, "今日已练");
+});
+
 test("打卡：首次作答记连续 1 天并写入存档", function () {
   const app = createApp();
   assert.equal(app.$("streak-note").hidden, true, "无记录时徽章应隐藏");
@@ -818,6 +921,8 @@ test("打卡：首次作答记连续 1 天并写入存档", function () {
   assert.equal(stored.streak, 1);
   assert.equal(stored.best, 1);
   assert.equal(stored.lastDate, localDateKey(0));
+  assert.equal(stored.verbAnswers, 1);
+  assert.equal(stored.adjectiveAnswers, 0);
 });
 
 test("打卡：昨天练过今天续上，中断则重新计数但保留最佳", function () {
@@ -840,6 +945,7 @@ test("打卡：同一天多次作答不重复计数，形容词作答同样打�
   app.answer(currentAnswer(app));
   const afterVerb = JSON.parse(app.window.localStorage.getItem(DAILY_KEY));
   assert.equal(afterVerb.streak, 1);
+  assert.equal(afterVerb.verbAnswers, 2);
 
   tab(app, "adjective");
   app.document.getElementById("adj-answer-input").value = currentAdjectiveAnswer(app);
@@ -847,6 +953,8 @@ test("打卡：同一天多次作答不重复计数，形容词作答同样打�
   const stored = JSON.parse(app.window.localStorage.getItem(DAILY_KEY));
   assert.equal(stored.streak, 1, "同一天只记一次");
   assert.equal(stored.lastDate, localDateKey(0));
+  assert.equal(stored.verbAnswers, 2);
+  assert.equal(stored.adjectiveAnswers, 1);
 });
 
 test("打卡：存档损坏降级为从零开始", function () {

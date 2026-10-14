@@ -1,0 +1,27 @@
+# 项目文档索引
+
+本目录同时记录产品目标、目标设计和当前代码状态。目标文档描述“准备建设什么”，当前状态文档描述“代码现在是什么”；不要把尚未实现的设计当成现有功能。
+
+## 文档地图
+
+| 文档 | 用途 | 状态 |
+| --- | --- | --- |
+| [product-overview.md](product-overview.md) | 产品愿景、范围、平台关系与设计原则 | 已确认方向 |
+| [information-architecture.md](information-architecture.md) | 学习主页、模块导航、主要视图与用户流程 | Web 主页与导航已实现；Android 导航待定 |
+| [basic-design.md](basic-design.md) | Web 与 Android 的目标技术结构、数据边界和共享服务 | 目标设计；Android 尚未实现 |
+| [android-requirements.md](android-requirements.md) | Android MVP 范围、发布、离线、数据和待决技术项 | 需求已确认；客户端尚未实现 |
+| [module-guide.md](module-guide.md) | 新增日语学习模块的设计和接入清单 | 扩展约定 |
+| [current-state.md](current-state.md) | 当前网页代码、功能、存储和测试基线 | 当前实现 |
+| [decisions.md](decisions.md) | 已确认的产品／架构选择与延后决定 | 决策记录 |
+| [deployment-github-pages.md](deployment-github-pages.md) | GitHub Pages 首次启用、自动部署和本地数据说明 | 部署操作指南 |
+| [navigation-prototypes.html](navigation-prototypes.html) | 可点击的网页导航方案原型 | 讨论用原型，不是正式页面 |
+
+## 信息来源与更新规则
+
+- [README.md](../README.md) 是仓库快速入口；[web/README.md](../web/README.md) 说明网页端运行方式、测试和资源维护。
+- 产品范围变化时更新 `product-overview.md`；主页、导航或主要操作流程变化时更新 `information-architecture.md`。
+- 目标架构、模块边界或数据策略变化时更新 `basic-design.md` 和 `decisions.md`。
+- 新增或修改实际代码后更新 `current-state.md`，不要用它代替目标设计。
+- 新增模块前按 `module-guide.md` 梳理模块；有未决选项时写入对应文档的“待确认”部分，不把推测写成已确认需求。
+
+旧版 `project-summary.md` 中仍有效的实现边界、测试约定和视觉原则已并入 `current-state.md` 与 `module-guide.md`；过期的未来方向和旧测试基线不再作为规范。

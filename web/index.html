@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f6f5f0">
-  <title>动词活用练习</title>
+  <title>日语学习</title>
   <link rel="icon" type="image/svg+xml" href="./icon/note-icon.svg">
   <link rel="stylesheet" href="styles.css">
   <script src="font/fonts.js" defer></script>
@@ -13,42 +13,141 @@
   <script src="app.js" defer></script>
 </head>
 <body>
-  <div class="app-shell">
-    <header class="topbar">
-      <a class="brand" href="./index.html" aria-label="动词活用练习首页">
-        <span class="brand-mark" aria-hidden="true">活</span>
+  <div class="app-shell" id="app-shell">
+    <aside class="app-sidebar" id="app-sidebar" aria-label="日语学习导航">
+      <a class="brand" href="./index.html" aria-label="日语学习主页">
+        <span class="brand-mark" aria-hidden="true">日</span>
         <span>
-          <strong>动词活用练习</strong>
-          <small>JAPANESE VERB PRACTICE</small>
+          <strong>日语学习</strong>
+          <small>JAPANESE STUDY</small>
         </span>
       </a>
-      <nav class="tabs" aria-label="工具页面">
-        <button class="tab is-active" type="button" data-view="practice" aria-current="page">练习</button>
-        <button class="tab" type="button" data-view="reference">活用速查</button>
-        <button class="tab" type="button" data-view="adjective">形容词</button>
-        <button class="tab" type="button" data-view="mistakes">
-          错题 <span class="tab-count" id="mistake-count">0</span>
+      <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-label="折叠侧栏" aria-pressed="false" title="折叠侧栏">
+        <svg class="sidebar-collapse-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M14.5 5.5 8 12l6.5 6.5"></path>
+          <path d="M8 12h12"></path>
+        </svg>
+      </button>
+      <nav class="primary-nav" id="primary-nav" aria-label="主要导航">
+        <p class="sidebar-section-label">学习</p>
+        <button class="nav-item nav-item-home is-active" type="button" data-view="home" aria-current="page" aria-label="学习主页" title="学习主页">
+          <span class="nav-label">学习主页</span>
+          <span class="nav-icon nav-icon-home" aria-hidden="true"><span class="home-icon-shape"></span></span>
+        </button>
+        <button class="nav-item" type="button" data-view="verb" aria-label="动词活用" title="动词活用">
+          <span class="nav-icon" aria-hidden="true">动</span><span class="nav-label">动词活用</span>
+        </button>
+        <button class="nav-item" type="button" data-view="adjective" aria-label="形容词活用" title="形容词活用">
+          <span class="nav-icon" aria-hidden="true">形</span><span class="nav-label">形容词活用</span>
+        </button>
+        <p class="sidebar-section-label sidebar-section-review">复习</p>
+        <button class="nav-item" type="button" data-view="mistakes" aria-label="错题本" title="错题本">
+          <span class="nav-icon" aria-hidden="true">错</span>
+          <span class="nav-label">错题本 <span class="nav-count" id="mistake-count">0</span></span>
         </button>
       </nav>
-    </header>
+      <div class="sidebar-footer"><span class="offline-dot" aria-hidden="true"></span><span class="nav-label">离线可用 · 记录保存在本机</span></div>
+    </aside>
 
-    <main>
+    <div class="app-main">
+      <header class="mobile-topbar">
+        <button class="mobile-nav-toggle" id="mobile-nav-toggle" type="button" aria-label="打开导航" aria-controls="app-sidebar" aria-expanded="false">
+          <span class="mobile-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+        </button>
+        <div class="mobile-topbar-brand">
+          <span class="brand-mark" aria-hidden="true">日</span>
+          <strong>日语学习</strong>
+        </div>
+      </header>
+
+      <main>
       <section class="page-intro">
         <div>
-          <p class="eyebrow" id="intro-eyebrow">一题一变，练到熟悉</p>
-          <h1 id="intro-title">看见动词，<span id="intro-title-accent">想起变化。</span></h1>
-          <p class="intro-copy" id="intro-copy">主动写出答案，再用变化规律记住它。支持五段、一段和不规则动词。</p>
+          <p class="eyebrow" id="intro-eyebrow">每天学一点，积累成习惯</p>
+          <h1 id="intro-title" tabindex="-1">把日语学习，<span id="intro-title-accent">拆成今天的一小步。</span></h1>
+          <p class="intro-copy" id="intro-copy">从学习主页进入动词、形容词等模块，按自己的节奏练习。</p>
         </div>
         <div class="intro-badges">
           <div class="streak-note" id="streak-note" hidden>
             <span class="streak-note-dot" aria-hidden="true"></span>
             <span id="streak-note-text"></span>
           </div>
-          <div class="offline-note"><span aria-hidden="true"></span> 离线可用 · 记录保存在本机</div>
+          <div class="offline-note"><span aria-hidden="true"></span> 离线可用 · 数据保存在本机</div>
         </div>
       </section>
 
-      <section class="view" id="view-practice" aria-labelledby="practice-title">
+      <section class="view home-view" id="view-home" aria-labelledby="home-title">
+        <div class="home-welcome">
+          <p class="eyebrow">LEARNING HOME</p>
+          <h2 id="home-title">今天，也来学一点日语。</h2>
+          <p>查看今日练习，再选择一个模块继续。</p>
+        </div>
+        <div class="home-summary-grid" aria-label="学习概览">
+          <article class="home-summary-card">
+            <span class="home-summary-label">今日练习</span>
+            <strong id="home-today-total">0 题</strong>
+            <small id="home-today-breakdown">动词 0 题 · 形容词 0 题</small>
+          </article>
+          <article class="home-summary-card">
+            <span class="home-summary-label">连续学习</span>
+            <strong><span id="home-streak-count">0</span> 天</strong>
+            <small>每天练一点，保持节奏</small>
+          </article>
+          <article class="home-summary-card">
+            <span class="home-summary-label">今日已开始</span>
+            <strong><span id="home-active-module-count">0</span> 个模块</strong>
+            <small>详细统计留在模块内</small>
+          </article>
+        </div>
+
+        <section class="home-module-section" aria-labelledby="home-modules-title">
+          <div class="home-section-heading">
+            <div>
+              <p class="eyebrow">STUDY MODULES</p>
+              <h2 id="home-modules-title">学习模块</h2>
+            </div>
+            <p>选择一个模块进入</p>
+          </div>
+          <div class="home-module-grid">
+            <button class="home-module-card" type="button" data-open-view="verb" data-verb-subview="practice">
+              <span class="home-module-mark" aria-hidden="true">动</span>
+              <span class="home-module-copy">
+                <strong>动词活用</strong>
+                <small>练习五段、一段与不规则动词</small>
+                <span class="home-module-status" id="home-verb-status">今日尚未练习</span>
+              </span>
+              <span class="home-module-count" id="home-verb-today">0 题</span>
+              <span class="home-module-arrow" aria-hidden="true">→</span>
+            </button>
+            <button class="home-module-card" type="button" data-open-view="adjective" data-adj-subview="practice">
+              <span class="home-module-mark" aria-hidden="true">形</span>
+              <span class="home-module-copy">
+                <strong>形容词活用</strong>
+                <small>练习い形容词与な形容词</small>
+                <span class="home-module-status" id="home-adjective-status">今日尚未练习</span>
+              </span>
+              <span class="home-module-count" id="home-adjective-today">0 题</span>
+              <span class="home-module-arrow" aria-hidden="true">→</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="home-review-card" aria-label="错题复习">
+          <div>
+            <p class="eyebrow">REVIEW</p>
+            <h2>把没掌握的变化再练一次。</h2>
+            <p><strong id="home-mistake-count">0</strong> 道错题按模块保存在本机。</p>
+          </div>
+          <button class="outline-button" type="button" data-open-view="mistakes">打开错题本 <span aria-hidden="true">→</span></button>
+        </section>
+      </section>
+
+      <section class="view verb-module-view" id="view-verb" aria-labelledby="practice-title" hidden>
+        <nav class="module-subnav" id="verb-subnav" aria-label="动词模块功能">
+          <button class="module-subtab is-active" type="button" data-verb-subview="practice" aria-selected="true">练习</button>
+          <button class="module-subtab" type="button" data-verb-subview="reference" aria-selected="false">活用速查</button>
+        </nav>
+      <section class="module-subview" id="view-practice" aria-labelledby="practice-title">
         <div class="filter-bar">
           <label>
             <span>动词类别</span>
@@ -87,12 +186,48 @@
 
         <div class="practice-layout">
           <article class="practice-card">
-            <div class="card-topline">
-              <div>
-                <p class="eyebrow" id="question-index">随机练习</p>
-                <h2 id="practice-title">把变形说出来</h2>
+            <div class="practice-card-head">
+              <div class="card-topline">
+                <div>
+                  <p class="eyebrow" id="question-index">随机练习</p>
+                  <h2 id="practice-title">把变形说出来</h2>
+                </div>
+                <span class="target-pill" id="target-pill">准备中</span>
               </div>
-              <span class="target-pill" id="target-pill">准备中</span>
+              <section class="practice-stats practice-stats-inline" role="group" aria-label="答题统计">
+                <div class="practice-stats-heading">
+                  <div class="practice-stats-counts">
+                    <div class="practice-stat practice-stat-correct">
+                      <span class="practice-stat-dot" aria-hidden="true"></span>
+                      <span>答对</span>
+                      <strong id="correct-answer-count" aria-live="polite">0</strong>
+                    </div>
+                    <div class="practice-stat practice-stat-incorrect">
+                      <span class="practice-stat-dot" aria-hidden="true"></span>
+                      <span>答错</span>
+                      <strong id="incorrect-answer-count" aria-live="polite">0</strong>
+                    </div>
+                  </div>
+                  <button
+                    class="text-button reset-stats-button"
+                    id="reset-stats"
+                    type="button"
+                    aria-label="清零答题统计，不影响错题集"
+                    title="清零统计，不会清空错题集"
+                    disabled
+                  >清零</button>
+                </div>
+                <div class="practice-stats-content">
+                  <div class="practice-stats-track" id="answer-distribution" role="img" aria-label="尚未作答">
+                    <span class="practice-stats-segment practice-stats-segment-correct" id="correct-answer-segment"></span>
+                    <span class="practice-stats-segment practice-stats-segment-incorrect" id="incorrect-answer-segment"></span>
+                  </div>
+                  <div class="practice-stats-summary">
+                    <span>共 <strong id="total-answer-count">0</strong> 题</span>
+                    <span>正确率 <strong id="answer-accuracy">—</strong></span>
+                  </div>
+                </div>
+              </section>
             </div>
 
             <div class="verb-prompt" role="button" tabindex="0" aria-expanded="false">
@@ -152,41 +287,6 @@
           </article>
 
           <div class="practice-sidebar">
-            <section class="practice-stats" role="group" aria-label="答题统计">
-              <div class="practice-stats-heading">
-                <span class="practice-stats-title">练习统计</span>
-                <button
-                  class="text-button reset-stats-button"
-                  id="reset-stats"
-                  type="button"
-                  aria-label="清零答题统计，不影响错题集"
-                  title="清零统计，不会清空错题集"
-                  disabled
-                >清零</button>
-              </div>
-              <div class="practice-stats-content">
-                <div class="practice-stats-counts">
-                  <div class="practice-stat practice-stat-correct">
-                    <span class="practice-stat-dot" aria-hidden="true"></span>
-                    <span>答对</span>
-                    <strong id="correct-answer-count" aria-live="polite">0</strong>
-                  </div>
-                  <div class="practice-stat practice-stat-incorrect">
-                    <span class="practice-stat-dot" aria-hidden="true"></span>
-                    <span>答错</span>
-                    <strong id="incorrect-answer-count" aria-live="polite">0</strong>
-                  </div>
-                </div>
-                <div class="practice-stats-track" id="answer-distribution" role="img" aria-label="尚未作答">
-                  <span class="practice-stats-segment practice-stats-segment-correct" id="correct-answer-segment"></span>
-                  <span class="practice-stats-segment practice-stats-segment-incorrect" id="incorrect-answer-segment"></span>
-                </div>
-                <div class="practice-stats-summary">
-                  <span>共 <strong id="total-answer-count">0</strong> 题</span>
-                  <span>正确率 <strong id="answer-accuracy">—</strong></span>
-                </div>
-              </div>
-            </section>
             <aside class="learning-card">
               <p class="eyebrow">记住变化的方法</p>
               <h2>先分组，再变形。</h2>
@@ -202,7 +302,7 @@
                 <span class="class-note-mark">不</span>
                 <div><strong>不规则动词</strong><p>「する」「来る」及其复合词需要单独记忆。</p></div>
               </div>
-              <button class="text-link" type="button" data-open-view="reference">
+              <button class="text-link" type="button" data-open-view="verb" data-verb-subview="reference">
                 查一个动词的完整变化 <span aria-hidden="true">→</span>
               </button>
             </aside>
@@ -210,7 +310,7 @@
         </div>
       </section>
 
-      <section class="view" id="view-reference" aria-labelledby="reference-title" hidden>
+      <section class="module-subview" id="view-reference" aria-labelledby="reference-title" hidden>
         <div class="section-heading">
           <div>
             <p class="eyebrow">REFERENCE</p>
@@ -260,6 +360,7 @@
           </table>
         </div>
       </section>
+      </section>
 
       <section class="view" id="view-adjective" aria-labelledby="adjective-title" hidden>
         <div class="subtabs" role="tablist" aria-label="形容词模块视图">
@@ -306,13 +407,49 @@
         </div>
 
         <div class="practice-layout">
-          <article class="practice-card">
-            <div class="card-topline">
-              <div>
-                <p class="eyebrow" id="adj-question-index">随机练习</p>
-                <h2 id="adj-practice-title">把变化写出来</h2>
+          <article class="practice-card" id="adj-practice-card">
+            <div class="practice-card-head">
+              <div class="card-topline">
+                <div>
+                  <p class="eyebrow" id="adj-question-index">随机练习</p>
+                  <h2 id="adj-practice-title">把变化写出来</h2>
+                </div>
+                <span class="target-pill" id="adj-target-pill">准备中</span>
               </div>
-              <span class="target-pill" id="adj-target-pill">准备中</span>
+              <section class="practice-stats practice-stats-inline" id="adj-practice-stats" role="group" aria-label="形容词答题统计">
+                <div class="practice-stats-heading">
+                  <div class="practice-stats-counts">
+                    <div class="practice-stat practice-stat-correct">
+                      <span class="practice-stat-dot" aria-hidden="true"></span>
+                      <span>答对</span>
+                      <strong id="adj-correct-count" aria-live="polite">0</strong>
+                    </div>
+                    <div class="practice-stat practice-stat-incorrect">
+                      <span class="practice-stat-dot" aria-hidden="true"></span>
+                      <span>答错</span>
+                      <strong id="adj-incorrect-count" aria-live="polite">0</strong>
+                    </div>
+                  </div>
+                  <button
+                    class="text-button reset-stats-button"
+                    id="adj-reset-stats"
+                    type="button"
+                    aria-label="清零形容词答题统计"
+                    title="清零统计，不会清空错题集"
+                    disabled
+                  >清零</button>
+                </div>
+                <div class="practice-stats-content">
+                  <div class="practice-stats-track" id="adj-answer-distribution" role="img" aria-label="尚未作答">
+                    <span class="practice-stats-segment practice-stats-segment-correct" id="adj-correct-segment"></span>
+                    <span class="practice-stats-segment practice-stats-segment-incorrect" id="adj-incorrect-segment"></span>
+                  </div>
+                  <div class="practice-stats-summary">
+                    <span>共 <strong id="adj-total-count">0</strong> 题</span>
+                    <span>正确率 <strong id="adj-accuracy">—</strong></span>
+                  </div>
+                </div>
+              </section>
             </div>
 
             <div class="verb-prompt adj-prompt">
@@ -371,41 +508,6 @@
           </article>
 
           <div class="practice-sidebar">
-            <section class="practice-stats" id="adj-practice-stats" role="group" aria-label="形容词答题统计">
-              <div class="practice-stats-heading">
-                <span class="practice-stats-title">练习统计</span>
-                <button
-                  class="text-button reset-stats-button"
-                  id="adj-reset-stats"
-                  type="button"
-                  aria-label="清零形容词答题统计"
-                  title="清零统计，不会清空错题集"
-                  disabled
-                >清零</button>
-              </div>
-              <div class="practice-stats-content">
-                <div class="practice-stats-counts">
-                  <div class="practice-stat practice-stat-correct">
-                    <span class="practice-stat-dot" aria-hidden="true"></span>
-                    <span>答对</span>
-                    <strong id="adj-correct-count" aria-live="polite">0</strong>
-                  </div>
-                  <div class="practice-stat practice-stat-incorrect">
-                    <span class="practice-stat-dot" aria-hidden="true"></span>
-                    <span>答错</span>
-                    <strong id="adj-incorrect-count" aria-live="polite">0</strong>
-                  </div>
-                </div>
-                <div class="practice-stats-track" id="adj-answer-distribution" role="img" aria-label="尚未作答">
-                  <span class="practice-stats-segment practice-stats-segment-correct" id="adj-correct-segment"></span>
-                  <span class="practice-stats-segment practice-stats-segment-incorrect" id="adj-incorrect-segment"></span>
-                </div>
-                <div class="practice-stats-summary">
-                  <span>共 <strong id="adj-total-count">0</strong> 题</span>
-                  <span>正确率 <strong id="adj-accuracy">—</strong></span>
-                </div>
-              </div>
-            </section>
             <aside class="learning-card">
               <p class="eyebrow">记住分类的方法</p>
               <h2>先分类，再变形。</h2>
@@ -609,9 +711,11 @@
     </main>
 
     <footer class="footer">
-      <span>独立整理的日语活用练习工具</span>
+      <span>日语学习工具 · 独立整理的练习内容</span>
       <span>数据仅保存在当前浏览器</span>
     </footer>
+    </div>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="关闭导航" hidden></button>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

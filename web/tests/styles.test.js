@@ -55,20 +55,30 @@ test("组件样式内不出现硬编码色值（#fff/#000 例外）", function (
   assert.deepEqual(offenders, [], "组件内出现硬编码色值:\n" + offenders.join("\n"));
 });
 
-test("答题结果扫过整张统计卡片且不阻挡操作", function () {
-  const sweepLayer = /\.practice-stats::after\s*\{([^}]*)\}/.exec(css);
-  assert.ok(sweepLayer, "统计卡片应有独立扫光层");
-  assert.match(sweepLayer[1], /inset:\s*0;/, "扫光层应覆盖整个统计卡片");
+test("侧栏与主内容分开滚动，窄屏顶部栏固定", function () {
+  assert.match(css, /\.app-shell\s*\{\s*height:\s*100vh;\s*height:\s*100dvh;\s*min-height:\s*0;\s*overflow:\s*hidden;/);
+  assert.match(css, /\.app-sidebar\s*\{\s*position:\s*relative;\s*top:\s*auto;\s*height:\s*100%;[\s\S]*?overflow-y:\s*auto;/);
+  assert.match(css, /\.app-main\s*\{\s*height:\s*100vh;\s*height:\s*100dvh;[\s\S]*?overflow-y:\s*auto;/);
+  assert.match(
+    css,
+    /@media \(max-width: 840px\)[\s\S]*?\.mobile-topbar\s*\{\s*position:\s*sticky;\s*top:\s*0;/
+  );
+});
+
+test("答题结果扫过整张练习卡且不阻挡操作", function () {
+  const sweepLayer = /\.practice-card::after\s*\{([^}]*)\}/.exec(css);
+  assert.ok(sweepLayer, "练习卡应有独立扫光层");
+  assert.match(sweepLayer[1], /inset:\s*0;/, "扫光层应覆盖整张练习卡");
   assert.match(sweepLayer[1], /pointer-events:\s*none;/, "扫光层不应拦截卡片内交互");
-  assert.match(css, /\.practice-stats\.is-answer-correct::after/);
-  assert.match(css, /\.practice-stats\.is-answer-incorrect::after/);
-  assert.match(css, /@keyframes\s+practice-stats-sweep/);
-  assert.equal((css.match(/animation:\s*practice-stats-sweep 1200ms ease-out;/g) || []).length, 2);
+  assert.match(css, /\.practice-card\.is-answer-correct::after/);
+  assert.match(css, /\.practice-card\.is-answer-incorrect::after/);
+  assert.match(css, /@keyframes\s+practice-card-sweep/);
+  assert.equal((css.match(/animation:\s*practice-card-sweep 1200ms ease-out;/g) || []).length, 2);
   assert.match(css, /--stat-correct-sweep:\s*rgba\(102,\s*135,\s*109,\s*0\.42\)/);
   assert.match(css, /--stat-incorrect-sweep:\s*rgba\(201,\s*127,\s*116,\s*0\.42\)/);
   assert.match(
     css,
-    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.practice-stats\.is-answer-correct::after,[\s\S]*?\.practice-stats\.is-answer-incorrect::after\s*\{\s*animation-duration:\s*1200ms !important;/
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.practice-card\.is-answer-correct::after,[\s\S]*?\.practice-card\.is-answer-incorrect::after\s*\{\s*animation-duration:\s*1200ms !important;/
   );
 });
 

@@ -94,8 +94,14 @@
       ADJ_LEVELS.push({ id: form.level, label: LEVEL_LABELS[form.level] });
     }
   });
-  // 标语区文案随视图切换：动词视图与形容词视图各有品牌句，速查/错题沿用动词文案。
+  // 标语区文案随主视图切换。
   const INTRO_COPY = {
+    home: {
+      eyebrow: "每天学一点，积累成习惯",
+      main: "把日语学习，",
+      accent: "拆成今天的一小步。",
+      copy: "从学习主页进入动词、形容词等模块，按自己的节奏练习。"
+    },
     verb: {
       eyebrow: "一题一变，练到熟悉",
       main: "看见动词，",
@@ -107,24 +113,47 @@
       main: "看见形容词，",
       accent: "想起接续。",
       copy: "和动词同一套练法：主动写出答案，再用变化规律记住它。支持い形容词与な形容词的常用变形与三种接续。"
+    },
+    mistakes: {
+      eyebrow: "REVIEW",
+      main: "复习错题，",
+      accent: "巩固每一次练习。",
+      copy: "动词与形容词错题集中保存，并按模块分组复习。"
     }
   };
 
   const elements = {
     tabs: Array.from(document.querySelectorAll("[data-view]")),
+    verbSubtabs: Array.from(document.querySelectorAll("[data-verb-subview]")),
     adjSubtabs: Array.from(document.querySelectorAll("[data-adj-subview]")),
     views: {
-      practice: document.getElementById("view-practice"),
-      reference: document.getElementById("view-reference"),
+      home: document.getElementById("view-home"),
+      verb: document.getElementById("view-verb"),
       adjective: document.getElementById("view-adjective"),
       mistakes: document.getElementById("view-mistakes")
     },
+    verbSubviewNav: document.getElementById("verb-subnav"),
+    verbSubviewPractice: document.getElementById("view-practice"),
+    verbSubviewReference: document.getElementById("view-reference"),
+    appShell: document.getElementById("app-shell"),
+    sidebarCollapse: document.getElementById("sidebar-collapse"),
+    mobileNavToggle: document.getElementById("mobile-nav-toggle"),
+    sidebarBackdrop: document.getElementById("sidebar-backdrop"),
     introEyebrow: document.getElementById("intro-eyebrow"),
     introTitle: document.getElementById("intro-title"),
     introCopy: document.getElementById("intro-copy"),
     streakNote: document.getElementById("streak-note"),
     streakNoteText: document.getElementById("streak-note-text"),
     mistakeCount: document.getElementById("mistake-count"),
+    homeMistakeCount: document.getElementById("home-mistake-count"),
+    homeTodayTotal: document.getElementById("home-today-total"),
+    homeTodayBreakdown: document.getElementById("home-today-breakdown"),
+    homeStreakCount: document.getElementById("home-streak-count"),
+    homeActiveModuleCount: document.getElementById("home-active-module-count"),
+    homeVerbToday: document.getElementById("home-verb-today"),
+    homeVerbStatus: document.getElementById("home-verb-status"),
+    homeAdjectiveToday: document.getElementById("home-adjective-today"),
+    homeAdjectiveStatus: document.getElementById("home-adjective-status"),
     correctAnswerCount: document.getElementById("correct-answer-count"),
     incorrectAnswerCount: document.getElementById("incorrect-answer-count"),
     totalAnswerCount: document.getElementById("total-answer-count"),
@@ -141,7 +170,6 @@
     reviewBannerCount: document.getElementById("review-banner-count"),
     exitReview: document.getElementById("exit-review"),
     practiceCard: document.querySelector(".practice-card"),
-    practiceStatsCard: document.querySelector(".practice-stats"),
     verbPrompt: document.querySelector(".verb-prompt"),
     newQuestion: document.getElementById("new-question"),
     questionIndex: document.getElementById("question-index"),
@@ -222,7 +250,7 @@
     adjFeedbackFormMeaning: document.getElementById("adj-feedback-form-meaning"),
     adjFeedbackRule: document.getElementById("adj-feedback-rule"),
     adjNextQuestion: document.getElementById("adj-next-question"),
-    adjPracticeStatsCard: document.getElementById("adj-practice-stats"),
+    adjPracticeCard: document.getElementById("adj-practice-card"),
     adjResetStats: document.getElementById("adj-reset-stats"),
     adjCorrectCount: document.getElementById("adj-correct-count"),
     adjIncorrectCount: document.getElementById("adj-incorrect-count"),
@@ -237,6 +265,8 @@
   let storageAvailable = true;
   let toastTimeout = null;
   let composing = false;
+  let activeViewId = "home";
+  let currentVerbSubview = "practice";
   let currentQuestion = null;
   let lastPairKey = "";
   let recentQuestionVerbIds = [];
@@ -478,10 +508,10 @@
     practiceStats[key] = Math.min(Number.MAX_SAFE_INTEGER, practiceStats[key] + 1);
     renderPracticeStats();
     savePracticeStats();
-    elements.practiceStatsCard.classList.remove("is-answer-correct");
-    elements.practiceStatsCard.classList.remove("is-answer-incorrect");
-    void elements.practiceStatsCard.offsetWidth;
-    elements.practiceStatsCard.classList.add(
+    elements.practiceCard.classList.remove("is-answer-correct");
+    elements.practiceCard.classList.remove("is-answer-incorrect");
+    void elements.practiceCard.offsetWidth;
+    elements.practiceCard.classList.add(
       correct ? "is-answer-correct" : "is-answer-incorrect"
     );
   }
@@ -701,7 +731,8 @@
       return;
     }
     setReviewingMistakes(false);
-    showView("practice");
+    showView("verb");
+    setVerbSubview("practice");
     startQuestion(question);
     elements.answerInput.focus();
   }
@@ -808,8 +839,8 @@
       return;
     }
     currentQuestion = question;
-    elements.practiceStatsCard.classList.remove("is-answer-correct");
-    elements.practiceStatsCard.classList.remove("is-answer-incorrect");
+    elements.practiceCard.classList.remove("is-answer-correct");
+    elements.practiceCard.classList.remove("is-answer-incorrect");
     recentQuestionVerbIds = [question.verb.id]
       .concat(recentQuestionVerbIds.filter(function (verbId) { return verbId !== question.verb.id; }))
       .slice(0, 3);
@@ -1019,12 +1050,13 @@
 
     updateMistakeCount();
     updatePracticeStats(correct);
-    updateDailyStreak();
+    updateDailyStreak("verb");
     elements.nextQuestion.focus();
   }
 
   function updateMistakeCount() {
     elements.mistakeCount.textContent = String(mistakes.length);
+    elements.homeMistakeCount.textContent = String(mistakes.length);
     renderReviewBanner();
   }
 
@@ -1045,14 +1077,58 @@
     renderReviewBanner();
   }
 
-  // 标语区文案随视图切换：形容词视图换成品牌姊妹句，其余视图沿用动词文案。
   function renderIntro(viewId) {
-    const copy = viewId === "adjective" ? INTRO_COPY.adjective : INTRO_COPY.verb;
+    const copy = INTRO_COPY[viewId] || INTRO_COPY.verb;
     elements.introEyebrow.textContent = copy.eyebrow;
     const accent = document.createElement("span");
     accent.textContent = copy.accent;
     elements.introTitle.replaceChildren(document.createTextNode(copy.main), accent);
     elements.introCopy.textContent = copy.copy;
+  }
+
+  function renderHomeDashboard() {
+    const isToday = dailyRecord.lastDate === localDateString(new Date());
+    const verbCount = isToday ? dailyRecord.verbAnswers : 0;
+    const adjectiveCount = isToday ? dailyRecord.adjectiveAnswers : 0;
+    const total = verbCount + adjectiveCount;
+    const activeModules = Number(verbCount > 0) + Number(adjectiveCount > 0);
+
+    elements.homeTodayTotal.textContent = total + " 题";
+    elements.homeTodayBreakdown.textContent = "动词 " + verbCount + " 题 · 形容词 " + adjectiveCount + " 题";
+    elements.homeStreakCount.textContent = String(getCurrentStreak());
+    elements.homeActiveModuleCount.textContent = String(activeModules);
+    elements.homeVerbToday.textContent = verbCount + " 题";
+    elements.homeVerbStatus.textContent = verbCount > 0 ? "今日已练" : "今日尚未练习";
+    elements.homeAdjectiveToday.textContent = adjectiveCount + " 题";
+    elements.homeAdjectiveStatus.textContent = adjectiveCount > 0 ? "今日已练" : "今日尚未练习";
+  }
+
+  function setMobileSidebarOpen(open, restoreFocus) {
+    const isOpen = Boolean(open);
+    elements.appShell.classList.toggle("is-sidebar-open", isOpen);
+    elements.mobileNavToggle.setAttribute("aria-expanded", String(isOpen));
+    elements.mobileNavToggle.setAttribute("aria-label", isOpen ? "关闭导航" : "打开导航");
+    elements.sidebarBackdrop.hidden = !isOpen;
+    if (isOpen && elements.tabs.length) {
+      elements.tabs[0].focus();
+    } else if (restoreFocus) {
+      elements.mobileNavToggle.focus();
+    }
+  }
+
+  function setVerbSubview(subview) {
+    currentVerbSubview = subview === "reference" ? "reference" : "practice";
+    const showPractice = currentVerbSubview === "practice";
+    elements.verbSubviewPractice.hidden = !showPractice;
+    elements.verbSubviewReference.hidden = showPractice;
+    elements.verbSubtabs.forEach(function (subtab) {
+      const active = subtab.dataset.verbSubview === currentVerbSubview;
+      subtab.classList.toggle("is-active", active);
+      subtab.setAttribute("aria-selected", String(active));
+    });
+    if (activeViewId === "verb" && !showPractice) {
+      renderReferenceTable();
+    }
   }
 
   // 形容词模块二级切换：练习（做题训练）与速查（规则查阅）分视，
@@ -1069,9 +1145,16 @@
   }
 
   function showView(viewId) {
+    if (!Object.prototype.hasOwnProperty.call(elements.views, viewId)) {
+      throw new RangeError("Unknown view: " + viewId);
+    }
+    const sidebarWasOpen = elements.appShell.classList.contains("is-sidebar-open");
+    activeViewId = viewId;
     Object.keys(elements.views).forEach(function (id) {
       elements.views[id].hidden = id !== viewId;
     });
+    elements.verbSubviewNav.hidden = viewId !== "verb";
+    setMobileSidebarOpen(false, false);
     elements.tabs.forEach(function (tab) {
       const active = tab.dataset.view === viewId;
       tab.classList.toggle("is-active", active);
@@ -1082,12 +1165,18 @@
       }
     });
     renderIntro(viewId);
+    if (sidebarWasOpen) {
+      elements.introTitle.focus();
+    }
 
+    if (viewId === "verb") {
+      setVerbSubview(currentVerbSubview);
+    }
+    if (viewId === "home") {
+      renderHomeDashboard();
+    }
     if (viewId === "mistakes") {
       renderMistakes();
-    }
-    if (viewId === "reference") {
-      renderReferenceTable();
     }
   }
 
@@ -1187,7 +1276,8 @@
       }
       setReviewingAdjectiveMistakes(false);
       setReviewingMistakes(true);
-      showView("practice");
+      showView("verb");
+      setVerbSubview("practice");
       startQuestion(questionFromMistake(mistake));
       elements.answerInput.focus();
     });
@@ -1197,6 +1287,7 @@
     removeButton.textContent = "移除";
     removeButton.addEventListener("click", function () {
       removeMistake(mistake.key);
+      updateMistakeCount();
       renderMistakes();
     });
     actions.append(practiceButton, removeButton);
@@ -1216,6 +1307,7 @@
     saveMistakes();
     setReviewingMistakes(false);
     setReviewingAdjectiveMistakes(false);
+    updateMistakeCount();
     renderMistakes();
     showToast("错题已清空。", false);
   }
@@ -1232,7 +1324,8 @@
     reviewedMistakeKeys = new Set();
     setReviewingAdjectiveMistakes(false);
     setReviewingMistakes(true);
-    showView("practice");
+    showView("verb");
+    setVerbSubview("practice");
     const mistake = weightedItem(verbMistakes, mistakeWeight);
     startQuestion(questionFromMistake(mistake));
     elements.answerInput.focus();
@@ -1317,6 +1410,7 @@
     }
     const result = mergeMistakes(incoming);
     saveMistakes();
+    updateMistakeCount();
     renderMistakes();
     if (result.added) {
       showToast("导入 " + result.added + " 道新错题"
@@ -1489,10 +1583,10 @@
     adjPracticeStats[key] = Math.min(Number.MAX_SAFE_INTEGER, adjPracticeStats[key] + 1);
     renderAdjectiveStats();
     saveAdjectiveStats();
-    elements.adjPracticeStatsCard.classList.remove("is-answer-correct");
-    elements.adjPracticeStatsCard.classList.remove("is-answer-incorrect");
-    void elements.adjPracticeStatsCard.offsetWidth;
-    elements.adjPracticeStatsCard.classList.add(
+    elements.adjPracticeCard.classList.remove("is-answer-correct");
+    elements.adjPracticeCard.classList.remove("is-answer-incorrect");
+    void elements.adjPracticeCard.offsetWidth;
+    elements.adjPracticeCard.classList.add(
       correct ? "is-answer-correct" : "is-answer-incorrect"
     );
   }
@@ -1521,7 +1615,13 @@
   }
 
   function createEmptyDailyRecord() {
-    return { lastDate: "", streak: 0, best: 0 };
+    return {
+      lastDate: "",
+      streak: 0,
+      best: 0,
+      verbAnswers: 0,
+      adjectiveAnswers: 0
+    };
   }
 
   function loadDailyRecord() {
@@ -1544,16 +1644,31 @@
       showToast("打卡记录无法解析，本次从零开始。", true);
       return createEmptyDailyRecord();
     }
-    if (!isObject(stored)
-      || typeof stored.lastDate !== "string"
-      || !Number.isSafeInteger(stored.streak)
-      || stored.streak < 0
-      || !Number.isSafeInteger(stored.best)
-      || stored.best < 0) {
+    if (!isObject(stored)) {
       showToast("打卡记录格式无效，本次从零开始。", true);
       return createEmptyDailyRecord();
     }
-    return { lastDate: stored.lastDate, streak: stored.streak, best: stored.best };
+    const verbAnswers = stored.verbAnswers === undefined ? 0 : stored.verbAnswers;
+    const adjectiveAnswers = stored.adjectiveAnswers === undefined ? 0 : stored.adjectiveAnswers;
+    if (typeof stored.lastDate !== "string"
+      || !Number.isSafeInteger(stored.streak)
+      || stored.streak < 0
+      || !Number.isSafeInteger(stored.best)
+      || stored.best < 0
+      || !Number.isSafeInteger(verbAnswers)
+      || verbAnswers < 0
+      || !Number.isSafeInteger(adjectiveAnswers)
+      || adjectiveAnswers < 0) {
+      showToast("打卡记录格式无效，本次从零开始。", true);
+      return createEmptyDailyRecord();
+    }
+    return {
+      lastDate: stored.lastDate,
+      streak: stored.streak,
+      best: stored.best,
+      verbAnswers: verbAnswers,
+      adjectiveAnswers: adjectiveAnswers
+    };
   }
 
   function saveDailyRecord() {
@@ -1570,28 +1685,48 @@
     }
   }
 
-  function updateDailyStreak() {
+  function getCurrentStreak() {
     const now = new Date();
     const todayKey = localDateString(now);
-    if (dailyRecord.lastDate === todayKey) {
-      return;
+    return dailyRecord.lastDate === todayKey || dailyRecord.lastDate === previousDateString(now)
+      ? dailyRecord.streak
+      : 0;
+  }
+
+  function updateDailyStreak(moduleId) {
+    const countKey = {
+      verb: "verbAnswers",
+      adjective: "adjectiveAnswers"
+    }[moduleId];
+    if (!countKey) {
+      throw new RangeError("Unknown daily activity module: " + moduleId);
     }
-    if (dailyRecord.lastDate === previousDateString(now)) {
-      dailyRecord.streak += 1;
-    } else {
-      dailyRecord.streak = 1;
+
+    const now = new Date();
+    const todayKey = localDateString(now);
+    if (dailyRecord.lastDate !== todayKey) {
+      if (dailyRecord.lastDate === previousDateString(now)) {
+        dailyRecord.streak += 1;
+      } else {
+        dailyRecord.streak = 1;
+      }
+      dailyRecord.lastDate = todayKey;
+      dailyRecord.verbAnswers = 0;
+      dailyRecord.adjectiveAnswers = 0;
+      dailyRecord.best = Math.max(dailyRecord.best, dailyRecord.streak);
     }
-    dailyRecord.lastDate = todayKey;
-    dailyRecord.best = Math.max(dailyRecord.best, dailyRecord.streak);
+    dailyRecord[countKey] = Math.min(Number.MAX_SAFE_INTEGER, dailyRecord[countKey] + 1);
     renderStreakNote();
+    renderHomeDashboard();
     saveDailyRecord();
   }
 
   function renderStreakNote() {
-    const hasRecord = dailyRecord.streak > 0;
+    const streak = getCurrentStreak();
+    const hasRecord = streak > 0;
     elements.streakNote.hidden = !hasRecord;
     if (hasRecord) {
-      elements.streakNoteText.textContent = "连续练习 " + dailyRecord.streak
+      elements.streakNoteText.textContent = "连续练习 " + streak
         + " 天 · 最佳 " + dailyRecord.best + " 天";
     }
   }
@@ -1758,8 +1893,8 @@
       return;
     }
     adjCurrentQuestion = question;
-    elements.adjPracticeStatsCard.classList.remove("is-answer-correct");
-    elements.adjPracticeStatsCard.classList.remove("is-answer-incorrect");
+    elements.adjPracticeCard.classList.remove("is-answer-correct");
+    elements.adjPracticeCard.classList.remove("is-answer-incorrect");
     adjRecentWordIds = [question.adjective.id]
       .concat(adjRecentWordIds.filter(function (id) { return id !== question.adjective.id; }))
       .slice(0, 3);
@@ -1789,7 +1924,7 @@
       adjEngine.explain(question.adjective, question.formId)
     );
 
-    const card = elements.adjAnswerForm.closest(".practice-card");
+    const card = elements.adjPracticeCard;
     card.classList.remove("is-question-entering");
     void card.offsetWidth;
     card.classList.add("is-question-entering");
@@ -1876,7 +2011,7 @@
 
     updateMistakeCount();
     updateAdjectiveStats(correct);
-    updateDailyStreak();
+    updateDailyStreak("adjective");
     elements.adjNextQuestion.focus();
   }
 
@@ -2047,8 +2182,37 @@
   });
   document.querySelectorAll("[data-open-view]").forEach(function (button) {
     button.addEventListener("click", function () {
+      if (button.dataset.verbSubview) {
+        setVerbSubview(button.dataset.verbSubview);
+      }
+      if (button.dataset.adjSubview) {
+        setAdjectiveSubview(button.dataset.adjSubview);
+      }
       showView(button.dataset.openView);
     });
+  });
+  elements.verbSubtabs.forEach(function (subtab) {
+    subtab.addEventListener("click", function () {
+      setVerbSubview(subtab.dataset.verbSubview);
+    });
+  });
+  elements.sidebarCollapse.addEventListener("click", function () {
+    const collapsed = elements.appShell.classList.toggle("is-sidebar-collapsed");
+    elements.sidebarCollapse.setAttribute("aria-pressed", String(collapsed));
+    elements.sidebarCollapse.setAttribute("aria-label", collapsed ? "展开侧栏" : "折叠侧栏");
+    elements.sidebarCollapse.title = collapsed ? "展开侧栏" : "折叠侧栏";
+  });
+  elements.mobileNavToggle.addEventListener("click", function () {
+    const open = elements.mobileNavToggle.getAttribute("aria-expanded") !== "true";
+    setMobileSidebarOpen(open, false);
+  });
+  elements.sidebarBackdrop.addEventListener("click", function () {
+    setMobileSidebarOpen(false, true);
+  });
+  elements.appShell.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && elements.appShell.classList.contains("is-sidebar-open")) {
+      setMobileSidebarOpen(false, true);
+    }
   });
 
   elements.answerForm.addEventListener("submit", submitAnswer);
@@ -2153,7 +2317,9 @@
   renderAdjectiveStats();
   renderStreakNote();
   renderMistakes();
+  setVerbSubview("practice");
   setAdjectiveSubview("practice");
   newRandomQuestion();
   newAdjectiveQuestion();
+  showView("home");
 })();

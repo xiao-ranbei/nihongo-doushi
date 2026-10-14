@@ -1,0 +1,1486 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>日语学习 · 导航原型</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f6f5f0;
+      --surface: #fffefa;
+      --ink: #26332e;
+      --muted: #758078;
+      --green: #326151;
+      --green-pale: #e8f0e9;
+      --orange: #b8784f;
+      --line: #e5e7df;
+      --shadow: 0 12px 32px rgba(43, 55, 47, 0.07);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 85% 5%, rgba(215, 228, 213, 0.35), transparent 36rem),
+        var(--paper);
+      color: var(--ink);
+      font-family: "LXGW ZhenKai GB", "Yu Gothic", "Noto Sans JP", "Microsoft YaHei", sans-serif;
+      line-height: 1.55;
+    }
+
+    button {
+      color: inherit;
+      font: inherit;
+    }
+
+    button:focus-visible,
+    a:focus-visible {
+      outline: 3px solid rgba(50, 97, 81, 0.38);
+      outline-offset: 3px;
+    }
+
+    .page {
+      width: min(1120px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 28px 0 52px;
+    }
+
+    .page-header,
+    .brand,
+    .choice-list,
+    .demo-header,
+    .brand-link,
+    .header-tools,
+    .breadcrumb,
+    .module-card-top,
+    .module-action,
+    .sidebar-toggle,
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+    }
+
+    .page-header {
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 35px;
+    }
+
+    .brand {
+      gap: 11px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: 14px;
+      background: var(--green);
+      color: white;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .brand strong,
+    .brand small {
+      display: block;
+    }
+
+    .brand small {
+      color: var(--muted);
+      font-size: 9px;
+      letter-spacing: 0.16em;
+    }
+
+    .prototype-label,
+    .eyebrow,
+    .module-status {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .prototype-label {
+      padding: 7px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 254, 250, 0.7);
+      letter-spacing: 0.04em;
+      text-transform: none;
+    }
+
+    .intro {
+      max-width: 680px;
+      margin-bottom: 28px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    .intro h1 {
+      margin-bottom: 8px;
+      font-size: clamp(28px, 4vw, 40px);
+      letter-spacing: -0.04em;
+      line-height: 1.2;
+    }
+
+    .intro > p:last-child {
+      margin-bottom: 0;
+      color: var(--muted);
+    }
+
+    .chooser {
+      margin-bottom: 16px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 254, 250, 0.78);
+    }
+
+    .chooser-heading {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .choice-list {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .choice-button,
+    .soft-button,
+    .primary-button,
+    .module-menu-button,
+    .sidebar-toggle,
+    .sidebar-link,
+    .module-card,
+    .module-tab,
+    .breadcrumb button {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      cursor: pointer;
+      transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+    }
+
+    .choice-button {
+      padding: 9px 13px;
+      border-radius: 11px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .choice-button:hover,
+    .soft-button:hover,
+    .module-menu-button:hover,
+    .sidebar-link:hover,
+    .module-tab:hover,
+    .breadcrumb button:hover {
+      border-color: #c8d5c9;
+      background: #f5f8f3;
+    }
+
+    .choice-button[aria-pressed="true"] {
+      border-color: var(--green);
+      background: var(--green-pale);
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .prototype-panel {
+      display: none;
+    }
+
+    .prototype-panel.is-active {
+      display: block;
+    }
+
+    .prototype-description {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 20px;
+      margin: 17px 2px 12px;
+    }
+
+    .prototype-description h2 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .prototype-description p {
+      max-width: 610px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .demo-shell {
+      position: relative;
+      overflow: hidden;
+      min-height: 550px;
+      border: 1px solid #e0e2d9;
+      border-radius: 22px;
+      background: rgba(255, 254, 250, 0.92);
+      box-shadow: var(--shadow);
+    }
+
+    .demo-header {
+      position: relative;
+      min-height: 68px;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 254, 250, 0.94);
+    }
+
+    .brand-link {
+      gap: 9px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .brand-link .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      font-size: 17px;
+    }
+
+    .header-tools {
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .module-menu-wrap {
+      position: relative;
+    }
+
+    .module-menu-button {
+      gap: 9px;
+      padding: 9px 12px;
+      border-radius: 11px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .menu-chevron {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .module-menu {
+      position: absolute;
+      z-index: 5;
+      top: calc(100% + 8px);
+      left: 0;
+      width: 220px;
+      padding: 7px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .module-menu button {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .module-menu button:hover {
+      background: var(--green-pale);
+    }
+
+    .module-menu .menu-divider {
+      height: 1px;
+      margin: 5px 8px;
+      background: var(--line);
+    }
+
+    .menu-symbol,
+    .module-symbol {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 auto;
+      place-items: center;
+      border-radius: 11px;
+      background: var(--green-pale);
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .menu-copy strong,
+    .menu-copy small {
+      display: block;
+    }
+
+    .menu-copy strong {
+      font-size: 12px;
+    }
+
+    .menu-copy small {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .demo-main {
+      padding: clamp(18px, 4vw, 34px);
+    }
+
+    .dashboard-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 18px;
+      margin-bottom: 21px;
+    }
+
+    .dashboard-heading h2,
+    .module-heading h2 {
+      margin-bottom: 5px;
+      font-size: clamp(22px, 3vw, 29px);
+      letter-spacing: -0.03em;
+    }
+
+    .dashboard-heading p:last-child,
+    .module-heading p:last-child {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .date-pill,
+    .module-status {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: #f0f2eb;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0;
+      text-transform: none;
+      white-space: nowrap;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 29px;
+    }
+
+    .summary-card,
+    .module-card,
+    .module-preview-card {
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--surface);
+    }
+
+    .summary-card {
+      min-height: 112px;
+      padding: 16px;
+    }
+
+    .summary-card span,
+    .summary-card strong,
+    .summary-card small {
+      display: block;
+    }
+
+    .summary-card span {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .summary-card strong {
+      margin: 4px 0 3px;
+      color: var(--green);
+      font-size: 25px;
+      line-height: 1.2;
+    }
+
+    .summary-card small {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .section-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .section-line h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .section-line span {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .module-card {
+      display: flex;
+      min-height: 105px;
+      align-items: center;
+      gap: 13px;
+      padding: 15px;
+      text-align: left;
+    }
+
+    .module-card:hover {
+      transform: translateY(-2px);
+      border-color: #c8d5c9;
+      box-shadow: 0 8px 20px rgba(43, 55, 47, 0.06);
+    }
+
+    .module-card .module-symbol {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      font-size: 17px;
+    }
+
+    .module-copy {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .module-copy strong,
+    .module-copy small,
+    .module-copy .module-status {
+      display: block;
+    }
+
+    .module-copy strong {
+      margin-bottom: 2px;
+      font-size: 14px;
+    }
+
+    .module-copy small {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .module-copy .module-status {
+      width: fit-content;
+      margin-top: 7px;
+    }
+
+    .module-action {
+      gap: 5px;
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .future-card {
+      border-style: dashed;
+      background: rgba(255, 254, 250, 0.5);
+      color: var(--muted);
+      cursor: default;
+    }
+
+    .future-card:hover {
+      transform: none;
+      border-color: var(--line);
+      box-shadow: none;
+    }
+
+    .future-card .module-symbol {
+      background: #f0f2eb;
+      color: var(--muted);
+    }
+
+    .prototype-note {
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .layout-sidebar {
+      display: grid;
+      min-height: 550px;
+      grid-template-columns: 210px minmax(0, 1fr);
+      transition: grid-template-columns 180ms ease;
+    }
+
+    .layout-sidebar.is-collapsed {
+      grid-template-columns: 72px minmax(0, 1fr);
+    }
+
+    .demo-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 16px 11px;
+      border-right: 1px solid var(--line);
+      background: #fbfaf5;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 2px 7px 7px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .sidebar-brand .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      font-size: 17px;
+    }
+
+    .sidebar-toggle {
+      width: 100%;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .sidebar-nav {
+      display: grid;
+      gap: 5px;
+    }
+
+    .sidebar-link {
+      width: 100%;
+      gap: 10px;
+      padding: 8px;
+      border-color: transparent;
+      border-radius: 10px;
+      background: transparent;
+      font-size: 12px;
+      text-align: left;
+    }
+
+    .sidebar-link[aria-current="page"] {
+      border-color: #dce6dc;
+      background: var(--green-pale);
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .sidebar-symbol {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 auto;
+      place-items: center;
+      border-radius: 10px;
+      background: rgba(255, 254, 250, 0.85);
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .sidebar-label {
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .sidebar-bottom {
+      margin-top: auto;
+      padding: 8px;
+      color: var(--muted);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .layout-sidebar.is-collapsed .sidebar-brand-copy,
+    .layout-sidebar.is-collapsed .sidebar-label,
+    .layout-sidebar.is-collapsed .sidebar-bottom,
+    .layout-sidebar.is-collapsed .sidebar-toggle-label {
+      display: none;
+    }
+
+    .layout-sidebar.is-collapsed .sidebar-brand,
+    .layout-sidebar.is-collapsed .sidebar-link {
+      justify-content: center;
+    }
+
+    .header-start {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .mobile-menu-button {
+      display: none;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--green);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .drawer-backdrop {
+      display: none;
+    }
+
+    .sidebar-main {
+      min-width: 0;
+    }
+
+    .sidebar-main > .demo-header {
+      min-height: 62px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      background: transparent;
+    }
+
+    .layout-breadcrumb .demo-header {
+      justify-content: flex-start;
+    }
+
+    .layout-breadcrumb .demo-header > .soft-button {
+      margin-left: auto;
+    }
+
+    .breadcrumb {
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-left: 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .breadcrumb button {
+      padding: 5px 8px;
+      border-color: transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .breadcrumb-current {
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .module-screen .breadcrumb {
+      margin: 0 0 16px;
+    }
+
+    .module-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 16px;
+      margin-bottom: 19px;
+    }
+
+    .module-heading .module-symbol {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      font-size: 18px;
+    }
+
+    .module-heading-main {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .module-preview-card {
+      padding: clamp(18px, 4vw, 26px);
+      background: linear-gradient(135deg, #fffefa, #f7f8f2);
+    }
+
+    .module-preview-card h3 {
+      margin-bottom: 6px;
+      font-size: 16px;
+    }
+
+    .module-preview-card p {
+      max-width: 520px;
+      margin-bottom: 15px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .module-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 14px;
+      padding-bottom: 11px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .module-tab {
+      padding: 7px 12px;
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .module-tab[aria-selected="true"] {
+      border-color: transparent;
+      background: var(--green-pale);
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .primary-button,
+    .soft-button {
+      padding: 9px 13px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .primary-button {
+      border-color: var(--green);
+      background: var(--green);
+      color: white;
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      background: #294f42;
+    }
+
+    .soft-button {
+      color: var(--green);
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .demo-footer {
+      padding: 10px 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    @media (max-width: 700px) {
+      .page {
+        width: min(100% - 22px, 1120px);
+        padding-top: 16px;
+      }
+
+      .page-header {
+        margin-bottom: 25px;
+      }
+
+      .prototype-label {
+        font-size: 10px;
+      }
+
+      .prototype-description {
+        display: block;
+      }
+
+      .prototype-description p {
+        margin-top: 5px;
+        text-align: left;
+      }
+
+      .demo-header {
+        padding: 10px 12px;
+      }
+
+      .header-tools > span {
+        display: none;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .summary-card {
+        min-height: auto;
+        padding: 12px 14px;
+      }
+
+      .summary-card strong {
+        font-size: 21px;
+      }
+
+      .module-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .layout-sidebar,
+      .layout-sidebar.is-collapsed {
+        display: block;
+        min-height: 550px;
+      }
+
+      .layout-sidebar .demo-sidebar {
+        position: absolute;
+        z-index: 7;
+        inset: 0 auto 0 0;
+        width: min(270px, 82vw);
+        transform: translateX(-105%);
+        transition: transform 180ms ease;
+        box-shadow: none;
+      }
+
+      .layout-sidebar .sidebar-toggle {
+        display: none;
+      }
+
+      .layout-sidebar.is-drawer-open .demo-sidebar {
+        transform: translateX(0);
+        box-shadow: var(--shadow);
+      }
+
+      .layout-sidebar.is-drawer-open .drawer-backdrop {
+        display: block;
+        position: absolute;
+        z-index: 6;
+        inset: 0;
+        width: 100%;
+        border: 0;
+        background: rgba(38, 51, 46, 0.25);
+        cursor: pointer;
+      }
+
+      .layout-sidebar .mobile-menu-button {
+        display: flex;
+      }
+
+      .demo-sidebar {
+        padding: 12px 11px;
+      }
+
+      .sidebar-main > .demo-header {
+        padding-left: 13px;
+      }
+
+      .sidebar-main .brand-link span:last-child {
+        display: inline;
+      }
+
+      .dashboard-heading {
+        align-items: start;
+      }
+
+      .date-pill {
+        display: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <a class="brand" href="#prototype">
+        <span class="brand-mark" aria-hidden="true">日</span>
+        <span>
+          <strong>日语学习</strong>
+          <small>JAPANESE STUDY</small>
+        </span>
+      </a>
+      <span class="prototype-label">导航方案原型 · 示例数据</span>
+    </header>
+
+    <main>
+      <section class="intro">
+        <p class="eyebrow">INFORMATION ARCHITECTURE</p>
+        <h1>从学习主页，走进每个模块。</h1>
+        <p>切换下面的导航方案，试着进入动词或形容词模块，再观察返回主页和模块内导航的区别。</p>
+      </section>
+
+      <section class="chooser" aria-labelledby="chooser-title">
+        <h2 class="chooser-heading" id="chooser-title">选择一种导航原型</h2>
+        <div class="choice-list" role="tablist" aria-label="导航原型">
+          <button class="choice-button" type="button" role="tab" aria-selected="false" aria-pressed="false" data-prototype-choice="dropdown">A · 顶栏模块下拉</button>
+          <button class="choice-button" type="button" role="tab" aria-selected="true" aria-pressed="true" data-prototype-choice="sidebar">B · 可折叠侧栏</button>
+          <button class="choice-button" type="button" role="tab" aria-selected="false" aria-pressed="false" data-prototype-choice="breadcrumb">C · 面包屑＋模块内导航</button>
+        </div>
+      </section>
+
+      <section class="prototype-panel" role="tabpanel" data-prototype="dropdown" aria-label="顶栏模块下拉方案" hidden>
+        <div class="prototype-description">
+          <h2>A · 顶栏模块下拉</h2>
+          <p>占用空间少；进入模块后仍可从顶栏切换其他模块。</p>
+        </div>
+        <div class="demo-shell">
+          <header class="demo-header">
+            <button class="brand-link" type="button" data-action="go-home">
+              <span class="brand-mark" aria-hidden="true">日</span>
+              <span>日语学习</span>
+            </button>
+            <div class="header-tools">
+              <div class="module-menu-wrap">
+                <button class="module-menu-button" type="button" aria-expanded="false" data-action="toggle-menu">
+                  <span>学习模块</span><span class="menu-chevron" aria-hidden="true">▼</span>
+                </button>
+                <div class="module-menu" hidden>
+                  <button type="button" data-action="go-home">
+                    <span class="menu-symbol" aria-hidden="true">家</span>
+                    <span class="menu-copy"><strong>学习主页</strong><small>今日学习概览</small></span>
+                  </button>
+                  <button type="button" data-action="open-module" data-module="verb">
+                    <span class="menu-symbol" aria-hidden="true">动</span>
+                    <span class="menu-copy"><strong>动词活用</strong><small>练习与活用速查</small></span>
+                  </button>
+                  <button type="button" data-action="open-module" data-module="adjective">
+                    <span class="menu-symbol" aria-hidden="true">形</span>
+                    <span class="menu-copy"><strong>形容词活用</strong><small>い形容词与な形容词</small></span>
+                  </button>
+                  <div class="menu-divider" aria-hidden="true"></div>
+                  <button type="button" data-action="open-mistakes">
+                    <span class="menu-symbol" aria-hidden="true">错</span>
+                    <span class="menu-copy"><strong>错题本</strong><small>按模块复习错题</small></span>
+                  </button>
+                </div>
+              </div>
+              <span>今日练习 · 8 题</span>
+            </div>
+          </header>
+          <main class="demo-main" data-stage></main>
+          <footer class="demo-footer">顶部菜单负责切换模块，学习主页负责概览与快捷入口。</footer>
+        </div>
+      </section>
+
+      <section class="prototype-panel is-active" role="tabpanel" data-prototype="sidebar" aria-label="可折叠侧栏方案">
+        <div class="prototype-description">
+          <h2>B · 可折叠侧栏</h2>
+          <p>模块入口常驻，适合模块逐渐增多；折叠后只保留「动」「形」等图标字。</p>
+        </div>
+        <div class="demo-shell layout-sidebar" data-sidebar-shell>
+          <aside class="demo-sidebar" aria-label="学习模块导航">
+            <div class="sidebar-brand">
+              <span class="brand-mark" aria-hidden="true">日</span>
+              <span class="sidebar-brand-copy">日语学习</span>
+            </div>
+            <button class="sidebar-toggle" type="button" aria-label="折叠侧栏" aria-pressed="false" data-action="toggle-sidebar">
+              <span aria-hidden="true">⇤</span><span class="sidebar-toggle-label">收起侧栏</span>
+            </button>
+            <nav class="sidebar-nav" aria-label="模块">
+              <button class="sidebar-link" type="button" aria-current="page" title="学习主页" data-action="go-home">
+                <span class="sidebar-symbol" aria-hidden="true">家</span><span class="sidebar-label">学习主页</span>
+              </button>
+              <button class="sidebar-link" type="button" title="动词活用" data-action="open-module" data-module="verb">
+                <span class="sidebar-symbol" aria-hidden="true">动</span><span class="sidebar-label">动词活用</span>
+              </button>
+              <button class="sidebar-link" type="button" title="形容词活用" data-action="open-module" data-module="adjective">
+                <span class="sidebar-symbol" aria-hidden="true">形</span><span class="sidebar-label">形容词活用</span>
+              </button>
+              <button class="sidebar-link" type="button" title="错题本" data-action="open-mistakes">
+                <span class="sidebar-symbol" aria-hidden="true">错</span><span class="sidebar-label">错题本</span>
+              </button>
+              <button class="sidebar-link" type="button" title="未来日语模块">
+                <span class="sidebar-symbol" aria-hidden="true">＋</span><span class="sidebar-label">未来模块</span>
+              </button>
+            </nav>
+            <div class="sidebar-bottom">让每天的练习更清晰</div>
+          </aside>
+          <div class="sidebar-main">
+            <header class="demo-header">
+              <div class="header-start">
+                <button class="mobile-menu-button" type="button" aria-label="打开模块导航" aria-expanded="false" data-action="toggle-mobile-drawer">
+                  <span aria-hidden="true">☰</span><span>导航</span>
+                </button>
+                <button class="brand-link" type="button" data-action="go-home">
+                  <span class="brand-mark" aria-hidden="true">日</span><span>学习概览</span>
+                </button>
+              </div>
+              <div class="header-tools"><span>连续学习 4 天</span></div>
+            </header>
+            <main class="demo-main" data-stage></main>
+            <footer class="demo-footer">侧栏负责模块切换；折叠状态下保留简短图标。</footer>
+          </div>
+          <button class="drawer-backdrop" type="button" aria-label="关闭模块导航" data-action="close-mobile-drawer" hidden></button>
+        </div>
+      </section>
+
+      <section class="prototype-panel" role="tabpanel" data-prototype="breadcrumb" aria-label="面包屑和模块内导航方案" hidden>
+        <div class="prototype-description">
+          <h2>C · 面包屑＋模块内导航</h2>
+          <p>层级关系最清楚；模块内功能由本模块导航承载，跨模块时先回主页。</p>
+        </div>
+        <div class="demo-shell layout-breadcrumb">
+          <header class="demo-header">
+            <button class="brand-link" type="button" data-action="go-home">
+              <span class="brand-mark" aria-hidden="true">日</span>
+              <span>日语学习</span>
+            </button>
+            <nav class="breadcrumb" aria-label="当前位置">
+              <button type="button" data-action="go-home">学习主页</button>
+              <span aria-hidden="true">/</span>
+              <span class="breadcrumb-current" data-breadcrumb-current>今日概览</span>
+            </nav>
+            <button class="soft-button" type="button" data-action="open-mistakes">错题本</button>
+          </header>
+          <main class="demo-main" data-stage></main>
+          <footer class="demo-footer">面包屑说明「我在哪里」；模块内导航只展示当前模块的功能。</footer>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="home-template">
+    <section class="home-screen">
+      <div class="dashboard-heading">
+        <div>
+          <p class="eyebrow">LEARNING HOME</p>
+          <h2>今天，也来学一点日语。</h2>
+          <p>查看今日练习，再选择一个模块继续。</p>
+        </div>
+        <span class="date-pill">今日概览 · 示例</span>
+      </div>
+      <div class="summary-grid" aria-label="学习概览">
+        <article class="summary-card">
+          <span>今日练习</span>
+          <strong>8 题</strong>
+          <small>动词 5 题 · 形容词 3 题</small>
+        </article>
+        <article class="summary-card">
+          <span>连续学习</span>
+          <strong>4 天</strong>
+          <small>每日练一点，保持节奏</small>
+        </article>
+        <article class="summary-card">
+          <span>今日已开始</span>
+          <strong>2 个模块</strong>
+          <small>详细统计保留在模块内</small>
+        </article>
+      </div>
+      <div class="section-line">
+        <h3>学习模块</h3>
+        <span>选择一个模块进入</span>
+      </div>
+      <div class="module-grid">
+        <button class="module-card" type="button" data-action="open-module" data-module="verb">
+          <span class="module-symbol" aria-hidden="true">动</span>
+          <span class="module-copy">
+            <strong>动词活用</strong>
+            <small>五段、一段与不规则动词</small>
+            <span class="module-status">今日已练 5 题</span>
+          </span>
+          <span class="module-action">继续 <span aria-hidden="true">→</span></span>
+        </button>
+        <button class="module-card" type="button" data-action="open-module" data-module="adjective">
+          <span class="module-symbol" aria-hidden="true">形</span>
+          <span class="module-copy">
+            <strong>形容词活用</strong>
+            <small>い形容词与な形容词</small>
+            <span class="module-status">今日已练 3 题</span>
+          </span>
+          <span class="module-action">继续 <span aria-hidden="true">→</span></span>
+        </button>
+        <div class="module-card future-card" aria-label="未来可扩展日语模块">
+          <span class="module-symbol" aria-hidden="true">＋</span>
+          <span class="module-copy">
+            <strong>更多日语模块</strong>
+            <small>助词、句型、汉字等可按需加入</small>
+            <span class="module-status">未来扩展</span>
+          </span>
+        </div>
+      </div>
+      <p class="prototype-note">这是导航与首页信息结构原型；卡片上的题数、天数均为示例数据。</p>
+    </section>
+  </template>
+
+  <template id="mistakes-template">
+    <section class="home-screen">
+      <div class="dashboard-heading">
+        <div>
+          <p class="eyebrow">SHARED REVIEW</p>
+          <h2>错题本</h2>
+          <p>集中查看错题，按所属模块分别开始复习。</p>
+        </div>
+        <span class="date-pill">共享复习入口</span>
+      </div>
+      <div class="module-grid">
+        <button class="module-card" type="button" data-action="open-module" data-module="verb" data-tab="mistakes">
+          <span class="module-symbol" aria-hidden="true">动</span>
+          <span class="module-copy">
+            <strong>动词错题</strong>
+            <small>返回动词模块继续复习</small>
+            <span class="module-status">错题记录按模块归类</span>
+          </span>
+          <span class="module-action">查看 <span aria-hidden="true">→</span></span>
+        </button>
+        <button class="module-card" type="button" data-action="open-module" data-module="adjective" data-tab="mistakes">
+          <span class="module-symbol" aria-hidden="true">形</span>
+          <span class="module-copy">
+            <strong>形容词错题</strong>
+            <small>返回形容词模块继续复习</small>
+            <span class="module-status">共用复习节奏</span>
+          </span>
+          <span class="module-action">查看 <span aria-hidden="true">→</span></span>
+        </button>
+      </div>
+      <p class="prototype-note">这里示意一个全局入口；真实题目、筛选和复习进度仍归各模块数据所有。</p>
+    </section>
+  </template>
+
+  <template id="module-template">
+    <section class="module-screen">
+      <div class="module-heading">
+        <div class="module-heading-main">
+          <span class="module-symbol" data-module-symbol aria-hidden="true"></span>
+          <div>
+            <p class="eyebrow" data-module-eyebrow></p>
+            <h2 data-module-name-heading></h2>
+            <p data-module-description></p>
+          </div>
+        </div>
+        <span class="date-pill">今日已练 <span data-module-count></span> 题</span>
+      </div>
+      <nav class="module-tabs" aria-label="模块功能">
+        <button class="module-tab" type="button" role="tab" aria-selected="true" data-action="module-tab" data-tab="practice">练习</button>
+        <button class="module-tab" type="button" role="tab" aria-selected="false" data-action="module-tab" data-tab="reference">速查</button>
+        <button class="module-tab" type="button" role="tab" aria-selected="false" data-action="module-tab" data-tab="mistakes">错题复习</button>
+      </nav>
+      <div class="module-preview-card" data-module-panel></div>
+    </section>
+  </template>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const moduleInfo = {
+        verb: {
+          name: "动词活用",
+          symbol: "动",
+          eyebrow: "VERB PRACTICE",
+          description: "把动词规则、练习和速查收在一个独立模块中。",
+          count: "5"
+        },
+        adjective: {
+          name: "形容词活用",
+          symbol: "形",
+          eyebrow: "ADJECTIVE PRACTICE",
+          description: "保留独立题库与学习状态，同时沿用统一的页面语言。",
+          count: "3"
+        }
+      };
+
+      const tabContent = {
+        practice: {
+          title: "继续今日练习",
+          copy: "从本模块的题目池开始练习；判题、提示与统计由模块自己的规则负责。",
+          button: "开始练习"
+        },
+        reference: {
+          title: "查看学习资料",
+          copy: "在不离开模块的情况下查阅规则；可从资料页直接回到对应练习。",
+          button: "打开速查"
+        },
+        mistakes: {
+          title: "复习本模块错题",
+          copy: "错题记录按模块分类，复习规则和全局打卡由共享学习服务维护。",
+          button: "开始复习"
+        }
+      };
+
+      const homeTemplate = document.getElementById("home-template");
+      const mistakesTemplate = document.getElementById("mistakes-template");
+      const moduleTemplate = document.getElementById("module-template");
+      const designButtons = Array.from(document.querySelectorAll("[data-prototype-choice]"));
+      const panels = Array.from(document.querySelectorAll("[data-prototype]"));
+
+      function setBreadcrumb(panel, moduleName) {
+        const current = panel.querySelector("[data-breadcrumb-current]");
+        if (current) {
+          current.textContent = moduleName || "今日概览";
+        }
+      }
+
+      function renderHome(panel) {
+        const stage = panel.querySelector("[data-stage]");
+        stage.replaceChildren(homeTemplate.content.cloneNode(true));
+        panel.dataset.currentModule = "";
+        setBreadcrumb(panel, "");
+        panel.querySelectorAll(".sidebar-link").forEach(function (link) {
+          link.removeAttribute("aria-current");
+        });
+        const homeLink = panel.querySelector('.sidebar-link[data-action="go-home"]');
+        if (homeLink) {
+          homeLink.setAttribute("aria-current", "page");
+        }
+      }
+
+      function renderMistakes(panel) {
+        const stage = panel.querySelector("[data-stage]");
+        stage.replaceChildren(mistakesTemplate.content.cloneNode(true));
+        panel.dataset.currentModule = "mistakes";
+        setBreadcrumb(panel, "错题本");
+        panel.querySelectorAll(".sidebar-link").forEach(function (link) {
+          if (link.dataset.action === "open-mistakes") {
+            link.setAttribute("aria-current", "page");
+          } else {
+            link.removeAttribute("aria-current");
+          }
+        });
+      }
+
+      function renderModule(panel, moduleId, tabId) {
+        const info = moduleInfo[moduleId];
+        if (!info) {
+          return;
+        }
+
+        const stage = panel.querySelector("[data-stage]");
+        stage.replaceChildren(moduleTemplate.content.cloneNode(true));
+        panel.dataset.currentModule = moduleId;
+        setBreadcrumb(panel, info.name);
+
+        const screen = stage.querySelector(".module-screen");
+        screen.querySelector("[data-module-name-heading]").textContent = info.name;
+        screen.querySelector("[data-module-symbol]").textContent = info.symbol;
+        screen.querySelector("[data-module-eyebrow]").textContent = info.eyebrow;
+        screen.querySelector("[data-module-description]").textContent = info.description;
+        screen.querySelector("[data-module-count]").textContent = info.count;
+        renderModuleTab(screen, tabId || "practice");
+
+        panel.querySelectorAll(".sidebar-link").forEach(function (link) {
+          if (link.dataset.module === moduleId) {
+            link.setAttribute("aria-current", "page");
+          } else {
+            link.removeAttribute("aria-current");
+          }
+        });
+        const homeLink = panel.querySelector('.sidebar-link[data-action="go-home"]');
+        if (homeLink) {
+          homeLink.removeAttribute("aria-current");
+        }
+        const mistakesLink = panel.querySelector('.sidebar-link[data-action="open-mistakes"]');
+        if (mistakesLink) {
+          mistakesLink.removeAttribute("aria-current");
+        }
+      }
+
+      function closeMobileDrawer(panel) {
+        const shell = panel.querySelector("[data-sidebar-shell]");
+        if (!shell) {
+          return;
+        }
+        shell.classList.remove("is-drawer-open");
+        const button = shell.querySelector("[data-action='toggle-mobile-drawer']");
+        const backdrop = shell.querySelector(".drawer-backdrop");
+        if (button) {
+          button.setAttribute("aria-expanded", "false");
+        }
+        if (backdrop) {
+          backdrop.hidden = true;
+        }
+      }
+
+      function renderModuleTab(screen, tabId) {
+        const content = tabContent[tabId];
+        if (!content) {
+          return;
+        }
+        screen.querySelectorAll("[data-action='module-tab']").forEach(function (tab) {
+          tab.setAttribute("aria-selected", String(tab.dataset.tab === tabId));
+        });
+        const panel = screen.querySelector("[data-module-panel]");
+        panel.replaceChildren();
+        const heading = document.createElement("h3");
+        heading.textContent = content.title;
+        const paragraph = document.createElement("p");
+        paragraph.textContent = content.copy;
+        const actions = document.createElement("div");
+        actions.className = "button-row";
+        const primary = document.createElement("button");
+        primary.className = "primary-button";
+        primary.type = "button";
+        primary.textContent = content.button;
+        primary.addEventListener("click", function () {
+          primary.textContent = "原型预览";
+          paragraph.textContent = "此处展示模块内页面的入口位置，原型不执行真实练习。";
+        }, { once: true });
+        actions.append(primary);
+        if (tabId !== "practice") {
+          const back = document.createElement("button");
+          back.className = "soft-button";
+          back.type = "button";
+          back.textContent = "返回主页";
+          back.dataset.action = "go-home";
+          actions.append(back);
+        }
+        panel.append(heading, paragraph, actions);
+      }
+
+      function choosePrototype(prototypeId) {
+        designButtons.forEach(function (button) {
+          const selected = button.dataset.prototypeChoice === prototypeId;
+          button.setAttribute("aria-pressed", String(selected));
+          button.setAttribute("aria-selected", String(selected));
+        });
+        panels.forEach(function (panel) {
+          const selected = panel.dataset.prototype === prototypeId;
+          panel.classList.toggle("is-active", selected);
+          panel.hidden = !selected;
+        });
+      }
+
+      panels.forEach(renderHome);
+
+      document.addEventListener("click", function (event) {
+        const choice = event.target.closest("[data-prototype-choice]");
+        if (choice) {
+          choosePrototype(choice.dataset.prototypeChoice);
+          return;
+        }
+
+        const action = event.target.closest("[data-action]");
+        if (!action) {
+          return;
+        }
+        const panel = action.closest("[data-prototype]");
+        if (!panel) {
+          return;
+        }
+
+        if (action.dataset.action === "go-home") {
+          renderHome(panel);
+          closeMobileDrawer(panel);
+          const menu = panel.querySelector(".module-menu");
+          if (menu) {
+            menu.hidden = true;
+          }
+          const menuButton = panel.querySelector("[data-action='toggle-menu']");
+          if (menuButton) {
+            menuButton.setAttribute("aria-expanded", "false");
+          }
+        } else if (action.dataset.action === "open-module") {
+          renderModule(panel, action.dataset.module, action.dataset.tab);
+          closeMobileDrawer(panel);
+          const menu = panel.querySelector(".module-menu");
+          if (menu) {
+            menu.hidden = true;
+          }
+          const menuButton = panel.querySelector("[data-action='toggle-menu']");
+          if (menuButton) {
+            menuButton.setAttribute("aria-expanded", "false");
+          }
+        } else if (action.dataset.action === "open-mistakes") {
+          renderMistakes(panel);
+          closeMobileDrawer(panel);
+          const menu = panel.querySelector(".module-menu");
+          if (menu) {
+            menu.hidden = true;
+          }
+          const menuButton = panel.querySelector("[data-action='toggle-menu']");
+          if (menuButton) {
+            menuButton.setAttribute("aria-expanded", "false");
+          }
+        } else if (action.dataset.action === "toggle-menu") {
+          const menu = panel.querySelector(".module-menu");
+          menu.hidden = !menu.hidden;
+          action.setAttribute("aria-expanded", String(!menu.hidden));
+        } else if (action.dataset.action === "toggle-mobile-drawer") {
+          const shell = action.closest("[data-sidebar-shell]");
+          const backdrop = shell.querySelector(".drawer-backdrop");
+          const open = shell.classList.toggle("is-drawer-open");
+          action.setAttribute("aria-expanded", String(open));
+          backdrop.hidden = !open;
+        } else if (action.dataset.action === "close-mobile-drawer") {
+          closeMobileDrawer(panel);
+        } else if (action.dataset.action === "toggle-sidebar") {
+          const shell = action.closest("[data-sidebar-shell]");
+          const collapsed = shell.classList.toggle("is-collapsed");
+          action.setAttribute("aria-pressed", String(collapsed));
+          action.setAttribute("aria-label", collapsed ? "展开侧栏" : "折叠侧栏");
+          const label = action.querySelector(".sidebar-toggle-label");
+          if (label) {
+            label.textContent = collapsed ? "展开侧栏" : "收起侧栏";
+          }
+        } else if (action.dataset.action === "module-tab") {
+          renderModuleTab(action.closest(".module-screen"), action.dataset.tab);
+        }
+      });
+
+      designButtons.forEach(function (button) {
+        button.addEventListener("keydown", function (event) {
+          if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") {
+            return;
+          }
+          event.preventDefault();
+          const index = designButtons.indexOf(button);
+          const step = event.key === "ArrowRight" ? 1 : -1;
+          const next = designButtons[(index + step + designButtons.length) % designButtons.length];
+          next.focus();
+          choosePrototype(next.dataset.prototypeChoice);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

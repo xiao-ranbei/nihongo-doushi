@@ -1,4 +1,4 @@
-// 视觉回归：对项目目录截取 6 个关键 UI 状态，供改动前后对比。
+// 视觉回归：截取学习主页、模块练习和主要状态，供改动前后对比。
 //
 // 用法:
 //   node tools/visual-check.js --dir <项目目录> --out <输出目录>
@@ -86,7 +86,10 @@ async function main() {
     const url = "file:///" + dir.replace(/\\/g, "/") + "/index.html";
     await page.goto(url);
     await settle(page);
-    await shoot(page, outDir, "01-practice-initial");
+    await shoot(page, outDir, "01-home");
+    await page.click('[data-view="verb"]');
+    await page.waitForTimeout(300);
+    await shoot(page, outDir, "02-practice-initial");
 
     // 反馈态（答对）：读题面 -> 计算正确答案 -> 真实提交
     const question = await readQuestion(page);
@@ -101,28 +104,29 @@ async function main() {
     await page.fill("#answer-input", expected);
     await page.click("#submit-answer");
     await page.waitForTimeout(450);
-    await shoot(page, outDir, "02-practice-correct");
+    await shoot(page, outDir, "03-practice-correct");
 
     // 反馈态（答错）-> 错题视图（含卡片）
     await page.reload();
     await settle(page);
+    await page.click('[data-view="verb"]');
     await page.fill("#answer-input", "まちがえた");
     await page.click("#submit-answer");
     await page.waitForTimeout(450);
-    await shoot(page, outDir, "03-practice-wrong");
+    await shoot(page, outDir, "04-practice-wrong");
     await page.click('[data-view="mistakes"]');
     await page.waitForTimeout(350);
-    await shoot(page, outDir, "04-mistakes-card");
+    await shoot(page, outDir, "05-mistakes-card");
 
     // 错题重练模式：横幅 + 退出入口
     await page.click("#review-mistakes");
     await page.waitForTimeout(450);
-    await shoot(page, outDir, "07-mistake-review");
+    await shoot(page, outDir, "06-mistake-review");
 
     // 速查视图
-    await page.click('[data-view="reference"]');
+    await page.click('[data-verb-subview="reference"]');
     await page.waitForTimeout(350);
-    await shoot(page, outDir, "05-reference");
+    await shoot(page, outDir, "07-reference");
 
     // 形容词练习视图（初始）
     await page.click('[data-view="adjective"]');
@@ -155,7 +159,7 @@ async function main() {
     await page.waitForTimeout(300);
     await shoot(page, outDir, "10-adjective-guide");
 
-    // 移动端练习视图
+    // 移动端主页与练习视图
     const mobile = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const mobilePage = await mobile.newPage();
     await mobilePage.addInitScript(() => {
@@ -163,7 +167,11 @@ async function main() {
     });
     await mobilePage.goto(url);
     await settle(mobilePage);
-    await shoot(mobilePage, outDir, "06-mobile-practice");
+    await shoot(mobilePage, outDir, "11-mobile-home");
+    await mobilePage.click("#mobile-nav-toggle");
+    await mobilePage.click('[data-view="verb"]');
+    await settle(mobilePage);
+    await shoot(mobilePage, outDir, "12-mobile-practice");
     await mobile.close();
 
     console.log("完成 -> " + outDir);
