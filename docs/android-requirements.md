@@ -36,13 +36,10 @@ Android 应用是日语学习工具集的原生客户端，与现有网页共同
 
 当前网页客户端已位于 `web/`。Android 工程开始时，在仓库根目录新建 `android/`，与 `web/` 并列维护。
 
-## 5. 待工程阶段确定
+## 5. 工程选项（2026-10-14 确定，见 decisions.md D-015）
 
-- 最低支持 Android 版本及目标设备 API 范围。
-- Kotlin UI 工具包、Android 原生全局导航方式与页面原型。
-- 应用包名、图标、APK 签名流程及测试分发方式。
-- 学习主页今日活动计数在 Android 上的持久化结构。
-- 本地数据库／偏好存储的具体选择和未来数据迁移策略。
-- 平板、横屏、折叠屏和辅助功能的支持范围。
-
-这些选项不阻止当前产品需求与高层架构文档成形，也不应在原型和设备范围确定前写成既定实现。
+- 最低支持版本：minSdk 26（Android 8.0+）；compileSdk / targetSdk 35。
+- UI 工具包：Jetpack Compose（Material 3），配色 Token 从 `web/styles.css` 的 `:root` 语义令牌移植；图标统一使用 Material Icons，不用 emoji。首版页面切换用状态管理实现，不引入 Navigation 库。
+- 应用包名：`com.nihongodoushi.app`；应用图标与签名分发细节在出签名 APK 前确定。
+- 本地存储：kotlinx-serialization 版本化 JSON 文件（对应 Web 端 localStorage 各键的结构），错题、统计、每日练习各一个文件；今日活动计数直接复用该结构。
+- 平板、横屏、折叠屏和辅助功能的支持范围仍延后。

@@ -1,0 +1,2 @@
+# gradlew 必须保持 LF，否则 autocrlf=true 环境重新 checkout 后 Git Bash 无法执行
+gradlew text eol=lf

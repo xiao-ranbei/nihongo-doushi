@@ -18,6 +18,7 @@
 | D-012 | 目标仓库为 `web/` 与 `android/` 并列；Android 工程开始时直接新增到 `android/` | `web/` 已整理；Android 待实现 |
 | D-013 | 当前不做插件注册框架，先用统一模块约定显式接入 | 已确认 |
 | D-014 | Android 保留品牌纸感配色，同时遵循原生系统交互；Android 导航样式留待原型决定 | 已确认原则；部分细节待定 |
+| D-015 | Android MVP 工程选型：minSdk 26（Android 8.0+）、UI 用 Jetpack Compose（Material 3）、本地存储用 kotlinx-serialization 版本化 JSON 文件（结构对齐 Web localStorage 键）、applicationId `com.nihongodoushi.app`；工具链 AGP 8.13.2 + Gradle 8.14.3 + Kotlin 2.2.21 + Compose BOM 2025.08.01（与本机 SDK platform 35 同代） | 已确认 |
 
 ## 明确延后的决定
 

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 平台原生浅色无标题栏主题；纸感配色在 Compose 主题层实现 -->
+    <style name="Theme.NihongoDoushi" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
