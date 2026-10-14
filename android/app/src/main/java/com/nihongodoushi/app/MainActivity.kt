@@ -21,11 +21,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.nihongodoushi.app.storage.LocalStore
+import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.home.HomeScreen
+import com.nihongodoushi.app.ui.mistakes.MistakesScreen
+import com.nihongodoushi.app.ui.practice.AdjectivePracticeScreen
+import com.nihongodoushi.app.ui.practice.AdjectivePracticeState
+import com.nihongodoushi.app.ui.practice.VerbPracticeScreen
+import com.nihongodoushi.app.ui.practice.VerbPracticeState
 import com.nihongodoushi.app.ui.theme.NihongoDoushiTheme
 
 /** 首版四个目的地（android-requirements §2）；图标统一 Material Icons 填充风格 */
@@ -42,14 +50,23 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             NihongoDoushiTheme {
-                AppRoot()
+                // 状态提升到根级：切换底部页签不丢失练习进度与题面
+                val store = remember { LocalStore(applicationContext) }
+                val appState = remember { AppState(store) }
+                val verbState = remember { VerbPracticeState(appState) }
+                val adjectiveState = remember { AdjectivePracticeState(appState) }
+                AppRoot(appState, verbState, adjectiveState)
             }
         }
     }
 }
 
 @Composable
-private fun AppRoot() {
+private fun AppRoot(
+    appState: AppState,
+    verbState: VerbPracticeState,
+    adjectiveState: AdjectivePracticeState,
+) {
     var currentScreen by rememberSaveable { mutableStateOf(AppScreen.HOME) }
 
     Scaffold(
@@ -60,10 +77,13 @@ private fun AppRoot() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentAlignment = Alignment.Center,
         ) {
-            // 占位：各屏实现在引擎接入后补齐（学习主页/动词练习/形容词练习/错题复习）
-            Text(text = currentScreen.label)
+            when (currentScreen) {
+                AppScreen.HOME -> HomeScreen(appState)
+                AppScreen.VERB -> VerbPracticeScreen(verbState)
+                AppScreen.ADJECTIVE -> AdjectivePracticeScreen(adjectiveState)
+                AppScreen.MISTAKES -> MistakesScreen(appState, verbState, adjectiveState)
+            }
         }
     }
 }
@@ -75,7 +95,7 @@ private fun AppBottomBar(current: AppScreen, onScreenSelected: (AppScreen) -> Un
             NavigationBarItem(
                 selected = current == screen,
                 onClick = { onScreenSelected(screen) },
-                icon = { Icon(imageVector = screen.icon, contentDescription = null) },
+                icon = { Icon(imageVector = screen.icon, contentDescription = screen.label) },
                 label = { Text(text = screen.label) },
             )
         }

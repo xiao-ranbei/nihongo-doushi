@@ -31,12 +31,15 @@ object PaperTokens {
     val Red = Color(0xFFA54E45)          // --red
     val RedPale = Color(0xFFFBF0ED)      // --red-pale
     val TextRed = Color(0xFF9C5B50)      // --text-red
+    val ReadingText = Color(0xFF839087)  // --reading
+    val MeaningText = Color(0xFF627967)  // --meaning-text
     val TextStrong = Color(0xFF657268)   // --text-strong
     val TextGreen = Color(0xFF657C69)    // --text-green
     val StatCorrectText = Color(0xFF54705A) // --stat-correct-text
     val StatIncorrectText = Color(0xFF98645B) // --stat-incorrect-text
     val LineAccent = Color(0xFFC6D4C7)   // --line-accent
     val BgPaleGreen = Color(0xFFF4F8F2)  // --bg-pale-green
+    val BgPaleStrong = Color(0xFFE9EEE7) // --bg-pale-strong
     val LineControl = Color(0xFFDFE5DC)  // --line-control
 }
 
@@ -47,6 +50,8 @@ data class PaperColors(
     val statCorrectText: Color,
     val statIncorrectText: Color,
     val textRed: Color,
+    val reading: Color,
+    val meaning: Color,
     val greenPale: Color,
     val orangePale: Color,
     val line: Color,
@@ -62,6 +67,8 @@ private val LocalPaperColors = staticCompositionLocalOf {
         statCorrectText = PaperTokens.StatCorrectText,
         statIncorrectText = PaperTokens.StatIncorrectText,
         textRed = PaperTokens.TextRed,
+        reading = PaperTokens.ReadingText,
+        meaning = PaperTokens.MeaningText,
         greenPale = PaperTokens.GreenPale,
         orangePale = PaperTokens.OrangePale,
         line = PaperTokens.Line,
@@ -120,11 +127,19 @@ private val PaperColorScheme: ColorScheme = lightColorScheme(
     onSurfaceVariant = PaperTokens.Muted,
     outline = PaperTokens.LineControl,
     outlineVariant = PaperTokens.Line,
+    // M3 容器色阶全部覆写为纸感色，避免默认中性基色带出的淡紫（P0-2）
+    surfaceContainerLowest = PaperTokens.Surface,
+    surfaceContainerLow = PaperTokens.Surface,
+    surfaceContainer = PaperTokens.BgPaleGreen,
+    surfaceContainerHigh = PaperTokens.GreenPale,
+    surfaceContainerHighest = PaperTokens.BgPaleStrong,
+    surfaceBright = PaperTokens.Surface,
+    surfaceDim = PaperTokens.Paper,
 )
 
-/** 细粒度语义色访问入口：MaterialTheme.paper.textGreen 等 */
-val MaterialTheme.paper: PaperColors
-    @Composable get() = LocalPaperColors.current
+/** 细粒度语义色访问入口：paperColors().textGreen 等（仅限 Composable 上下文） */
+@Composable
+fun paperColors(): PaperColors = LocalPaperColors.current
 
 @Composable
 fun NihongoDoushiTheme(content: @Composable () -> Unit) {
@@ -143,6 +158,8 @@ private fun defaultPaperColors(): PaperColors = PaperColors(
     statCorrectText = PaperTokens.StatCorrectText,
     statIncorrectText = PaperTokens.StatIncorrectText,
     textRed = PaperTokens.TextRed,
+    reading = PaperTokens.ReadingText,
+    meaning = PaperTokens.MeaningText,
     greenPale = PaperTokens.GreenPale,
     orangePale = PaperTokens.OrangePale,
     line = PaperTokens.Line,

@@ -21,4 +21,7 @@ object ReviewPolicy {
 
     /** 会话内重试：再答若干题后到期错题重新出现 */
     const val SESSION_RETRY_AFTER_ANSWERS = 4
+
+    /** 错题加权上限（对应 web 端 MAX_MISTAKE_WEIGHT），避免单题长期占用 */
+    const val MAX_MISTAKE_WEIGHT = 3
 }
