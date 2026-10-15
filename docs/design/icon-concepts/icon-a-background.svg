@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 自适应图标背景层：纯纸色满铺，由系统遮罩裁切 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108" role="img" aria-label="图标背景层 纸色">
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108" role="img" aria-label="图标背景层">
   <rect width="108" height="108" fill="#FFFEFA"/>
+  <path d="M20 34H88" stroke="#EDF3EB" stroke-width="2" stroke-linecap="round"/>
+  <path d="M20 52H88" stroke="#EDF3EB" stroke-width="2" stroke-linecap="round"/>
+  <path d="M20 70H88" stroke="#EDF3EB" stroke-width="2" stroke-linecap="round"/>
 </svg>

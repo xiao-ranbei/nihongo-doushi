@@ -1,72 +1,146 @@
 package com.nihongodoushi.app.ui.practice
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.engine.verb.VerbData
-import com.nihongodoushi.app.engine.verb.VerbEngine
 import com.nihongodoushi.app.engine.verb.VerbEntry
+import com.nihongodoushi.app.storage.MistakeRecord
 import com.nihongodoushi.app.ui.AppState
-import com.nihongodoushi.app.ui.theme.paperColors
+import kotlinx.coroutines.delay
 
-/** 动词练习：筛选、出题调度、判题与复习推进（行为对齐 web/app.js 动词模块）。 */
+/** 动词练习：选择题（纸卡竖排 + 底部判定抽屉）。行为依据 docs/android-answer-screen-spec.md。 */
 
 internal data class VerbPair(val verb: VerbEntry, val voiceId: String, val inflectionId: String) {
     val key: String = AppState.verbMistakeKey(verb.id, voiceId, inflectionId)
 }
 
 class VerbPracticeState(internal val app: AppState) {
+
+    companion object {
+        /** 双击同一选项直接提交的判定窗口（= Android 默认双击超时） */
+        const val DOUBLE_TAP_MS = 300L
+        const val ROUND_SIZE = 5
+    }
+
     var groupFilter by mutableStateOf("all")
+        private set
     var voiceFilter by mutableStateOf("base")
+        private set
     var inflectionFilter by mutableStateOf("all")
+        private set
     var levelFilter by mutableStateOf("all")
+        private set
 
     var currentQuestion by mutableStateOf<PracticeQuestion.VerbQ?>(null)
         private set
-    var reviewingMistakes by mutableStateOf(false)
+    var selectedIndex by mutableStateOf(-1)
         private set
-    var answerText by mutableStateOf("")
     var judged by mutableStateOf(false)
         private set
     var lastCorrect by mutableStateOf(false)
         private set
-    var detailsVisible by mutableStateOf(false)
-    var hintVisible by mutableStateOf(false)
+    var showHint by mutableStateOf(false)
+        private set
+    var reviewingMistakes by mutableStateOf(false)
+        private set
     var toast by mutableStateOf<String?>(null)
+        private set
+
+    var roundAnswered by mutableStateOf(0)
+        private set
+    var roundCorrect by mutableStateOf(0)
+        private set
+    var roundWrong by mutableStateOf(0)
+        private set
+    var roundComplete by mutableStateOf(false)
         private set
 
     private val deck = QuestionDeck<VerbPair>()
     private var lastPairKey: String? = null
     private var recentVerbIds: List<String> = emptyList()
     private val reviewedKeys = mutableSetOf<String>()
+    private var lastTapIndex = -1
+    private var lastTapTime = 0L
+
+    /** 辅助信息开关（Q6）：同一按钮控制假名与规律提示 */
+    val kanaVisible: Boolean get() = showHint || judged
+
+    val progress: Float get() = roundAnswered.toFloat() / ROUND_SIZE
+
+    val progressLabel: String
+        get() = "${(roundAnswered + 1).coerceAtMost(ROUND_SIZE)}/$ROUND_SIZE"
+
+    val roundLabel: String
+        get() = "第 ${(roundAnswered + 1).coerceAtMost(ROUND_SIZE)} / $ROUND_SIZE 题"
+
+    val statsLabel: String
+        get() {
+            val stats = app.verbStats
+            val total = stats.correct + stats.incorrect
+            val accuracy = if (total == 0) "—" else Math.round(stats.correct * 100.0 / total).toString() + "%"
+            return "答对 ${stats.correct} · 答错 ${stats.incorrect} · 正确率 $accuracy"
+        }
+
+    val modeLabel: String
+        get() = when {
+            reviewingMistakes -> "错题重练"
+            currentQuestion?.isScheduledReview == true -> "间隔复习"
+            else -> "随机练习"
+        }
+
+    fun applyFilters(group: String, voice: String, inflection: String, level: String) {
+        groupFilter = group
+        voiceFilter = voice
+        inflectionFilter = inflection
+        levelFilter = level
+        roundAnswered = 0
+        roundCorrect = 0
+        roundWrong = 0
+        roundComplete = false
+        newRandomQuestion()
+    }
+
+    fun resetFilters() {
+        applyFilters("all", "base", "all", "all")
+    }
+
+    fun filterSummary(): String {
+        val group = when (groupFilter) {
+            "godan" -> "五段动词"
+            "ichidan" -> "一段动词"
+            "irregular" -> "不规则动词"
+            else -> "全部类别"
+        }
+        val voice = when (voiceFilter) {
+            "all" -> "全部变形"
+            "base" -> "基础形态"
+            else -> VerbGroupLabels.voiceLabel(voiceFilter)
+        }
+        val inflection = when {
+            inflectionFilter != "all" -> VerbGroupLabels.inflectionLabel(inflectionFilter)
+            levelFilter == "all" -> "全部活用"
+            levelFilter == "basic" -> "基础活用"
+            else -> "进阶活用"
+        }
+        return "$group · $voice · $inflection"
+    }
 
     private fun buildTargets(): List<VerbPair> {
         val voices = if (voiceFilter == "all") VerbData.VOICES else VerbData.VOICES.filter { it.id == voiceFilter }
@@ -76,10 +150,20 @@ class VerbPracticeState(internal val app: AppState) {
             else -> VerbData.INFLECTIONS.filter { it.level == levelFilter }
         }
         val verbs = VerbData.VERBS.filter { groupFilter == "all" || it.group == groupFilter }
-        return verbs.flatMap { verb -> voices.flatMap { voice -> inflections.map { form -> VerbPair(verb, voice.id, form.id) } } }
+        return verbs.flatMap { verb ->
+            voices.flatMap { voice -> inflections.map { form -> VerbPair(verb, voice.id, form.id) } }
+        }
     }
 
-    private fun filterKey(): String = listOf(groupFilter, voiceFilter, inflectionFilter, levelFilter).joinToString("|")
+    private fun filterKey(): String =
+        listOf(groupFilter, voiceFilter, inflectionFilter, levelFilter).joinToString("|")
+
+    private fun questionFrom(mistake: MistakeRecord): PracticeQuestion.VerbQ? {
+        val verb = AppState.verbById[mistake.verbId] ?: return null
+        val voiceId = mistake.voiceId ?: return null
+        val inflectionId = mistake.inflectionId ?: return null
+        return PracticeQuestion.VerbQ(verb, voiceId, inflectionId)
+    }
 
     private fun chooseDueReview(): PracticeQuestion.VerbQ? {
         val allowed = buildTargets().map { it.voiceId + "::" + it.inflectionId }.toSet()
@@ -91,8 +175,7 @@ class VerbPracticeState(internal val app: AppState) {
                 (mistake.voiceId + "::" + mistake.inflectionId) in allowed
         }
         if (due.isEmpty()) return null
-        val question = questionFrom(weightedItem(due, app::mistakeWeight))
-        return question?.copy(isScheduledReview = true)
+        return questionFrom(weightedItem(due, app::mistakeWeight))?.copy(isScheduledReview = true)
     }
 
     private fun chooseRandom(): PracticeQuestion.VerbQ? {
@@ -106,30 +189,30 @@ class VerbPracticeState(internal val app: AppState) {
             recentEntities = recentVerbIds,
         ) ?: return null
         lastPairKey = pair.key
-        return PracticeQuestion.VerbQ(pair.verb, pair.voiceId, pair.inflectionId, isScheduledReview = false)
+        return PracticeQuestion.VerbQ(pair.verb, pair.voiceId, pair.inflectionId)
     }
 
-    private fun questionFrom(mistake: com.nihongodoushi.app.storage.MistakeRecord): PracticeQuestion.VerbQ? {
-        val verb = AppState.verbById[mistake.verbId] ?: return null
-        val voiceId = mistake.voiceId ?: return null
-        val inflectionId = mistake.inflectionId ?: return null
-        return PracticeQuestion.VerbQ(verb, voiceId, inflectionId, isScheduledReview = false)
-    }
-
-    fun startQuestion(question: PracticeQuestion.VerbQ) {
+    /** 唯一的题目状态入口：进入新题统一复位（Q4） */
+    private fun startQuestion(question: PracticeQuestion.VerbQ) {
         currentQuestion = question
         recentVerbIds = (listOf(question.verb.id) + recentVerbIds.filter { it != question.verb.id }).take(3)
-        answerText = ""
+        selectedIndex = -1
         judged = false
-        detailsVisible = false
-        hintVisible = false
+        showHint = false
+        lastTapIndex = -1
+        lastTapTime = 0L
     }
 
     fun newRandomQuestion() {
         val wasReviewing = reviewingMistakes
         reviewingMistakes = false
         val question = chooseDueReview() ?: chooseRandom()
-        if (question != null) startQuestion(question) else currentQuestion = null
+        if (question != null) {
+            startQuestion(question)
+        } else {
+            currentQuestion = null
+            toast = "当前筛选范围没有可练习的题目。"
+        }
         if (wasReviewing) toast = "已退出错题重练，回到练习。"
     }
 
@@ -141,29 +224,62 @@ class VerbPracticeState(internal val app: AppState) {
         }
         reviewedKeys.clear()
         reviewingMistakes = true
+        roundAnswered = 0
+        roundCorrect = 0
+        roundWrong = 0
+        roundComplete = false
         startQuestion(questionFrom(weightedItem(targets, app::mistakeWeight)) ?: return)
     }
 
-    /** 判题：锁定输入并落统计/错题/打卡（对齐 web submitAnswer 后半段）。 */
-    fun submit() {
+    /** 单击选中（可改选）；同一选项 300ms 内再点一次 = 直接提交 */
+    fun tapOption(index: Int) {
+        if (judged) return
+        val now = System.currentTimeMillis()
+        val isDouble = lastTapIndex == index && (now - lastTapTime) < DOUBLE_TAP_MS
+        lastTapIndex = index
+        lastTapTime = now
+        selectedIndex = index
+        if (isDouble) {
+            lastTapIndex = -1
+            commit()
+        }
+    }
+
+    /** 提交判定：双击与按钮共用同一条链，保证统计/错题/复习/打卡只执行一次 */
+    fun commit() {
         val question = currentQuestion ?: return
-        if (judged || answerText.isBlank()) return
-        detailsVisible = true
-        val correct = judgeAnswer(question, answerText)
+        if (judged || selectedIndex !in question.options.indices) return
+        val correct = judgeIndex(question, selectedIndex)
         app.onAnswerSubmitted()
         if (correct) {
             app.recordSuccessfulReview(question.key)
         } else {
-            app.recordVerbMistake(question.verb, question.voiceId, question.inflectionId, answerText.trim())
+            app.recordVerbMistake(
+                question.verb,
+                question.voiceId,
+                question.inflectionId,
+                question.options[selectedIndex].text,
+            )
         }
         app.updateVerbStats(correct)
         app.updateDaily("verb")
         lastCorrect = correct
         judged = true
+        lastTapIndex = -1
+
+        roundAnswered += 1
+        if (correct) roundCorrect += 1 else roundWrong += 1
+        if (roundAnswered >= ROUND_SIZE) roundComplete = true
     }
 
-    /** 下一题：重练模式走未复习集合，清空则退出并提示（对齐 web continueAfterAnswer）。 */
+    /** Q3：答对不自动跳转，只能由用户点「下一题」推进 */
     fun next() {
+        if (roundComplete) {
+            roundAnswered = 0
+            roundCorrect = 0
+            roundWrong = 0
+            roundComplete = false
+        }
         if (reviewingMistakes) {
             currentQuestion?.let { reviewedKeys.add(it.key) }
             val alternatives = app.verbMistakes().filter { it.key !in reviewedKeys }
@@ -172,11 +288,30 @@ class VerbPracticeState(internal val app: AppState) {
                 return
             }
             reviewingMistakes = false
-            toast = if (app.verbMistakes().isEmpty()) "错题已全部完成间隔复习。" else "本轮错题已复习，剩余题目会按间隔继续复习。"
+            toast = if (app.verbMistakes().isEmpty()) "错题已全部完成间隔复习。"
+            else "本轮错题已复习，剩余题目会按间隔继续复习。"
             newRandomQuestion()
             return
         }
         newRandomQuestion()
+    }
+
+    fun toggleHint() {
+        if (judged) return
+        showHint = !showHint
+    }
+
+    fun optionState(index: Int): OptionState {
+        val question = currentQuestion ?: return OptionState.Default
+        if (!judged) {
+            return if (index == selectedIndex) OptionState.Selected else OptionState.Default
+        }
+        return when {
+            index == question.correctIndex ->
+                if (index == selectedIndex) OptionState.Correct else OptionState.Reveal
+            index == selectedIndex -> OptionState.Wrong
+            else -> OptionState.Locked
+        }
     }
 
     fun remainingReviewCount(): Int = app.verbMistakes().count { it.key !in reviewedKeys }
@@ -191,217 +326,149 @@ fun VerbPracticeScreen(state: VerbPracticeState) {
     LaunchedEffect(Unit) {
         if (state.currentQuestion == null) state.newRandomQuestion()
     }
-    ToastLine(state.toast, onConsume = { state.consumeToast() })
+    var sheetOpen by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
+    val correctRequester = remember { BringIntoViewRequester() }
+    val question = state.currentQuestion
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        FilterRow(state)
-        StatSummaryRow(stats = state.app.verbStats, onReset = { state.app.resetVerbStats() })
-        ReviewBanner(state.reviewingMistakes, state.remainingReviewCount())
-        val question = state.currentQuestion
-        if (question == null) {
-            EmptyPoolHint { state.newRandomQuestion() }
-        } else {
-            QuestionCard(state, question)
-            if (state.judged) FeedbackCard(state, question)
-        }
-    }
-}
+    Column(modifier = Modifier.fillMaxSize()) {
+        PracticeTopArea(
+            roundLabel = state.roundLabel,
+            statsLabel = state.statsLabel,
+            progress = state.progress,
+            progressLabel = state.progressLabel,
+            hintEnabled = !state.judged,
+            hintOn = state.showHint,
+            onFilterClick = { sheetOpen = true },
+            onHintClick = { state.toggleHint() },
+        )
+        ToastLine(state.toast, onConsume = { state.consumeToast() })
 
-@Composable
-private fun FilterRow(state: VerbPracticeState) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        FilterDropdown(
-            label = "类别",
-            options = listOf(
-                "all" to "全部类别", "godan" to "五段动词", "ichidan" to "一段动词", "irregular" to "不规则动词",
-            ),
-            selected = state.groupFilter,
-            onSelect = { state.groupFilter = it; state.newRandomQuestion() },
-            modifier = Modifier.weight(1f),
-        )
-        FilterDropdown(
-            label = "语态",
-            options = buildList {
-                add("all" to "全部变形"); add("base" to "基础形态")
-                VerbData.VOICES.filter { it.id != "base" }.forEach { add(it.id to it.label) }
-            },
-            selected = state.voiceFilter,
-            onSelect = { state.voiceFilter = it; state.newRandomQuestion() },
-            modifier = Modifier.weight(1f),
-        )
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        FilterDropdown(
-            label = "活用形式",
-            options = buildList {
-                add("all" to "全部活用")
-                VerbData.INFLECTIONS.forEach { add(it.id to it.label) }
-            },
-            selected = state.inflectionFilter,
-            onSelect = { state.inflectionFilter = it; state.newRandomQuestion() },
-            modifier = Modifier.weight(1f),
-        )
-        FilterDropdown(
-            label = "难度",
-            options = listOf("all" to "全部难度", "basic" to "基础", "advanced" to "进阶"),
-            selected = state.levelFilter,
-            enabled = state.inflectionFilter == "all",
-            onSelect = { state.levelFilter = it; state.newRandomQuestion() },
-            modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-@Composable
-internal fun FilterDropdown(
-    label: String,
-    options: List<Pair<String, String>>,
-    selected: String,
-    enabled: Boolean = true,
-    onSelect: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val selectedLabel = options.firstOrNull { it.first == selected }?.second ?: selected
-    Box(modifier) {
-        OutlinedButton(onClick = { expanded = true }, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
-            Text(text = if (enabled) "$label：$selectedLabel" else "$label：已按形式锁定", maxLines = 1)
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { (value, text) ->
-                DropdownMenuItem(
-                    text = { Text(text, fontWeight = if (value == selected) FontWeight.Bold else null) },
-                    onClick = { expanded = false; onSelect(value) },
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(scrollState)
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp),
+        ) {
+            ReviewBanner(state.reviewingMistakes, state.remainingReviewCount())
+            if (question == null) {
+                EmptyPoolHint { state.resetFilters() }
+            } else {
+                PromptCard(
+                    question = question,
+                    modeLabel = state.modeLabel,
+                    kanaVisible = state.kanaVisible,
+                    compact = state.judged,
+                    hintOn = state.showHint,
+                    onToggleHint = { state.toggleHint() },
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun QuestionCard(state: VerbPracticeState, question: PracticeQuestion.VerbQ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                ModeChip(
-                    when {
-                        state.reviewingMistakes -> "错题重练"
-                        question.isScheduledReview -> "间隔复习"
-                        else -> "随机练习"
-                    },
-                )
-                Surface(color = paperColors().bgPaleGreen, shape = MaterialTheme.shapes.small) {
-                    Text(
-                        text = question.targetLabel,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = paperColors().textGreen,
+                Spacer(modifier = Modifier.height(2.dp))
+                question.options.forEachIndexed { index, option ->
+                    OptionRow(
+                        index = index,
+                        text = option.text,
+                        state = state.optionState(index),
+                        modifier = if (state.judged && index == question.correctIndex) {
+                            Modifier.bringIntoViewRequester(correctRequester)
+                        } else {
+                            Modifier
+                        },
+                        onClick = { state.tapOption(index) },
                     )
                 }
             }
-            QuestionTitleBlock(question, state.detailsVisible)
-            Text(text = question.instruction, style = MaterialTheme.typography.bodyMedium, color = paperColors().textStrong)
-            OutlinedTextField(
-                value = state.answerText,
-                onValueChange = { state.answerText = it },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !state.judged,
-                label = { Text("输入答案（假名或汉字）") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { state.submit() }),
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { state.submit() }, enabled = !state.judged && state.answerText.isNotBlank()) {
-                    Text("提交")
-                }
-                TextButton(onClick = { state.hintVisible = !state.hintVisible }) {
-                    Text(if (state.hintVisible) "隐藏规律提示" else "显示规律提示")
-                }
-                TextButton(onClick = { state.detailsVisible = !state.detailsVisible }) {
-                    Text(if (state.detailsVisible) "隐藏读音类别" else "显示读音类别")
-                }
-            }
-            if (state.hintVisible) {
-                RuleExplanationText(ruleExplanation(question.explain, allFormLabels()))
-            }
         }
+
+        JudgementDock(
+            question = question,
+            pickedIndex = state.selectedIndex,
+            judged = state.judged,
+            correct = state.lastCorrect,
+            roundComplete = state.roundComplete,
+            roundCorrect = state.roundCorrect,
+            roundWrong = state.roundWrong,
+            roundSize = VerbPracticeState.ROUND_SIZE,
+            onConfirm = { state.commit() },
+            onNext = { state.next() },
+        )
+    }
+
+    // 判定后抽屉展开会压缩内容区：把正确项滚进可视范围
+    LaunchedEffect(state.judged) {
+        if (state.judged) {
+            delay(150)
+            runCatching { correctRequester.bringIntoView() }
+        }
+    }
+
+    if (sheetOpen) {
+        FilterSheet(
+            title = "练习范围",
+            summary = state.filterSummary(),
+            sections = verbFilterSections(
+                group = state.groupFilter,
+                voice = state.voiceFilter,
+                inflection = state.inflectionFilter,
+                level = state.levelFilter,
+            ),
+            onDismiss = { sheetOpen = false },
+            onResetStats = { state.app.resetVerbStats() },
+            onApply = { values ->
+                state.applyFilters(
+                    group = values["group"] ?: "all",
+                    voice = values["voice"] ?: "base",
+                    inflection = values["inflection"] ?: "all",
+                    level = values["level"] ?: "all",
+                )
+                sheetOpen = false
+            },
+        )
     }
 }
 
-@Composable
-private fun FeedbackCard(state: VerbPracticeState, question: PracticeQuestion.VerbQ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = if (state.lastCorrect) "答对了" else "再记一下这个变化",
-                style = MaterialTheme.typography.titleLarge,
-                color = if (state.lastCorrect) paperColors().statCorrectText else paperColors().textRed,
-            )
-            val raw = state.answerText.trim()
-            val romaji = Regex("^[a-z']+$", RegexOption.IGNORE_CASE).matches(raw)
-            Text(
-                text = "你的答案：" + raw +
-                    (if (state.lastCorrect && romaji) "（" + VerbEngine.normalizeAnswer(raw) + "）" else ""),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(text = "正确答案：" + question.written, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-            if (question.kana != question.written) {
-                Text(text = "读音：" + question.kana, style = MaterialTheme.typography.bodyMedium, color = paperColors().reading)
-            }
-            question.voiceMeaning?.let {
-                Text(text = "语态：" + it, style = MaterialTheme.typography.bodySmall, color = paperColors().textStrong)
-            }
-            Text(
-                text = (if (question.voiceMeaning != null) "活用：" else "") + question.formMeaning,
-                style = MaterialTheme.typography.bodySmall,
-                color = paperColors().textStrong,
-            )
-            RuleExplanationText(ruleExplanation(question.explain, allFormLabels()))
-            Button(onClick = { state.next() }) {
-                Text("下一题")
-            }
-        }
-    }
-}
-
-@Composable
-internal fun RuleExplanationText(text: androidx.compose.ui.text.AnnotatedString) {
-    Text(text = text, style = MaterialTheme.typography.bodyMedium, color = paperColors().textStrong)
-}
-
-@Composable
-internal fun EmptyPoolHint(onRetry: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("当前筛选范围没有可练习的题目。", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        OutlinedButton(onClick = onRetry) { Text("重试") }
-    }
-}
-
-@Composable
-internal fun ToastLine(toast: String?, onConsume: () -> Unit) {
-    if (toast != null) {
-        LaunchedEffect(toast) {
-            kotlinx.coroutines.delay(2500)
-            onConsume()
-        }
-        Surface(
-            color = paperColors().greenPale,
-            shape = MaterialTheme.shapes.small,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(
-                text = toast,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-        }
-    }
-}
+internal fun verbFilterSections(
+    group: String,
+    voice: String,
+    inflection: String,
+    level: String,
+): List<FilterSection> = listOf(
+    FilterSection(
+        key = "group",
+        label = "类别",
+        selected = group,
+        options = listOf(
+            "all" to "全部类别",
+            "godan" to "五段动词",
+            "ichidan" to "一段动词",
+            "irregular" to "不规则动词",
+        ),
+    ),
+    FilterSection(
+        key = "voice",
+        label = "语态",
+        selected = voice,
+        options = buildList {
+            add("all" to "全部变形")
+            add("base" to "基础形态")
+            VerbData.VOICES.filter { it.id != "base" }.forEach { add(it.id to it.label) }
+        },
+    ),
+    FilterSection(
+        key = "inflection",
+        label = "活用形式",
+        selected = inflection,
+        options = buildList {
+            add("all" to "全部活用")
+            VerbData.INFLECTIONS.forEach { add(it.id to it.label) }
+        },
+    ),
+    FilterSection(
+        key = "level",
+        label = "难度",
+        selected = if (inflection == "all") level else "all",
+        enabled = inflection == "all",
+        options = listOf("all" to "全部难度", "basic" to "基础", "advanced" to "进阶"),
+    ),
+)

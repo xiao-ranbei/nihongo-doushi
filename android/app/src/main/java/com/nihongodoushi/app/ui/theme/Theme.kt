@@ -47,6 +47,7 @@ object PaperTokens {
 data class PaperColors(
     val textStrong: Color,
     val textGreen: Color,
+    val muted: Color,
     val statCorrectText: Color,
     val statIncorrectText: Color,
     val textRed: Color,
@@ -64,6 +65,7 @@ private val LocalPaperColors = staticCompositionLocalOf {
     PaperColors(
         textStrong = PaperTokens.TextStrong,
         textGreen = PaperTokens.TextGreen,
+        muted = PaperTokens.Muted,
         statCorrectText = PaperTokens.StatCorrectText,
         statIncorrectText = PaperTokens.StatIncorrectText,
         textRed = PaperTokens.TextRed,
@@ -155,6 +157,7 @@ fun NihongoDoushiTheme(content: @Composable () -> Unit) {
 private fun defaultPaperColors(): PaperColors = PaperColors(
     textStrong = PaperTokens.TextStrong,
     textGreen = PaperTokens.TextGreen,
+    muted = PaperTokens.Muted,
     statCorrectText = PaperTokens.StatCorrectText,
     statIncorrectText = PaperTokens.StatIncorrectText,
     textRed = PaperTokens.TextRed,

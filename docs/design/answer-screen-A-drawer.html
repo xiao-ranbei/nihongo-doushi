@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>选择题答题界面 · 方案 A + 底部判定抽屉（确认版）</title>
+<style>
+  :root {
+    --paper: #f6f5f0;
+    --surface: #fffefa;
+    --ink: #26332e;
+    --muted: #7b867e;
+    --line: #e7e9e1;
+    --line-faint: #eef0eb;
+    --line-control: #dfe5dc;
+    --line-accent: #c6d4c7;
+    --green: #326151;
+    --green-dark: #254a3d;
+    --green-pale: #edf3eb;
+    --bg-pale-green: #f4f8f2;
+    --bg-pale-strong: #e9eee7;
+    --orange: #b8784f;
+    --orange-pale: #f8efe6;
+    --orange-deep: #895936;
+    --red: #a54e45;
+    --red-pale: #fbf0ed;
+    --text-strong: #657268;
+    --text-green: #657c69;
+    --stat-correct: #54705a;
+    --stat-incorrect: #98645b;
+    --reading: #839087;
+    --meaning: #627967;
+    --shadow-card: 0 2px 10px rgba(43, 55, 47, 0.05), 0 12px 32px rgba(43, 55, 47, 0.045);
+    --shadow-drawer: 0 -6px 26px rgba(43, 55, 47, 0.13);
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  @font-face {
+    font-family: "LXGW ZhenKai GB";
+    src: url("../../web/font/LXGWZhenKaiGB-Regular.subset.woff2") format("woff2");
+    font-display: swap;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #e9ebe4;
+    color: var(--ink);
+    font-family: "LXGW ZhenKai GB", "Yu Gothic", "Noto Sans JP", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1460px; margin: 0 auto; padding: 30px 26px 60px; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.14em; color: var(--muted); margin: 0 0 6px; }
+  h1 { font-size: 25px; margin: 0 0 8px; }
+  .lede { margin: 0 0 8px; color: var(--text-strong); font-size: 14px; line-height: 1.75; }
+  .lede b { color: var(--ink); }
+  .flow {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    margin: 16px 0 26px; font-size: 12.5px; color: var(--text-strong);
+  }
+  .flow span.step {
+    border: 1px solid var(--line-control); background: var(--surface);
+    border-radius: 8px; padding: 5px 10px;
+  }
+  .flow span.step.on { border-color: var(--green); background: var(--green-pale); color: var(--green-dark); }
+  .flow i { color: var(--line-accent); font-style: normal; }
+
+  .stage { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  .variant { width: 392px; flex: 0 0 auto; }
+  .variant-title { display: flex; align-items: baseline; gap: 8px; margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+  .tag {
+    font-size: 11px; font-weight: 400; color: var(--green-dark);
+    background: var(--green-pale); border: 1px solid var(--line-accent);
+    border-radius: 999px; padding: 2px 8px;
+  }
+  .variant-note { font-size: 12.5px; color: var(--text-strong); line-height: 1.6; margin: 0 0 12px; min-height: 40px; }
+
+  .phone {
+    width: 392px; height: 812px; background: var(--paper);
+    border-radius: 34px; border: 1px solid var(--line-control);
+    box-shadow: 0 24px 60px rgba(43, 55, 47, 0.16);
+    overflow: hidden; display: flex; flex-direction: column; position: relative;
+  }
+  .status-bar {
+    height: 34px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px; font-size: 11px; color: var(--text-strong); flex: 0 0 auto;
+  }
+  .topbar { flex: 0 0 auto; padding: 2px 18px 10px; display: flex; align-items: center; gap: 12px; }
+  .progress-ring { flex: 0 0 auto; position: relative; width: 46px; height: 46px; }
+  .progress-ring svg { display: block; transform: rotate(-90deg); }
+  .progress-ring .ring-text {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 11.5px; color: var(--green-dark); font-weight: 700;
+  }
+  .top-meta { flex: 1 1 auto; min-width: 0; }
+  .top-meta .t1 { font-size: 13.5px; font-weight: 700; }
+  .top-meta .t2 { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .icon-btn {
+    flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px;
+    border: 1px solid var(--line-control); background: var(--surface); color: var(--text-strong);
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .icon-btn:hover { background: var(--bg-pale-green); border-color: var(--line-accent); }
+  .icon-btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+  .icon-btn[disabled]:hover { background: var(--surface); border-color: var(--line-control); }
+  .icon-btn.is-on { border-color: var(--green); background: var(--green-pale); color: var(--green-dark); }
+  .track { height: 3px; background: var(--line-faint); margin: 0 18px 12px; border-radius: 999px; overflow: hidden; flex: 0 0 auto; }
+  .track i { display: block; height: 100%; background: var(--green); border-radius: 999px; transition: width 220ms var(--ease); }
+
+  .review-banner {
+    flex: 0 0 auto; margin: 0 18px 10px; background: var(--orange-pale);
+    border: 1px solid var(--orange); border-radius: 10px; padding: 7px 11px;
+    font-size: 12px; color: var(--orange-deep); display: flex; align-items: center; gap: 7px;
+  }
+
+  .screen-body {
+    flex: 1 1 auto; padding: 0 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 11px;
+    scrollbar-width: none;
+  }
+  .screen-body::-webkit-scrollbar { display: none; }
+
+  .prompt-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow-card); padding: 15px 15px 13px; animation: rise 220ms var(--ease);
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .chip-row { display: flex; align-items: center; gap: 7px; margin-bottom: 9px; flex-wrap: wrap; }
+  .chip {
+    font-size: 11.5px; line-height: 1; padding: 5px 9px; border-radius: 999px;
+    border: 1px solid var(--line-accent); color: var(--green-dark); background: var(--green-pale);
+  }
+  .chip.mode { border-color: var(--line-control); color: var(--text-strong); background: var(--bg-pale-green); }
+  .chip.target { border-color: var(--orange); color: var(--orange-deep); background: var(--orange-pale); font-weight: 700; }
+  .word-line { display: flex; align-items: baseline; gap: 10px; }
+  .prompt-word { font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: 0.02em; }
+  .prompt-sub { font-size: 12.5px; color: var(--reading); }
+  .prompt-sub.placeholder { color: var(--muted); opacity: 0.75; }
+  .prompt-meaning { font-size: 14px; color: var(--meaning); margin-top: 5px; }
+  .prompt-instruction { font-size: 13.5px; color: var(--text-strong); margin-top: 9px; }
+  /* 判定后题面卡压缩：指令与提示已完成使命（解析已在抽屉里），把高度让给选项区 */
+  .prompt-card.is-compact .prompt-instruction,
+  .prompt-card.is-compact .prompt-tools,
+  .prompt-card.is-compact .hint-panel { display: none; }
+  .prompt-card.is-compact .prompt-word { font-size: 34px; }
+  .prompt-card.is-compact { padding-bottom: 12px; transition: padding 180ms var(--ease); }
+  .prompt-tools { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-ghost {
+    border: 1px solid var(--line-control); background: var(--surface); color: var(--text-strong);
+    border-radius: 10px; font: inherit; font-size: 12.5px; padding: 7px 11px; cursor: pointer;
+  }
+  .btn-ghost:hover { background: var(--bg-pale-green); border-color: var(--line-accent); }
+  .hint-panel {
+    font-size: 12.5px; color: var(--text-strong); background: var(--bg-pale-green);
+    border: 1px dashed var(--line-accent); border-radius: 10px; padding: 10px 12px;
+    line-height: 1.7; margin-top: 10px;
+  }
+  .hint-panel em { font-style: normal; font-weight: 700; color: var(--green-dark); }
+
+  .options-col { display: flex; flex-direction: column; gap: 9px; }
+  .opt {
+    display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+    background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px;
+    padding: 13px 14px; font: inherit; font-size: 17px; color: var(--ink);
+    cursor: pointer; transition: border-color 130ms var(--ease), background 130ms var(--ease), transform 130ms var(--ease);
+  }
+  .opt:hover { border-color: var(--line-accent); background: var(--bg-pale-green); }
+  .opt:active { transform: scale(0.988); }
+  .opt-key {
+    flex: 0 0 auto; width: 26px; height: 26px; border-radius: 8px;
+    border: 1px solid var(--line-control); background: var(--paper); color: var(--text-strong);
+    font-size: 12px; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .opt-text { flex: 1 1 auto; line-height: 1.35; }
+  .opt-mark { flex: 0 0 auto; opacity: 0; }
+  .opt.is-selected { border-color: var(--green); background: var(--green-pale); }
+  .opt.is-selected .opt-key { border-color: var(--green); background: var(--green); color: var(--surface); }
+  .opt.is-correct { border-color: var(--green); background: var(--green-pale); }
+  .opt.is-correct .opt-key { border-color: var(--green); background: var(--green); color: var(--surface); }
+  .opt.is-correct .opt-mark { opacity: 1; color: var(--green); }
+  .opt.is-wrong { border-color: var(--red); background: var(--red-pale); }
+  .opt.is-wrong .opt-key { border-color: var(--red); background: var(--red); color: var(--surface); }
+  .opt.is-wrong .opt-mark { opacity: 1; color: var(--red); }
+  .opt.is-reveal { border-color: var(--green); border-style: dashed; }
+  .opt.is-reveal .opt-mark { opacity: 1; color: var(--green); }
+  .opt.is-locked { cursor: default; }
+
+  .dock {
+    flex: 0 0 auto; background: var(--surface); border-top: 1px solid var(--line);
+    box-shadow: var(--shadow-drawer); border-radius: 18px 18px 0 0;
+    padding: 10px 18px 12px; transition: padding 180ms var(--ease);
+    max-height: 46%; overflow-y: auto;
+  }
+  .dock-handle { width: 38px; height: 4px; border-radius: 999px; background: var(--line-control); margin: 0 auto 8px; }
+  .dock-row { display: flex; align-items: center; gap: 12px; }
+  .dock-status { flex: 1 1 auto; min-width: 0; }
+  .dock-status .k { font-size: 11.5px; color: var(--muted); }
+  .dock-status .v { font-size: 15px; margin-top: 2px; }
+  .dock-status .v.pending { color: var(--muted); }
+  .dock-status .v.picked { color: var(--green-dark); font-weight: 700; }
+  .dock-hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  /* 双击提交瞬间的轻反馈（实现层对应 HapticFeedback 轻触） */
+  @keyframes tapPulse { 0% { transform: scale(1); } 45% { transform: scale(0.985); } 100% { transform: scale(1); } }
+  .opt.is-double { animation: tapPulse 180ms var(--ease); }
+  .btn-primary {
+    flex: 0 0 auto; border: none; border-radius: 12px; background: var(--green); color: var(--surface);
+    font: inherit; font-size: 15.5px; font-weight: 700; padding: 13px 22px; cursor: pointer;
+    box-shadow: 0 6px 18px rgba(50, 97, 81, 0.22); transition: background 140ms var(--ease), transform 140ms var(--ease);
+  }
+  .btn-primary:hover { background: var(--green-dark); }
+  .btn-primary:active { transform: scale(0.99); }
+  .btn-primary[disabled] { background: var(--bg-pale-strong); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+
+  .verdict { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; }
+  .verdict.good { color: var(--stat-correct); }
+  .verdict.bad { color: var(--stat-incorrect); }
+  .verdict-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .answer-block { margin-top: 7px; }
+  .answer-block .big { font-size: 20px; font-weight: 700; }
+  .answer-block .kana { font-size: 12px; color: var(--reading); margin-top: 2px; }
+  .answer-block .yours { font-size: 12.5px; color: var(--text-strong); margin-top: 5px; }
+  .rule {
+    font-size: 12.2px; color: var(--text-strong); line-height: 1.65;
+    margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line);
+  }
+  .rule em { font-style: normal; font-weight: 700; color: var(--green-dark); }
+  .rule strong { font-weight: 700; }
+  .meta-line { font-size: 12px; color: var(--text-strong); margin-top: 7px; }
+  .meta-line b { color: var(--ink); }
+  .toast-note {
+    flex: 0 0 auto; font-size: 11px; color: var(--orange-deep);
+    background: var(--orange-pale); border-radius: 999px; padding: 4px 9px; white-space: nowrap;
+  }
+  .dock-actions { display: flex; gap: 9px; margin-top: 11px; }
+  .dock-actions .btn-primary { flex: 1 1 auto; padding: 12px; }
+
+  .tabbar {
+    flex: 0 0 auto; height: 64px; border-top: 1px solid var(--line); background: var(--surface);
+    display: flex; align-items: center; padding: 0 8px 6px;
+  }
+  .tab { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10.5px; color: var(--muted); padding-top: 6px; }
+  .tab.active { color: var(--green-dark); font-weight: 700; }
+  .tab-pill { padding: 3px 14px; border-radius: 999px; }
+  .tab.active .tab-pill { background: var(--green-pale); }
+
+  .sheet-backdrop { position: absolute; inset: 0; background: rgba(38, 51, 46, 0.34); }
+  .sheet-scrim { position: absolute; left: 0; right: 0; bottom: 0; background: var(--surface); border-radius: 20px 20px 0 0; box-shadow: var(--shadow-drawer); padding: 14px 18px 16px; }
+  .sheet-title { font-size: 15px; font-weight: 700; margin: 2px 0 12px; }
+  .field { margin-bottom: 13px; }
+  .field .label { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button {
+    border: 1px solid var(--line-control); background: var(--surface); color: var(--text-strong);
+    border-radius: 999px; font: inherit; font-size: 12.5px; padding: 6px 11px; cursor: pointer;
+  }
+  .seg button.on { border-color: var(--green); background: var(--green-pale); color: var(--green-dark); font-weight: 700; }
+  .sheet-actions { display: flex; gap: 9px; margin-top: 6px; }
+  .sheet-actions .btn-primary { flex: 1 1 auto; padding: 12px; }
+
+  .summary { display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 26px; }
+  .summary .big-ring { position: relative; width: 132px; height: 132px; }
+  .summary .big-ring svg { transform: rotate(-90deg); }
+  .summary .big-ring .val {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px;
+  }
+  .summary .big-ring .val b { font-size: 30px; font-weight: 700; color: var(--green-dark); }
+  .summary .big-ring .val span { font-size: 11.5px; color: var(--muted); }
+  .summary-cells { display: flex; gap: 10px; width: 100%; }
+  .summary-cell { flex: 1 1 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 11px; text-align: center; }
+  .summary-cell .v { font-size: 19px; font-weight: 700; }
+  .summary-cell .k { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+  .summary-cell.good .v { color: var(--stat-correct); }
+  .summary-cell.bad .v { color: var(--stat-incorrect); }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow-card); padding: 22px 24px; margin-top: 30px;
+  }
+  .panel h2 { font-size: 18px; margin: 0 0 4px; }
+  .panel .sub { font-size: 13px; color: var(--text-strong); margin: 0 0 16px; line-height: 1.7; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line-faint); vertical-align: top; }
+  th { color: var(--muted); font-weight: 400; font-size: 11.5px; letter-spacing: 0.03em; }
+  td code { font-family: Consolas, monospace; font-size: 11.5px; background: var(--bg-pale-green); padding: 1px 5px; border-radius: 4px; }
+  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; border: 1px solid var(--line-control); }
+  .dim-list { font-size: 12.5px; color: var(--text-strong); line-height: 1.9; }
+  .dim-list b { color: var(--ink); }
+
+  .annot { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--line-accent); }
+  .annot b {
+    position: absolute; right: 6px; top: -9px; font-size: 10.5px; font-weight: 400;
+    background: var(--green-pale); color: var(--green-dark); border: 1px solid var(--line-accent);
+    border-radius: 999px; padding: 2px 7px; white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <p class="eyebrow">NIhongo-Doushi · Android 答题界面 · 确认版</p>
+    <h1>方案 A 纸卡竖排 + 底部判定抽屉</h1>
+    <p class="lede">
+      交互采用<b>两步式</b>：点选项只是选中（可改选），在底部判定栏点「确认提交」才判题，判定后抽屉展开承载解析。
+      两步的收益是<b>防误触 + 可改选</b>——选择题有四个大热区，一步式点错就等于直接判错。
+    </p>
+    <p class="lede">
+      <b>快捷路径：同一选项 300ms 内再次点击 = 直接提交</b>。熟练时不必去够底部按钮；单击仍然是即时选中、零延迟
+      （实现上不使用框架的双击手势，避免单击被双击超时拖慢）。
+    </p>
+    <p class="lede">
+      <b>辅助信息开关</b>：题面假名与规律提示由同一个按钮同步控制（默认都隐藏）；判定后假名强制显示、按钮隐藏。
+      <b>答对后不自动跳转</b>——判定成立即停住，由「下一题」推进。
+    </p>
+    <div class="flow">
+      <span class="step on">1 选择答案</span><i>→</i>
+      <span class="step on">2 抽屉栏确认提交</span><i>→</i>
+      <span class="step on">3 判定着色 + 正确答案揭晓</span><i>→</i>
+      <span class="step on">4 抽屉展开：正误 / 解析</span><i>→</i>
+      <span class="step">5 下一题</span><i>·</i>
+      <span class="step on">快捷：双击选项直接提交</span>
+    </div>
+  </header>
+
+  <div class="stage">
+
+    <!-- 1 可交互主演示 -->
+    <section class="variant">
+      <h2 class="variant-title">① 主界面（可点） <span class="tag">试着点一个选项</span></h2>
+      <p class="variant-note">点选项 → 底部判定栏出现「确认提交」→ 提交后选项着色、抽屉展开解析 → 点「下一题」循环。</p>
+      <div class="phone" id="live">
+        <div class="status-bar"><span>9:41</span><span class="status-icons" data-icons="status"></span></div>
+        <div class="topbar">
+          <div class="progress-ring" data-ring></div>
+          <div class="top-meta">
+            <div class="t1" data-round>第 1 / 5 题</div>
+            <div class="t2" data-stat>答对 0 · 答错 0 · 正确率 —</div>
+          </div>
+          <button class="icon-btn" title="筛选" data-icons="filter"></button>
+          <button class="icon-btn" title="规律提示" data-icons="hint" data-act="hint"></button>
+        </div>
+        <div class="track"><i data-track style="width:20%"></i></div>
+        <div class="screen-body">
+          <div class="prompt-card" data-prompt></div>
+          <div class="options-col" data-options></div>
+        </div>
+        <div class="dock" data-dock></div>
+        <div class="tabbar" data-tabbar></div>
+      </div>
+    </section>
+
+    <!-- 2 答对态快照 -->
+    <section class="variant">
+      <h2 class="variant-title">② 答对 · 抽屉展开 <span class="tag">快照</span></h2>
+      <p class="variant-note">判定后：正确项绿底绿框加勾，抽屉展开给出形态、读音、语态大意、变化规则；底栏留「下一题」主操作。</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="status-icons" data-icons="status"></span></div>
+        <div class="topbar">
+          <div class="progress-ring" data-ring-demo="3"></div>
+          <div class="top-meta"><div class="t1">第 3 / 5 题</div><div class="t2">答对 2 · 答错 0 · 正确率 100%</div></div>
+          <button class="icon-btn" title="筛选" data-icons="filter"></button>
+          <button class="icon-btn" title="规律提示" data-icons="hint"></button>
+        </div>
+        <div class="track"><i style="width:60%"></i></div>
+        <div class="screen-body">
+          <div class="prompt-card">
+            <div class="chip-row"><span class="chip mode">随机练习</span><span class="chip">动词 · 五段</span><span class="chip target">て形</span></div>
+            <div class="word-line"><span class="prompt-word">読む</span><span class="prompt-sub">よむ</span></div>
+            <div class="prompt-meaning">读</div>
+          </div>
+          <div class="options-col">
+            <div class="opt is-correct"><span class="opt-key">1</span><span class="opt-text">読んで</span><span class="opt-mark" data-icons="check"></span></div>
+            <div class="opt is-locked"><span class="opt-key">2</span><span class="opt-text">読んだ</span></div>
+            <div class="opt is-locked"><span class="opt-key">3</span><span class="opt-text">読めて</span></div>
+            <div class="opt is-locked"><span class="opt-key">4</span><span class="opt-text">読みて</span></div>
+          </div>
+        </div>
+        <div class="dock">
+          <div class="dock-handle"></div>
+          <div class="verdict good" data-icons-verdict="good">答对了</div>
+          <div class="answer-block">
+            <div class="big">読んで</div>
+            <div class="kana">读音：よんで</div>
+            <div class="yours">你的答案：読んで</div>
+          </div>
+          <div class="rule">五段动词「む」结尾发生<em>拨音便</em>：む → んで。読む → 読んで。</div>
+          <div class="dock-actions"><button class="btn-primary">下一题</button></div>
+        </div>
+        <div class="tabbar" data-tabbar></div>
+      </div>
+    </section>
+
+    <!-- 3 答错态快照 -->
+    <section class="variant">
+      <h2 class="variant-title">③ 答错 · 抽屉展开 <span class="tag">快照</span></h2>
+      <p class="variant-note">误选项红底红框加叉，正确项用<b>绿色虚线框</b>揭晓（与“你选的”区分）；抽屉里给错题入本提示。</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="status-icons" data-icons="status"></span></div>
+        <div class="topbar">
+          <div class="progress-ring" data-ring-demo="2"></div>
+          <div class="top-meta"><div class="t1">第 2 / 5 题</div><div class="t2">答对 1 · 答错 1 · 正确率 50%</div></div>
+          <button class="icon-btn" title="筛选" data-icons="filter"></button>
+          <button class="icon-btn" title="规律提示" data-icons="hint"></button>
+        </div>
+        <div class="track"><i style="width:40%"></i></div>
+        <div class="screen-body">
+          <div class="prompt-card">
+            <div class="chip-row"><span class="chip mode">错题重练</span><span class="chip">动词 · 五段（例外）</span><span class="chip target">て形</span></div>
+            <div class="word-line"><span class="prompt-word">行く</span><span class="prompt-sub">いく</span></div>
+            <div class="prompt-meaning">去</div>
+          </div>
+          <div class="options-col">
+            <div class="opt is-wrong"><span class="opt-key">1</span><span class="opt-text">行いて</span><span class="opt-mark" data-icons="cross"></span></div>
+            <div class="opt is-reveal"><span class="opt-key">2</span><span class="opt-text">行って</span><span class="opt-mark" data-icons="check"></span></div>
+            <div class="opt is-locked"><span class="opt-key">3</span><span class="opt-text">行きて</span></div>
+            <div class="opt is-locked"><span class="opt-key">4</span><span class="opt-text">行った</span></div>
+          </div>
+        </div>
+        <div class="dock">
+          <div class="dock-handle"></div>
+          <div class="verdict-row">
+            <div class="verdict bad" data-icons-verdict="bad">答错了</div>
+            <span class="toast-note">已加入错题本</span>
+          </div>
+          <div class="answer-block">
+            <div class="big">行って</div>
+            <div class="kana">读音：いって</div>
+            <div class="yours">你的答案：行いて</div>
+          </div>
+          <div class="meta-line">语态：基础形态 · 活用：连接形</div>
+          <div class="rule">「行く」是唯一走<em>促音便</em>的五段动词：行く → 行って（<strong>不是</strong>行いて）。</div>
+          <div class="dock-actions"><button class="btn-primary">下一题</button></div>
+        </div>
+        <div class="tabbar" data-tabbar></div>
+      </div>
+    </section>
+
+    <!-- 4 筛选抽屉 -->
+    <section class="variant">
+      <h2 class="variant-title">④ 筛选抽屉 <span class="tag">快照</span></h2>
+      <p class="variant-note">原顶部两行下拉改为底部抽屉，顶部只留一个筛选图标；四组分段控件选择完点「应用」重建题池。</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="status-icons" data-icons="status"></span></div>
+        <div class="topbar">
+          <div class="progress-ring" data-ring-demo="1"></div>
+          <div class="top-meta"><div class="t1">第 1 / 5 题</div><div class="t2">答对 0 · 答错 0 · 正确率 —</div></div>
+          <button class="icon-btn" title="筛选" data-icons="filter" style="border-color:#326151;background:#edf3eb"></button>
+          <button class="icon-btn" title="规律提示" data-icons="hint"></button>
+        </div>
+        <div class="track"><i style="width:20%"></i></div>
+        <div class="screen-body">
+          <div class="prompt-card">
+            <div class="chip-row"><span class="chip mode">随机练习</span><span class="chip">动词 · 五段</span><span class="chip target">ます形</span></div>
+            <div class="word-line"><span class="prompt-word">待つ</span><span class="prompt-sub placeholder">假名已隐藏</span></div>
+            <div class="prompt-meaning">等</div>
+            <div class="prompt-instruction">请选出「ます形」的正确形态</div>
+          </div>
+          <div class="options-col">
+            <div class="opt"><span class="opt-key">1</span><span class="opt-text">待ちます</span></div>
+            <div class="opt"><span class="opt-key">2</span><span class="opt-text">待ちります</span></div>
+            <div class="opt"><span class="opt-key">3</span><span class="opt-text">待つます</span></div>
+            <div class="opt"><span class="opt-key">4</span><span class="opt-text">待った</span></div>
+          </div>
+        </div>
+        <div class="sheet-backdrop"></div>
+        <div class="sheet-scrim">
+          <div class="dock-handle"></div>
+          <div class="sheet-title">练习范围</div>
+          <div class="field">
+            <div class="label">类别</div>
+            <div class="seg">
+              <button class="on">全部类别</button><button>五段动词</button><button>一段动词</button><button>不规则动词</button>
+            </div>
+          </div>
+          <div class="field">
+            <div class="label">语态</div>
+            <div class="seg">
+              <button>全部变形</button><button class="on">基础形态</button><button>可能形</button><button>受身形</button><button>使役形</button>
+            </div>
+          </div>
+          <div class="field">
+            <div class="label">活用形式</div>
+            <div class="seg">
+              <button class="on">全部活用</button><button>ます形</button><button>て形</button><button>た形</button><button>ない形</button><button>条件形（ば）</button>
+            </div>
+          </div>
+          <div class="field">
+            <div class="label">难度</div>
+            <div class="seg"><button>全部难度</button><button class="on">基础</button><button>进阶</button></div>
+          </div>
+          <div class="sheet-actions">
+            <button class="btn-ghost" style="flex:0 0 auto;padding:12px 18px">重置</button>
+            <button class="btn-primary">应用并重新出题</button>
+          </div>
+        </div>
+        <div class="tabbar" data-tabbar></div>
+      </div>
+    </section>
+
+    <!-- 5 本轮小结 -->
+    <section class="variant">
+      <h2 class="variant-title">⑤ 本轮小结 <span class="tag">快照</span></h2>
+      <p class="variant-note">本轮 5 题走完后的收束页：正确率环 + 三格数字 + 错题数，下一步给两条明确路径。</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="status-icons" data-icons="status"></span></div>
+        <div class="topbar">
+          <div class="top-meta"><div class="t1">本轮完成</div><div class="t2">共 5 题 · 用时 2 分 10 秒</div></div>
+        </div>
+        <div class="screen-body">
+          <div class="summary">
+            <div class="big-ring" data-ring-big></div>
+            <div class="summary-cells">
+              <div class="summary-cell good"><div class="v">4</div><div class="k">答对</div></div>
+              <div class="summary-cell bad"><div class="v">1</div><div class="k">答错</div></div>
+              <div class="summary-cell"><div class="v">1</div><div class="k">新增错题</div></div>
+            </div>
+            <div style="width:100%;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 15px;font-size:12.5px;color:var(--text-strong);line-height:1.75">
+              本轮错题已按间隔复习计划排入：<b style="color:var(--ink)">行く・て形</b> 明天到期，
+              <b style="color:var(--ink)">食べる・可能形</b> 3 天后到期。
+            </div>
+            <div style="display:flex;gap:10px;width:100%">
+              <button class="btn-primary" style="flex:1 1 auto">再来一轮</button>
+              <button class="btn-ghost" style="flex:0 0 auto;padding:13px 20px">去错题本</button>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar" data-tabbar></div>
+      </div>
+    </section>
+
+    <!-- 6 边界用例 -->
+    <section class="variant">
+      <h2 class="variant-title">⑥ 边界用例 <span class="tag">快照</span></h2>
+      <p class="variant-note">选项两行、词条释义偏长、选中态与未选态并存：选项高度自适应，序号与图标顶端对齐；选中态在判定栏给出双击快捷提示。此题未开辅助开关，故假名为占位态。</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="status-icons" data-icons="status"></span></div>
+        <div class="topbar">
+          <div class="progress-ring" data-ring-demo="4"></div>
+          <div class="top-meta"><div class="t1">第 4 / 5 题</div><div class="t2">答对 2 · 答错 1 · 正确率 67%</div></div>
+          <button class="icon-btn" title="筛选" data-icons="filter"></button>
+          <button class="icon-btn" title="规律提示" data-icons="hint"></button>
+        </div>
+        <div class="track"><i style="width:80%"></i></div>
+        <div class="screen-body">
+          <div class="prompt-card">
+            <div class="chip-row"><span class="chip mode">间隔复习</span><span class="chip">形容词 · な</span><span class="chip target">过去否定</span></div>
+            <div class="word-line"><span class="prompt-word">静か</span><span class="prompt-sub placeholder">假名已隐藏</span></div>
+            <div class="prompt-meaning">安静的、不吵闹的（形容环境或人的状态）</div>
+            <div class="prompt-instruction">请选出「过去否定」的正确形态</div>
+          </div>
+          <div class="options-col">
+            <div class="opt is-selected"><span class="opt-key">1</span><span class="opt-text">静かではなかった</span></div>
+            <div class="opt"><span class="opt-key">2</span><span class="opt-text">静かじゃなかった</span></div>
+            <div class="opt"><span class="opt-key">3</span><span class="opt-text">静かくなかった</span></div>
+            <div class="opt"><span class="opt-key">4</span><span class="opt-text">静かじゃありませんでした</span></div>
+          </div>
+        </div>
+        <div class="dock">
+          <div class="dock-handle"></div>
+          <div class="dock-row">
+            <div class="dock-status">
+              <div class="k">已选答案</div>
+              <div class="v picked">静かではなかった</div>
+              <div class="dock-hint">再次点击该选项可直接提交</div>
+            </div>
+            <button class="btn-primary">确认提交</button>
+          </div>
+        </div>
+        <div class="tabbar" data-tabbar></div>
+      </div>
+    </section>
+
+    <!-- 7 结构标注 -->
+    <section class="variant">
+      <h2 class="variant-title">⑦ 结构标注 <span class="tag">尺寸</span></h2>
+      <p class="variant-note">纵向分区与高度（单位 dp）：状态栏 34 / 顶部信息区 72 / 进度条 3（含 12 下边距）/ 题面卡自适应 / 选项组自适应 / 判定抽屉 76（收起）或 300+（展开）/ 底部导航 64。</p>
+      <div class="phone" style="position:relative">
+        <div class="status-bar"><span>9:41</span><span class="status-icons" data-icons="status"></span></div>
+        <div class="annot" style="top:34px"><b>状态栏 34</b></div>
+        <div class="topbar">
+          <div class="progress-ring" data-ring-demo="1"></div>
+          <div class="top-meta"><div class="t1">第 1 / 5 题</div><div class="t2">答对 0 · 答错 0 · 正确率 —</div></div>
+          <button class="icon-btn" title="筛选" data-icons="filter"></button>
+          <button class="icon-btn" title="规律提示" data-icons="hint"></button>
+        </div>
+        <div class="annot" style="top:106px"><b>顶部信息区 72（进度环 46 + 统计）</b></div>
+        <div class="track"><i style="width:20%"></i></div>
+        <div class="annot" style="top:121px"><b>进度条 3 + 下边距 12</b></div>
+        <div class="screen-body">
+          <div class="prompt-card">
+            <div class="chip-row"><span class="chip mode">随机练习</span><span class="chip">动词 · 五段</span><span class="chip target">て形</span></div>
+            <div class="word-line"><span class="prompt-word">読む</span><span class="prompt-sub placeholder">假名已隐藏</span></div>
+            <div class="prompt-meaning">读</div>
+            <div class="prompt-instruction">请选出「て形」的正确形态</div>
+          </div>
+          <div class="options-col">
+            <div class="opt"><span class="opt-key">1</span><span class="opt-text">読んで</span></div>
+            <div class="opt"><span class="opt-key">2</span><span class="opt-text">読んだ</span></div>
+            <div class="opt"><span class="opt-key">3</span><span class="opt-text">読めて</span></div>
+            <div class="opt"><span class="opt-key">4</span><span class="opt-text">読みて</span></div>
+          </div>
+        </div>
+        <div class="annot" style="top:592px"><b>题面卡 + 选项组（自适应，间距 11）</b></div>
+        <div class="dock">
+          <div class="dock-handle"></div>
+          <div class="dock-row">
+            <div class="dock-status"><div class="k">已选答案</div><div class="v picked">読んで</div>
+              <div class="dock-hint">再次点击该选项可直接提交</div></div>
+            <button class="btn-primary">确认提交</button>
+          </div>
+        </div>
+        <div class="annot" style="top:676px"><b>判定抽屉 76 收起 / 300+ 展开，圆角 18 上提阴影</b></div>
+        <div class="tabbar" data-tabbar></div>
+        <div class="annot" style="top:748px"><b>底部导航 64</b></div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- 图标族 -->
+  <section class="panel">
+    <h2>应用图标 · 方向 1「あ・纸页」（已轮廓化，可直接接入）</h2>
+    <p class="sub">
+      「あ」取自项目自带 LXGW 楷体（<code>web/font/LXGWZhenKaiGB-Regular.ttf</code>）的真实字形轮廓，已烘焙为固定路径——
+      不依赖设备字体，任何环境像素一致。自适应图标按官方规范拆为背景层 + 前景层 + 单色层三份 VectorDrawable。
+    </p>
+    <div style="display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end">
+      <div style="text-align:center"><div style="width:108px;height:108px;border-radius:50%;overflow:hidden;border:1px solid var(--line-control)"><img src="icon-concepts/icon-a-ai-paper.svg" alt="圆形遮罩" style="width:100%;height:100%"></div><div style="font-size:11px;color:var(--muted);margin-top:6px">圆形</div></div>
+      <div style="text-align:center"><div style="width:108px;height:108px;border-radius:26%;overflow:hidden;border:1px solid var(--line-control)"><img src="icon-concepts/icon-a-ai-paper.svg" alt="圆角方遮罩" style="width:100%;height:100%"></div><div style="font-size:11px;color:var(--muted);margin-top:6px">圆角方</div></div>
+      <div style="text-align:center"><div style="width:108px;height:108px;border-radius:34%;overflow:hidden;border:1px solid var(--line-control)"><img src="icon-concepts/icon-a-ai-paper.svg" alt="squircle 遮罩" style="width:100%;height:100%"></div><div style="font-size:11px;color:var(--muted);margin-top:6px">squircle</div></div>
+      <div style="text-align:center"><div style="width:72px;height:72px;border-radius:50%;overflow:hidden;border:1px solid var(--line-control)"><img src="icon-concepts/icon-a-ai-paper.svg" alt="72dp" style="width:100%;height:100%"></div><div style="font-size:11px;color:var(--muted);margin-top:6px">72dp</div></div>
+      <div style="text-align:center"><div style="width:48px;height:48px;border-radius:50%;overflow:hidden;border:1px solid var(--line-control)"><img src="icon-concepts/icon-a-ai-paper.svg" alt="48dp" style="width:100%;height:100%"></div><div style="font-size:11px;color:var(--muted);margin-top:6px">48dp</div></div>
+      <div style="text-align:center"><div style="width:36px;height:36px;border-radius:50%;overflow:hidden;border:1px solid var(--line-control)"><img src="icon-concepts/icon-a-ai-paper.svg" alt="36dp" style="width:100%;height:100%"></div><div style="font-size:11px;color:var(--muted);margin-top:6px">36dp</div></div>
+      <div style="text-align:center"><div style="width:108px;height:108px;border-radius:50%;overflow:hidden;background:#26332e;display:flex;align-items:center;justify-content:center"><img src="icon-concepts/icon-a-monochrome.svg" alt="单色深色" style="width:100%;height:100%;filter:invert(1) brightness(1.9)"></div><div style="font-size:11px;color:var(--muted);margin-top:6px">单色·深色底</div></div>
+    </div>
+    <div class="dim-list" style="margin-top:16px">
+      <b>几何校验（脚本自动断言）</b>：字形 bbox x 28.7–66.3 / y 27.0–73.0；书签 bbox x 70–80 / y 56–76；
+      两者均落在 66dp 官方安全区与 60dp 自留余量区内；水平间隙 3.7dp；「あ」轮廓 3 条子路径。
+      <b>系统裁切实测</b>：只显示中央 72dp 窗口时，字形与书签完整无裁切。
+    </div>
+  </section>
+
+  <!-- 规格速查 -->
+  <section class="panel">
+    <h2>视觉与交互规格速查</h2>
+    <p class="sub">下表为可实现粒度：颜色一律引用语义令牌（全项目唯一色源），尺寸单位 dp，字号单位 sp。</p>
+    <table>
+      <thead><tr><th style="width:150px">元素</th><th style="width:190px">规格</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>页面底</td><td><span class="swatch" style="background:#f6f5f0"></span><code>--paper #f6f5f0</code></td><td>整屏底色，纸感基调</td></tr>
+        <tr><td>卡片 / 抽屉</td><td><span class="swatch" style="background:#fffefa"></span><code>--surface #fffefa</code></td><td>题面卡、选项、抽屉、导航栏</td></tr>
+        <tr><td>卡片圆角 / 描边 / 阴影</td><td>16dp / 1dp <code>--line</code> / 0 2 10 + 0 12 32（α≤5%）</td><td>选项圆角 12dp；抽屉上圆角 18dp</td></tr>
+        <tr><td>题面字</td><td>40sp / 700 / 楷体</td><td>词条大字，视觉锚点</td></tr>
+        <tr><td>选项字</td><td>17sp / 行高 1.35</td><td>两行时高度自适应，序号顶端对齐</td></tr>
+        <tr><td>选项序号</td><td>26dp 方形 / 圆角 8dp</td><td>默认纸底描边，判定后填充绿/红</td></tr>
+        <tr><td>选项四态</td><td>默认 / 选中 / 正确 / 错误</td><td>选中 = 绿框浅绿底（未判定）；正确 = 绿框绿底加勾；错误 = 红框红底加叉；正确答案揭晓 = 绿虚线框加勾</td></tr>
+        <tr><td>抽屉收起高度</td><td>76dp</td><td>左：已选答案状态；右：提交按钮（未选时禁用）</td></tr>
+        <tr><td>抽屉展开高度</td><td>300dp 起，长解析可拖至 70% 屏高</td><td>内容优先序：判定标题 → 正确形态 → 读音 → 你的答案 → 语态/形式大意 → 变化规则 → 错题提示 → 下一题</td></tr>
+        <tr><td>抽屉手势</td><td>上滑展开 / 下滑收起 / 点 handle 切换</td><td>收起不丢状态，已判定时收起仍保留「下一题」</td></tr>
+        <tr><td>顶部进度环</td><td>46dp / 环宽 4dp / 内显「3/5」</td><td>底环 <code>--line-faint</code>，进度 <code>--green</code></td></tr>
+        <tr><td>动效</td><td>卡片入场 220ms translateY(6→0)；选项着色 130ms；抽屉 220ms / 统一 <code>cubic-bezier(0.22,0.61,0.36,1)</code></td><td>禁止弹跳与弹性缓动</td></tr>
+        <tr><td>图标</td><td>Material Icons 填充风格 / 20dp 按钮内 / 24dp 导航</td><td>不使用 emoji 作功能图标</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>
+
+<script>
+"use strict";
+
+var ICONS = {
+  status: '<svg width="14" height="10" viewBox="0 0 14 10" aria-hidden="true"><path d="M1 9h2V6H1zM5 9h2V4H5zM9 9h2V2H9z" fill="#657268"/></svg><svg width="16" height="10" viewBox="0 0 16 10" aria-hidden="true"><rect x="0.5" y="1.5" width="12" height="7" rx="2" fill="none" stroke="#657268"/><rect x="2" y="3" width="8" height="4" fill="#657268"/><rect x="13.5" y="3" width="2" height="4" rx="1" fill="#657268"/></svg>',
+  filter: '<svg width="17" height="17" viewBox="0 0 18 18" aria-hidden="true"><path d="M2.5 4.5h13M5 9h8M7.5 13.5h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  hint: '<svg width="17" height="17" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 2.2a5 5 0 0 0-2.9 9.1c.5.4.8.9.9 1.5h4c.1-.6.4-1.1.9-1.5A5 5 0 0 0 9 2.2Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7.3 15.2h3.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  check: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3.8 9.6l3.3 3.3 7-7.4" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  cross: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4.6 4.6l8.8 8.8M13.4 4.6l-8.8 8.8" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></svg>',
+  home: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.4 8.6 10 3.2l6.6 5.4V16a1 1 0 0 1-1 1h-3.4v-4.4H7.8V17H4.4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  verb: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M13.6 3.4 16.6 6.4 8.4 14.6H5.4v-3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3.4 17h13.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  adj: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4.5h8M6 9.5h8M6 14.5h4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  wrong: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M15.4 5.4a5.6 5.6 0 1 0 .9 6.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4.6 4.2v4h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+
+var QUESTIONS = [
+  { group: "动词 · 五段", word: "読む", kana: "よむ", meaning: "读", target: "て形", mode: "随机练习",
+    options: ["読んで", "読んだ", "読めて", "読みて"], answer: 0, reading: "よんで",
+    meta: "语态：基础形态 · 活用：普通形的非过去表达",
+    explain: "五段动词「む」结尾发生<em>拨音便</em>：む → んで。読む → 読んで。" },
+  { group: "动词 · 五段", word: "買う", kana: "かう", meaning: "买", target: "ない形", mode: "间隔复习",
+    options: ["買らない", "買わない", "買いない", "買わなかった"], answer: 1, reading: "かわない",
+    meta: "语态：基础形态 · 活用：普通形否定",
+    explain: "五段「う」结尾变<em>わ</em>再接ない：買う → 買わない。" },
+  { group: "动词 · 五段（例外）", word: "行く", kana: "いく", meaning: "去", target: "て形", mode: "随机练习",
+    options: ["行いて", "行きて", "行って", "行った"], answer: 2, reading: "いって",
+    meta: "语态：基础形态 · 活用：连接形",
+    explain: "「行く」是唯一走<em>促音便</em>的五段动词：行く → 行って。" },
+  { group: "动词 · 不规则", word: "する", kana: "する", meaning: "做", target: "可能形", mode: "随机练习",
+    options: ["しれる", "できる", "される", "します"], answer: 1, reading: "できる",
+    meta: "语态：可能形 · 活用：辞书形",
+    explain: "「する」的可能形是独立词<em>できる</em>，不能按五段规则变「しれる」。" },
+  { group: "形容词 · な", word: "静か", kana: "しずか", meaning: "安静的", target: "过去否定", mode: "错题重练",
+    options: ["静かではなかった", "静かじゃなかった", "静かくなかった", "静かじゃありませんでした"], answer: 1,
+    reading: "しずかじゃなかった", meta: "形式：过去否定 · な形容词接续",
+    explain: "な形容词否定用<em>じゃない</em>（＝ではない），过去形再接なかった：静かじゃなかった。" }
+];
+
+var LETTERS = ["1", "2", "3", "4"];
+var TOTAL = 5;
+
+function inject(root) {
+  root.querySelectorAll("[data-icons]").forEach(function (el) { el.innerHTML = ICONS[el.getAttribute("data-icons")] || ""; });
+  var g = root.querySelector("[data-icons-verdict='good']");
+  if (g) { g.innerHTML = ICONS.check + "<span>答对了</span>"; }
+  var b = root.querySelector("[data-icons-verdict='bad']");
+  if (b) { b.innerHTML = ICONS.cross + "<span>答错了</span>"; }
+}
+
+function tabbar(active) {
+  return [["home", "主页"], ["verb", "动词"], ["adj", "形容词"], ["wrong", "错题本"]].map(function (it) {
+    return '<div class="tab' + (it[0] === active ? " active" : "") + '"><span class="tab-pill">' + ICONS[it[0]] + "</span><span>" + it[1] + "</span></div>";
+  }).join("");
+}
+
+function ring(size, stroke, percent, label, inner) {
+  var r = (size - stroke) / 2, c = 2 * Math.PI * r, dash = c * percent / 100;
+  var svg = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + " " + size + '">' +
+    '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="#eef0eb" stroke-width="' + stroke + '"/>' +
+    '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="#326151" stroke-width="' + stroke + '" stroke-linecap="round" stroke-dasharray="' + dash.toFixed(1) + " " + c.toFixed(1) + '"/></svg>';
+  if (inner) { return svg + '<span class="ring-text">' + (label || "") + "</span>"; }
+  return '<div class="big-ring">' + svg + '<span class="val"><b>' + percent + "%</b><span>" + (label || "正确率") + "</span></span></div>";
+}
+
+document.querySelectorAll("[data-ring]").forEach(function (el) { el.innerHTML = ring(46, 4, 20, "1/5", true); });
+document.querySelectorAll("[data-ring-demo]").forEach(function (el) {
+  var n = Number(el.getAttribute("data-ring-demo"));
+  el.innerHTML = ring(46, 4, n * 100 / TOTAL, n + "/" + TOTAL, true);
+});
+document.querySelectorAll("[data-ring-big]").forEach(function (el) { el.innerHTML = ring(132, 10, 80, "正确率"); });
+document.querySelectorAll("[data-tabbar]").forEach(function (el) { el.innerHTML = tabbar("verb"); });
+inject(document);
+
+/* ---- 主演示状态机 ---- */
+function Live(phone) {
+  var self = this;
+  this.phone = phone;
+  this.index = 0;
+  this.state = "idle";
+  this.selected = -1;
+  this.correct = 0;
+  this.wrong = 0;
+  this.lastTapIndex = -1;
+  this.lastTapTime = 0;
+  this.showHint = false;
+
+  phone.addEventListener("click", function (ev) {
+    var opt = ev.target.closest(".opt");
+    if (opt && self.state !== "judged") { self.tap(Number(opt.getAttribute("data-i"))); return; }
+    if (ev.target.closest("[data-confirm]")) { self.lastTapIndex = -1; self.confirm(); return; }
+    if (ev.target.closest("[data-next]")) { self.next(); return; }
+    if (ev.target.closest("[data-act='hint']")) { self.hint(); }
+  });
+
+  phone.addEventListener("keydown", function (ev) {
+    if (self.state === "judged" && ev.key === "Enter") { self.next(); return; }
+    var n = Number(ev.key);
+    if (n >= 1 && n <= 4 && self.state !== "judged") { self.select(n - 1); }
+    if (ev.key === "Enter" && self.state === "picked") { self.lastTapIndex = -1; self.confirm(); }
+  });
+
+  this.render();
+}
+
+Live.prototype.q = function () { return QUESTIONS[this.index]; };
+
+Live.prototype.updateHeader = function () {
+  var total = this.correct + this.wrong;
+  this.phone.querySelector("[data-stat]").textContent = "答对 " + this.correct + " · 答错 " + this.wrong +
+    " · 正确率 " + (total === 0 ? "—" : Math.round(this.correct * 100 / total) + "%");
+  this.phone.querySelector("[data-ring]").innerHTML =
+    ring(46, 4, (this.index + 1) * 100 / TOTAL, (this.index + 1) + "/" + TOTAL, true);
+};
+
+Live.prototype.render = function () {
+  var q = this.q();
+  this.phone.querySelector("[data-round]").textContent = "第 " + (this.index + 1) + " / " + TOTAL + " 题";
+  this.phone.querySelector("[data-track]").style.width = ((this.index + 1) * 100 / TOTAL) + "%";
+  this.updateHeader();
+
+  this.phone.querySelector("[data-prompt]").innerHTML = this.promptHtml();
+  this.phone.querySelector("[data-options]").innerHTML = q.options.map(function (text, i) {
+    return '<button class="opt" data-i="' + i + '"><span class="opt-key">' + LETTERS[i] +
+      '</span><span class="opt-text">' + text + '</span><span class="opt-mark"></span></button>';
+  }).join("");
+
+  this.paint();
+};
+
+Live.prototype.promptHtml = function () {
+  var q = this.q();
+  var judged = this.state === "judged";
+  var kanaVisible = this.showHint || judged;
+  return '<div class="chip-row"><span class="chip mode">' + q.mode + '</span><span class="chip">' + q.group +
+    '</span><span class="chip target">' + q.target + "</span></div>" +
+    '<div class="word-line"><span class="prompt-word">' + q.word + "</span>" +
+      (kanaVisible ? '<span class="prompt-sub">' + q.kana + "</span>"
+                   : '<span class="prompt-sub placeholder">假名已隐藏</span>') + "</div>" +
+    '<div class="prompt-meaning">' + q.meaning + "</div>" +
+    (judged ? "" : '<div class="prompt-instruction">请选出「' + q.target + '」的正确形态</div>') +
+    (judged ? "" : '<div class="prompt-tools"><button class="btn-ghost" data-act="hint">' +
+      (this.showHint ? "隐藏假名与规律" : "显示假名与规律") + "</button></div>") +
+    (this.showHint && !judged ? '<div class="hint-panel">提示：先判断词尾所在的段，再看这个形式是否需要音便。</div>' : "");
+};
+
+Live.prototype.paint = function () {
+  var q = this.q(), self = this;
+  var prompt = this.phone.querySelector("[data-prompt]");
+  prompt.innerHTML = this.promptHtml();
+  prompt.classList.toggle("is-compact", this.state === "judged");
+
+  // 顶栏提示图标是同一开关的快捷入口：开启时高亮，判定后禁用（此时假名已强制显示）
+  var topHint = this.phone.querySelector(".icon-btn[title='规律提示']");
+  if (topHint) {
+    topHint.disabled = this.state === "judged";
+    topHint.classList.toggle("is-on", this.showHint && this.state !== "judged");
+  }
+
+  var opts = this.phone.querySelectorAll(".opt");
+  opts.forEach(function (el, i) {
+    el.className = "opt";
+    var mark = el.querySelector(".opt-mark");
+    mark.innerHTML = "";
+    if (self.state === "picked" && i === self.selected) { el.classList.add("is-selected"); }
+    if (self.state === "judged") {
+      if (i === q.answer) { el.classList.add(i === self.selected ? "is-correct" : "is-reveal"); mark.innerHTML = ICONS.check; }
+      else if (i === self.selected) { el.classList.add("is-wrong"); mark.innerHTML = ICONS.cross; }
+      else { el.classList.add("is-locked"); }
+    }
+  });
+
+  var dock = this.phone.querySelector("[data-dock]");
+  if (this.state === "judged") { dock.innerHTML = this.judgedHtml(); }
+  else { dock.innerHTML = this.dockHtml(); }
+};
+
+Live.prototype.dockHtml = function () {
+  var q = this.q();
+  var picked = this.selected >= 0;
+  return '<div class="dock-handle"></div>' +
+    '<div class="dock-row">' +
+      '<div class="dock-status"><div class="k">' + (picked ? "已选答案" : "尚未作答") + "</div>" +
+      '<div class="v ' + (picked ? "picked" : "pending") + '">' + (picked ? q.options[this.selected] : "请选择一个答案") + "</div>" +
+      (picked ? '<div class="dock-hint">再次点击该选项可直接提交</div>' : "") + "</div>" +
+      '<button class="btn-primary" data-confirm' + (picked ? "" : " disabled") + ">确认提交</button>" +
+    "</div>";
+};
+
+Live.prototype.judgedHtml = function () {
+  var q = this.q();
+  var good = this.selected === q.answer;
+  return '<div class="dock-handle"></div>' +
+    '<div class="verdict-row">' +
+      '<div class="verdict ' + (good ? "good" : "bad") + '">' +
+        (good ? ICONS.check + "<span>答对了</span>" : ICONS.cross + "<span>答错了</span>") + "</div>" +
+      (good ? "" : '<span class="toast-note">已加入错题本</span>') +
+    "</div>" +
+    '<div class="answer-block">' +
+      '<div class="big">' + q.options[q.answer] + "</div>" +
+      '<div class="kana">读音：' + q.reading + "</div>" +
+      '<div class="yours">你的答案：' + q.options[this.selected] + "</div>" +
+    "</div>" +
+    '<div class="meta-line">' + q.meta + "</div>" +
+    '<div class="rule">' + q.explain + "</div>" +
+    '<div class="dock-actions"><button class="btn-primary" data-next>下一题</button></div>';
+};
+
+/** 单击：选中（可改选）；同一选项 300ms 内再次点击：直接提交判定。 */
+Live.DOUBLE_TAP_MS = 300;
+
+Live.prototype.tap = function (i) {
+  if (this.state === "judged") { return; }
+  var now = Date.now();
+  var isDouble = this.lastTapIndex === i && (now - this.lastTapTime) < Live.DOUBLE_TAP_MS;
+  this.lastTapIndex = i;
+  this.lastTapTime = now;
+  this.selected = i;
+
+  if (isDouble) {
+    this.lastTapIndex = -1;
+    var el = this.phone.querySelectorAll(".opt")[i];
+    if (el) {
+      el.classList.add("is-double");
+      setTimeout(function () { el.classList.remove("is-double"); }, 200);
+    }
+    this.confirm();
+    return;
+  }
+
+  this.state = "picked";
+  this.paint();
+};
+
+Live.prototype.select = function (i) {
+  this.lastTapIndex = -1;
+  this.selected = i;
+  this.state = "picked";
+  this.paint();
+};
+
+Live.prototype.confirm = function () {
+  if (this.selected < 0) { return; }
+  this.state = "judged";
+  this.lastTapIndex = -1;
+  if (this.selected === this.q().answer) { this.correct += 1; } else { this.wrong += 1; }
+  this.paint();
+  this.updateHeader();
+  // 抽屉展开会压掉部分选项区：把正确项滚进可视范围，答错时也能看到揭晓
+  var correctEl = this.phone.querySelectorAll(".opt")[this.q().answer];
+  if (correctEl) { correctEl.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+};
+
+Live.prototype.next = function () {
+  this.index = (this.index + 1) % QUESTIONS.length;
+  this.selected = -1;
+  this.state = "idle";
+  this.lastTapIndex = -1;
+  this.lastTapTime = 0;
+  this.showHint = false;   // Q4：进入新题复位辅助开关
+  this.render();
+};
+
+Live.prototype.hint = function () {
+  if (this.state === "judged") { return; }
+  this.showHint = !this.showHint;
+  this.paint();
+};
+
+var livePhone = document.getElementById("live");
+livePhone.setAttribute("tabindex", "0");
+inject(livePhone);
+new Live(livePhone);
+</script>
+</body>
+</html>
