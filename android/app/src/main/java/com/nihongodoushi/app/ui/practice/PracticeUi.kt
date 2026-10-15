@@ -96,7 +96,7 @@ fun ProgressRing(
     }
 }
 
-/** 顶部信息区：进度环 + 题号 + 统计 + 筛选/辅助开关图标 + 细进度条 */
+/** 顶部统计卡：纸白卡（细边 + 轻阴影），含进度环 · 题号 · 本轮统计 · 卡内底部进度条 */
 @Composable
 fun PracticeTopArea(
     roundLabel: String,
@@ -108,58 +108,65 @@ fun PracticeTopArea(
     onFilterClick: () -> Unit,
     onHintClick: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 6.dp, top = 4.dp, bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            ProgressRing(progress = progress, label = progressLabel)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = roundLabel,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text(
-                    text = statsLabel,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = paperColors().textStrong,
-                )
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 10.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shadowElevation = 2.dp,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 14.dp, end = 4.dp, top = 10.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                ProgressRing(progress = progress, label = progressLabel)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = roundLabel,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Text(
+                        text = statsLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = paperColors().muted,
+                    )
+                }
+                IconButton(onClick = onFilterClick) {
+                    Icon(
+                        imageVector = Icons.Filled.List,
+                        contentDescription = "筛选练习范围",
+                        tint = paperColors().textStrong,
+                    )
+                }
+                IconButton(onClick = onHintClick, enabled = hintEnabled) {
+                    Icon(
+                        imageVector = Icons.Filled.Info,
+                        contentDescription = if (hintOn) "隐藏假名与规律" else "显示假名与规律",
+                        tint = if (hintOn) MaterialTheme.colorScheme.primary else paperColors().textStrong,
+                    )
+                }
             }
-            IconButton(onClick = onFilterClick) {
-                Icon(
-                    imageVector = Icons.Filled.List,
-                    contentDescription = "筛选练习范围",
-                    tint = paperColors().textStrong,
-                )
-            }
-            IconButton(onClick = onHintClick, enabled = hintEnabled) {
-                Icon(
-                    imageVector = Icons.Filled.Info,
-                    contentDescription = if (hintOn) "隐藏假名与规律" else "显示假名与规律",
-                    tint = if (hintOn) MaterialTheme.colorScheme.primary else paperColors().textStrong,
-                )
-            }
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .height(3.dp)
-                .clip(RoundedCornerShape(999.dp))
-                .background(MaterialTheme.colorScheme.outlineVariant),
-        ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(progress.coerceIn(0f, 1f))
+                    .fillMaxWidth()
                     .height(3.dp)
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(MaterialTheme.colorScheme.primary),
-            )
+                    .background(MaterialTheme.colorScheme.outlineVariant),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress.coerceIn(0f, 1f))
+                        .height(3.dp)
+                        .background(MaterialTheme.colorScheme.primary),
+                )
+            }
         }
     }
 }

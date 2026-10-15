@@ -72,6 +72,9 @@ class VerbPracticeState(internal val app: AppState) {
     var roundComplete by mutableStateOf(false)
         private set
 
+    /** 当前题号（进入本题时冻结）：判定后不前进，下一题才推进（对齐已确认规格） */
+    private var numberAtStart by mutableStateOf(1)
+
     private val deck = QuestionDeck<VerbPair>()
     private var lastPairKey: String? = null
     private var recentVerbIds: List<String> = emptyList()
@@ -82,20 +85,18 @@ class VerbPracticeState(internal val app: AppState) {
     /** 辅助信息开关（Q6）：同一按钮控制假名与规律提示 */
     val kanaVisible: Boolean get() = showHint || judged
 
-    val progress: Float get() = roundAnswered.toFloat() / ROUND_SIZE
+    val progress: Float get() = numberAtStart.toFloat() / ROUND_SIZE
 
-    val progressLabel: String
-        get() = "${(roundAnswered + 1).coerceAtMost(ROUND_SIZE)}/$ROUND_SIZE"
+    val progressLabel: String get() = "$numberAtStart/$ROUND_SIZE"
 
-    val roundLabel: String
-        get() = "第 ${(roundAnswered + 1).coerceAtMost(ROUND_SIZE)} / $ROUND_SIZE 题"
+    val roundLabel: String get() = "第 $numberAtStart / $ROUND_SIZE 题"
 
+    /** 本轮累计口径：与抽屉内「本轮小结」使用同一公式，两处数字一致 */
     val statsLabel: String
         get() {
-            val stats = app.verbStats
-            val total = stats.correct + stats.incorrect
-            val accuracy = if (total == 0) "—" else Math.round(stats.correct * 100.0 / total).toString() + "%"
-            return "答对 ${stats.correct} · 答错 ${stats.incorrect} · 正确率 $accuracy"
+            val total = roundCorrect + roundWrong
+            val accuracy = if (total == 0) "—" else Math.round(roundCorrect * 100.0 / total).toString() + "%"
+            return "答对 $roundCorrect · 答错 $roundWrong · 正确率 $accuracy"
         }
 
     val modeLabel: String
@@ -192,10 +193,11 @@ class VerbPracticeState(internal val app: AppState) {
         return PracticeQuestion.VerbQ(pair.verb, pair.voiceId, pair.inflectionId)
     }
 
-    /** 唯一的题目状态入口：进入新题统一复位（Q4） */
+    /** 唯一的题目状态入口：进入新题统一复位（Q4），并冻结当前题号 */
     private fun startQuestion(question: PracticeQuestion.VerbQ) {
         currentQuestion = question
         recentVerbIds = (listOf(question.verb.id) + recentVerbIds.filter { it != question.verb.id }).take(3)
+        numberAtStart = (roundAnswered + 1).coerceAtMost(ROUND_SIZE)
         selectedIndex = -1
         judged = false
         showHint = false

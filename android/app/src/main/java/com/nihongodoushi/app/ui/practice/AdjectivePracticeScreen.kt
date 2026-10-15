@@ -69,6 +69,9 @@ class AdjectivePracticeState(internal val app: AppState) {
     var roundComplete by mutableStateOf(false)
         private set
 
+    /** 当前题号（进入本题时冻结）：判定后不前进，下一题才推进 */
+    private var numberAtStart by mutableStateOf(1)
+
     private val deck = QuestionDeck<AdjPair>()
     private var lastPairKey: String? = null
     private var recentWordIds: List<String> = emptyList()
@@ -78,20 +81,18 @@ class AdjectivePracticeState(internal val app: AppState) {
 
     val kanaVisible: Boolean get() = showHint || judged
 
-    val progress: Float get() = roundAnswered.toFloat() / ROUND_SIZE
+    val progress: Float get() = numberAtStart.toFloat() / ROUND_SIZE
 
-    val progressLabel: String
-        get() = "${(roundAnswered + 1).coerceAtMost(ROUND_SIZE)}/$ROUND_SIZE"
+    val progressLabel: String get() = "$numberAtStart/$ROUND_SIZE"
 
-    val roundLabel: String
-        get() = "第 ${(roundAnswered + 1).coerceAtMost(ROUND_SIZE)} / $ROUND_SIZE 题"
+    val roundLabel: String get() = "第 $numberAtStart / $ROUND_SIZE 题"
 
+    /** 本轮累计口径：与抽屉内「本轮小结」一致 */
     val statsLabel: String
         get() {
-            val stats = app.adjectiveStats
-            val total = stats.correct + stats.incorrect
-            val accuracy = if (total == 0) "—" else Math.round(stats.correct * 100.0 / total).toString() + "%"
-            return "答对 ${stats.correct} · 答错 ${stats.incorrect} · 正确率 $accuracy"
+            val total = roundCorrect + roundWrong
+            val accuracy = if (total == 0) "—" else Math.round(roundCorrect * 100.0 / total).toString() + "%"
+            return "答对 $roundCorrect · 答错 $roundWrong · 正确率 $accuracy"
         }
 
     val modeLabel: String
@@ -176,11 +177,12 @@ class AdjectivePracticeState(internal val app: AppState) {
         return PracticeQuestion.AdjQ(pair.adjective, pair.formId)
     }
 
-    /** 唯一的题目状态入口：进入新题统一复位（Q4） */
+    /** 唯一的题目状态入口：进入新题统一复位（Q4），并冻结当前题号 */
     private fun startQuestion(question: PracticeQuestion.AdjQ) {
         currentQuestion = question
         recentWordIds = (listOf(question.adjective.id) +
             recentWordIds.filter { it != question.adjective.id }).take(3)
+        numberAtStart = (roundAnswered + 1).coerceAtMost(ROUND_SIZE)
         selectedIndex = -1
         judged = false
         showHint = false
