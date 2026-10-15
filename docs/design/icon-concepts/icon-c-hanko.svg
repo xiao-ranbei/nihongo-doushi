@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 图标方案 C「朱印」：日语印章语言 + 轻微旋转的手感
+     纸底 + 朱红方印描边 + 「あ」；朱红沿用应用答错色 #A54E45，与纸感主色系同源 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108" role="img" aria-label="图标方案 C 朱印">
+  <rect width="108" height="108" fill="#F6F5F0"/>
+  <g transform="rotate(-5 54 54)">
+    <rect x="24" y="24" width="60" height="60" rx="13" fill="none" stroke="#A54E45" stroke-width="6"/>
+    <text x="54" y="74" font-family="LXGW ZhenKai GB, Yu Mincho, Hiragino Mincho ProN, Songti SC, serif" font-size="36" fill="#A54E45" text-anchor="middle">あ</text>
+  </g>
+</svg>

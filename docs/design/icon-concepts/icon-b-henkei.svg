@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 图标方案 B「る→ます」：直接表达“动词变形”这一核心功能
+     墨绿满底 + 两块纸白字形块 + 变形箭头；极简双色，缩到 48dp 仍可辨 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108" role="img" aria-label="图标方案 B 动词变形">
+  <rect width="108" height="108" fill="#326151"/>
+  <rect x="14" y="34" width="34" height="40" rx="9" fill="#FFFEFA"/>
+  <text x="31" y="62" font-family="LXGW ZhenKai GB, Yu Mincho, Hiragino Mincho ProN, Songti SC, serif" font-size="22" fill="#326151" text-anchor="middle">る</text>
+  <path d="M51 54 h8" stroke="#FFFEFA" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M56 49.5 l5 4.5 -5 4.5" stroke="#FFFEFA" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="64" y="34" width="34" height="40" rx="9" fill="#FFFEFA"/>
+  <text x="81" y="60" font-family="LXGW ZhenKai GB, Yu Mincho, Hiragino Mincho ProN, Songti SC, serif" font-size="15" fill="#326151" text-anchor="middle">ます</text>
+</svg>

@@ -19,6 +19,7 @@
 | D-013 | 当前不做插件注册框架，先用统一模块约定显式接入 | 已确认 |
 | D-014 | Android 保留品牌纸感配色，同时遵循原生系统交互；Android 导航样式留待原型决定 | 已确认原则；部分细节待定 |
 | D-015 | Android MVP 工程选型：minSdk 26（Android 8.0+）、UI 用 Jetpack Compose（Material 3）、本地存储用 kotlinx-serialization 版本化 JSON 文件（结构对齐 Web localStorage 键）、applicationId `com.nihongodoushi.app`；工具链 AGP 8.13.2 + Gradle 8.14.3 + Kotlin 2.2.21 + Compose BOM 2025.08.01（与本机 SDK platform 35 同代） | 已确认 |
+| D-016 | 答题界面改为选择题（四选项单选、点选即判，取消输入框）；布局采用「方案 A 竖排全宽选项 + 顶部统计卡（含正确率比例条）+ 底部判定抽屉」；应用图标采用「あ・纸页」方向（字形取 LXGW 楷体真实轮廓，前景/背景分层）；规格见 docs/design/answer-ui-spec.md | 方案已确认；待实现 |
 
 ## 明确延后的决定
 

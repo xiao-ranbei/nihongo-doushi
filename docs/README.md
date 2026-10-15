@@ -15,6 +15,11 @@
 | [decisions.md](decisions.md) | 已确认的产品／架构选择与延后决定 | 决策记录 |
 | [deployment-github-pages.md](deployment-github-pages.md) | GitHub Pages 首次启用、自动部署和本地数据说明 | 部署操作指南 |
 | [navigation-prototypes.html](navigation-prototypes.html) | 可点击的网页导航方案原型 | 讨论用原型，不是正式页面 |
+| [android-redesign-proposal.md](android-redesign-proposal.md) | 选择题答题界面、应用图标、视觉层次与交互逻辑的重设计方案 | 待确认；不含代码变更 |
+| [design/answer-ui-spec.md](design/answer-ui-spec.md) | 已确认方案的实现规格：区块层级、状态映射、交互细则、图标接入、文件级改动清单 | 已确认；待实现 |
+| [design/answer-choice-final.html](design/answer-choice-final.html) | 最终方案可交互原型（A 布局 + 统计卡 + 判定抽屉） | 讨论用原型，不是正式页面 |
+| [design/answer-choice-prototypes.html](design/answer-choice-prototypes.html) | 三版选择题答题界面可交互原型（含图标遮罩预览） | 讨论用原型，不是正式页面 |
+| [design/icon-concepts/](design/icon-concepts/) | 应用图标三个方向的矢量方案；「あ・纸页」已按自适应图标规范拆层 | 方向已选；待接入工程 |
 
 ## 信息来源与更新规则
 

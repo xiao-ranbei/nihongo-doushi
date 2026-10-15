@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>选择题答题界面 · 最终方案（A 布局 + 统计卡 + 判定抽屉）</title>
+<style>
+  :root {
+    --paper: #f6f5f0;
+    --surface: #fffefa;
+    --ink: #26332e;
+    --muted: #7b867e;
+    --line: #e7e9e1;
+    --line-faint: #eef0eb;
+    --line-control: #dfe5dc;
+    --line-accent: #c6d4c7;
+    --green: #326151;
+    --green-dark: #254a3d;
+    --green-pale: #edf3eb;
+    --bg-pale-green: #f4f8f2;
+    --orange: #b8784f;
+    --orange-pale: #f8efe6;
+    --orange-deep: #895936;
+    --red: #a54e45;
+    --red-pale: #fbf0ed;
+    --text-strong: #657268;
+    --text-green: #657c69;
+    --stat-correct: #54705a;
+    --stat-incorrect: #98645b;
+    --reading: #839087;
+    --meaning: #627967;
+    --shadow-card: 0 2px 10px rgba(43, 55, 47, 0.05), 0 12px 32px rgba(43, 55, 47, 0.045);
+    --shadow-float: 0 -6px 28px rgba(43, 55, 47, 0.14);
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  @font-face {
+    font-family: "LXGW ZhenKai GB";
+    src: url("../../web/font/LXGWZhenKaiGB-Regular.subset.woff2") format("woff2");
+    font-display: swap;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #e9ebe4;
+    color: var(--ink);
+    font-family: "LXGW ZhenKai GB", "Yu Gothic", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 1180px; margin: 0 auto; padding: 32px 28px 72px; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.14em; color: var(--muted); margin: 0 0 6px; }
+  h1 { font-size: 25px; margin: 0 0 8px; }
+  .lede { margin: 0 0 24px; color: var(--text-strong); font-size: 14px; line-height: 1.75; }
+  .lede b { color: var(--ink); }
+
+  .layout { display: flex; gap: 34px; align-items: flex-start; flex-wrap: wrap; }
+
+  /* ============ 手机 ============ */
+  .phone {
+    flex: 0 0 auto;
+    width: 392px;
+    height: 812px;
+    background: var(--paper);
+    border-radius: 34px;
+    border: 1px solid var(--line-control);
+    box-shadow: 0 24px 60px rgba(43, 55, 47, 0.16);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    outline: none;
+  }
+
+  .status-bar {
+    flex: 0 0 auto;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    font-size: 11px;
+    color: var(--text-strong);
+  }
+  .status-icons { display: inline-flex; gap: 5px; align-items: center; opacity: 0.75; }
+
+  /* 滚动内容区：抽屉为 flex item 插入，不遮挡选项 */
+  .content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 4px 18px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+  }
+
+  /* ---- 层级 2：顶部统计卡 ---- */
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+
+  .stat-progress { height: 3px; background: var(--line-faint); }
+  .stat-progress i { display: block; height: 100%; width: 20%; background: var(--green); transition: width 260ms var(--ease); }
+
+  .stat-body { padding: 12px 14px 13px; }
+
+  .stat-top { display: flex; align-items: baseline; justify-content: space-between; }
+  .stat-round { font-size: 13.5px; font-weight: 700; }
+  .stat-round span { color: var(--muted); font-weight: 400; font-size: 12px; }
+  .stat-acc { font-size: 12px; color: var(--text-strong); }
+  .stat-acc b { font-size: 15px; color: var(--green-dark); }
+
+  .stat-cells { display: flex; gap: 16px; margin-top: 9px; }
+  .stat-cell { min-width: 56px; }
+  .stat-cell .k { font-size: 10.5px; color: var(--muted); }
+  .stat-cell .v { font-size: 17px; font-weight: 700; line-height: 1.25; }
+  .stat-cell.correct .v { color: var(--stat-correct); }
+  .stat-cell.wrong .v { color: var(--stat-incorrect); }
+  .stat-cell.remain .v { color: var(--text-strong); }
+
+  .ratio-bar {
+    margin-top: 11px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--line-faint);
+    display: flex;
+    overflow: hidden;
+  }
+  .ratio-bar .c { background: var(--green); transition: width 300ms var(--ease); }
+  .ratio-bar .w { background: var(--red); transition: width 300ms var(--ease); }
+  .ratio-note { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--muted); margin-top: 6px; }
+
+  /* ---- 层级 3：题面卡 ---- */
+  .prompt-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+    padding: 15px 16px 14px;
+  }
+
+  .chip-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chip { font-size: 11.5px; line-height: 1; padding: 5px 9px; border-radius: 999px; border: 1px solid var(--line-control); color: var(--text-strong); background: var(--bg-pale-green); }
+  .chip.group { background: var(--green-pale); border-color: var(--line-accent); color: var(--green-dark); }
+  .chip.target { background: var(--orange-pale); border-color: var(--orange); color: var(--orange-deep); font-weight: 700; }
+
+  .prompt-word { font-size: 40px; line-height: 1.08; font-weight: 700; letter-spacing: 0.02em; }
+  .prompt-instruction { font-size: 13.5px; color: var(--text-strong); margin-top: 8px; }
+  .prompt-instruction b { color: var(--green-dark); }
+
+  .reveal { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); display: none; }
+  .reveal.show { display: block; animation: fade 180ms var(--ease); }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .reveal .reading { font-size: 13px; color: var(--reading); }
+  .reveal .meaning { font-size: 13.5px; color: var(--meaning); margin-top: 3px; }
+
+  .hint-panel { margin-top: 10px; font-size: 12.5px; color: var(--text-strong); background: var(--bg-pale-green); border: 1px dashed var(--line-accent); border-radius: 10px; padding: 10px 12px; line-height: 1.7; display: none; }
+  .hint-panel.show { display: block; }
+  .hint-panel em { font-style: normal; font-weight: 700; color: var(--green-dark); }
+
+  .row-tools { display: flex; gap: 8px; margin-top: 11px; }
+  .btn-ghost {
+    border: 1px solid var(--line-control);
+    background: var(--surface);
+    color: var(--text-strong);
+    border-radius: 10px;
+    font: inherit; font-size: 12.5px; padding: 7px 11px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-ghost:hover { background: var(--bg-pale-green); border-color: var(--line-accent); }
+
+  /* ---- 层级 4：选项区（A 布局：竖排全宽） ---- */
+  .options { display: flex; flex-direction: column; gap: 9px; }
+
+  .opt {
+    display: flex; align-items: center; gap: 11px;
+    width: 100%; text-align: left;
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    padding: 13px 14px;
+    font: inherit; font-size: 17px; color: var(--ink);
+    cursor: pointer;
+    transition: border-color 130ms var(--ease), background 130ms var(--ease), transform 130ms var(--ease), padding 160ms var(--ease);
+  }
+  .opt:hover:not(.locked) { border-color: var(--line-accent); background: var(--bg-pale-green); }
+  .opt:active:not(.locked) { transform: scale(0.99); }
+  .opt.compact { padding: 10px 14px; font-size: 16.5px; }
+
+  .opt-key {
+    flex: 0 0 auto; width: 26px; height: 26px; border-radius: 8px;
+    border: 1px solid var(--line-control); background: var(--paper);
+    color: var(--text-strong); font-size: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .opt-text { flex: 1 1 auto; }
+  .opt-mark { flex: 0 0 auto; width: 18px; height: 18px; opacity: 0; transform: scale(0.8); transition: opacity 140ms var(--ease), transform 140ms var(--ease); }
+  .opt-mark.show { opacity: 1; transform: none; }
+
+  .opt.locked { cursor: default; }
+  .opt.correct { border-color: var(--green); background: var(--green-pale); }
+  .opt.correct .opt-key { background: var(--green); border-color: var(--green); color: var(--surface); }
+  .opt.wrong { border-color: var(--red); background: var(--red-pale); }
+  .opt.wrong .opt-key { background: var(--red); border-color: var(--red); color: var(--surface); }
+  .opt.reveal { border-color: var(--green); border-style: dashed; }
+  .opt.correct .opt-mark, .opt.wrong .opt-mark, .opt.reveal .opt-mark { color: var(--green); }
+  .opt.wrong .opt-mark { color: var(--red); }
+
+  /* ---- 层级 5：判定抽屉 ---- */
+  .drawer {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+    box-shadow: var(--shadow-float);
+    padding: 12px 15px 14px;
+    border-left: 3px solid var(--green);
+    animation: slideUp 220ms var(--ease);
+  }
+  .drawer.bad { border-left-color: var(--red); }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+  .drawer-handle { width: 38px; height: 4px; border-radius: 999px; background: var(--line-control); margin: 0 auto 10px; }
+
+  .drawer-head { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; }
+  .drawer.good .drawer-head { color: var(--stat-correct); }
+  .drawer.bad .drawer-head { color: var(--stat-incorrect); }
+
+  .drawer-answer { font-size: 14px; margin-top: 9px; color: var(--text-strong); }
+  .drawer-answer b { font-size: 20px; color: var(--ink); }
+  .drawer-reading { font-size: 12.5px; color: var(--reading); margin-top: 3px; }
+  .drawer-rule { font-size: 12.5px; color: var(--text-strong); line-height: 1.7; margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--line); }
+  .drawer-rule em { font-style: normal; font-weight: 700; color: var(--green-dark); }
+
+  .toast-wrong { display: inline-block; margin-top: 9px; font-size: 11.5px; color: var(--orange-deep); background: var(--orange-pale); border-radius: 8px; padding: 5px 9px; }
+
+  .btn-primary {
+    width: 100%; border: none; border-radius: 12px;
+    background: var(--green); color: var(--surface);
+    font: inherit; font-size: 16px; font-weight: 700; padding: 14px;
+    cursor: pointer; margin-top: 12px;
+    box-shadow: 0 6px 18px rgba(50, 97, 81, 0.22);
+    transition: background 140ms var(--ease), transform 140ms var(--ease);
+  }
+  .btn-primary:hover { background: var(--green-dark); }
+  .btn-primary:active { transform: scale(0.99); }
+  .btn-primary.ghosty { background: var(--surface); color: var(--green-dark); border: 1.5px solid var(--line-accent); box-shadow: none; margin-top: 8px; }
+
+  /* 本轮小结 */
+  .summary-grid { display: flex; gap: 18px; margin-top: 10px; }
+  .summary-grid .item .k { font-size: 10.5px; color: var(--muted); }
+  .summary-grid .item .v { font-size: 20px; font-weight: 700; }
+  .summary-grid .item.correct .v { color: var(--stat-correct); }
+  .summary-grid .item.wrong .v { color: var(--stat-incorrect); }
+
+  /* ---- 层级 6：底部导航 ---- */
+  .tabbar {
+    flex: 0 0 auto;
+    height: 64px;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    padding: 0 8px 6px;
+  }
+  .tab { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10.5px; color: var(--muted); padding-top: 6px; }
+  .tab.active { color: var(--green-dark); font-weight: 700; }
+  .tab-pill { padding: 3px 14px; border-radius: 999px; }
+  .tab.active .tab-pill { background: var(--green-pale); }
+
+  /* ============ 右侧说明 ============ */
+  .side { flex: 1 1 420px; min-width: 380px; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .panel h2 { font-size: 16px; margin: 0 0 4px; }
+  .panel .sub { font-size: 12.5px; color: var(--text-strong); margin: 0 0 14px; line-height: 1.7; }
+
+  table.spec { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.spec th { text-align: left; color: var(--muted); font-weight: 400; padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); }
+  table.spec td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--line-faint); vertical-align: top; line-height: 1.6; }
+  table.spec td:first-child { white-space: nowrap; color: var(--ink); font-weight: 700; }
+
+  .state-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-faint); font-size: 12.5px; }
+  .state-chip { flex: 0 0 auto; width: 92px; font-weight: 700; font-size: 12px; }
+  .state-desc { color: var(--text-strong); line-height: 1.6; }
+
+  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 4px; vertical-align: -2px; margin-right: 5px; }
+
+  /* 图标区 */
+  .icon-strip { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .mask { width: 84px; height: 84px; overflow: hidden; box-shadow: 0 6px 16px rgba(43,55,47,0.10); }
+  .mask.circle { border-radius: 50%; }
+  .mask.rounded { border-radius: 22px; }
+  .mask.squircle { border-radius: 28px; }
+  .mask img { width: 100%; height: 100%; display: block; }
+  .mask-cap { font-size: 10.5px; color: var(--muted); text-align: center; margin-top: 6px; }
+  .icon-label { font-size: 12.5px; color: var(--text-strong); line-height: 1.7; }
+  .layers { display: flex; gap: 10px; margin-top: 12px; }
+  .layer-box { flex: 1 1 0; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--paper); }
+  .layer-box .lh { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
+  .layer-box img { width: 56px; height: 56px; display: block; }
+  .layer-box .ln { font-size: 11.5px; color: var(--text-strong); margin-top: 6px; line-height: 1.6; }
+
+  .foot { font-size: 12px; color: var(--muted); line-height: 1.8; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow">Nihongo-Doushi · 选择题答题界面最终设计</p>
+  <h1>方案 A 布局 + 顶部统计卡 + 底部判定抽屉</h1>
+  <p class="lede">
+    左侧是可交互原型：<b>点选项即判题</b>，判定抽屉从内容区底部展开并自动滚入视野；键盘 1–4 选答案、Enter 下一题。
+    下方可连续作答至本轮小结。右侧是层级、状态与交互规格。题目与正确答案取自动词/形容词引擎的实际输出。
+  </p>
+
+  <div class="layout">
+
+    <!-- ==================== 手机原型 ==================== -->
+    <div class="phone" id="phone" tabindex="0">
+      <div class="status-bar"><span>9:41</span><span class="status-icons" id="status-icons"></span></div>
+
+      <div class="content" id="content">
+
+        <!-- 统计卡 -->
+        <section class="stat-card">
+          <div class="stat-progress"><i id="progress"></i></div>
+          <div class="stat-body">
+            <div class="stat-top">
+              <div class="stat-round">本轮 <span id="round-no">第 1 / 5 题</span></div>
+              <div class="stat-acc">正确率 <b id="acc">—</b></div>
+            </div>
+            <div class="stat-cells">
+              <div class="stat-cell correct"><div class="k">答对</div><div class="v" id="n-correct">0</div></div>
+              <div class="stat-cell wrong"><div class="k">答错</div><div class="v" id="n-wrong">0</div></div>
+              <div class="stat-cell remain"><div class="k">剩余</div><div class="v" id="n-remain">5</div></div>
+            </div>
+            <div class="ratio-bar">
+              <div class="c" id="ratio-c" style="width:0%"></div>
+              <div class="w" id="ratio-w" style="width:0%"></div>
+            </div>
+            <div class="ratio-note"><span>正确率比例条</span><span id="ratio-text">尚无作答</span></div>
+          </div>
+        </section>
+
+        <!-- 题面卡 -->
+        <section class="prompt-card">
+          <div class="chip-row" id="chips"></div>
+          <div class="prompt-word" id="word">読む</div>
+          <div class="prompt-instruction" id="instruction"></div>
+          <div class="reveal" id="reveal">
+            <div class="reading" id="reading"></div>
+            <div class="meaning" id="meaning"></div>
+          </div>
+          <div class="hint-panel" id="hint"></div>
+          <div class="row-tools">
+            <button class="btn-ghost" id="btn-hint"><span id="hint-icon"></span>显示规律提示</button>
+          </div>
+        </section>
+
+        <!-- 选项区 -->
+        <section class="options" id="options"></section>
+
+        <!-- 判定抽屉（判题前不存在于 DOM） -->
+        <div id="drawer-slot"></div>
+
+      </div>
+
+      <nav class="tabbar" id="tabbar"></nav>
+    </div>
+
+    <!-- ==================== 规格说明 ==================== -->
+    <div class="side">
+
+      <section class="panel">
+        <h2>区块层级（自上而下，共 6 层）</h2>
+        <p class="sub">层级由「底色 → 纸白卡 + 细边 + 双层轻阴影 → 语义淡色」三级构成；同一屏内不再出现第四种表面，保证视觉统一。</p>
+        <table class="spec">
+          <tr>
+            <th style="width:88px">区块</th><th style="width:96px">层级 / 表面</th><th>内容与职责</th>
+          </tr>
+          <tr>
+            <td>状态栏</td><td>系统层</td><td>系统状态，不干预；背景与页面纸底同色，避免出现“双色条”。</td>
+          </tr>
+          <tr>
+            <td>统计卡</td><td>纸白卡 + 顶部 3px 进度条</td>
+            <td>本轮进度（第 n / N 题）· 答对 · 答错 · 剩余 · 正确率大数 · <b>正确率比例条</b>（绿=答对占比，红=答错占比）。每次判定后数字与条宽同步过渡 300ms。</td>
+          </tr>
+          <tr>
+            <td>题面卡</td><td>纸白卡</td>
+            <td>模式/类别/目标三个 chip + 楷体大字词条 + 作答指令；判题后<b>原位展开</b>读音与大意（虚线分隔，不跳页）。</td>
+          </tr>
+          <tr>
+            <td>选项区</td><td>纸白卡 × 4（竖排全宽）</td>
+            <td>方案 A 的核心：整宽热区，序号 1–4 圆角方块；判定后整体转为紧凑态（内边距收紧），为抽屉腾出空间。</td>
+          </tr>
+          <tr>
+            <td>判定抽屉</td><td>浮起卡 + 左侧 3px 语义色条</td>
+            <td>判题后以 flex item 插入内容区底部（<b>非浮层，不遮挡任何选项</b>），并自动滚入视野；承载判定结果、正确形态、读音、规则说明、错题提示与「下一题」。</td>
+          </tr>
+          <tr>
+            <td>底部导航</td><td>纸白 + 上边框</td>
+            <td>四目的地固定在底部；抽屉展开时导航位置不变，避免布局跳动。</td>
+          </tr>
+        </table>
+      </section>
+
+      <section class="panel">
+        <h2>状态一览（答题闭环 4 态）</h2>
+        <p class="sub">原型会真实经历这四种状态；每种状态的视觉差异只允许出现在「选项」「抽屉」「统计卡」三处。</p>
+        <div class="state-row">
+          <div class="state-chip">S0 作答中</div>
+          <div class="state-desc">选项全部可用，悬停淡绿底、按下轻微内缩；抽屉不存在；题面读音/大意折叠。</div>
+        </div>
+        <div class="state-row">
+          <div class="state-chip" style="color:var(--stat-correct)">S1 判对</div>
+          <div class="state-desc">所选项 <span class="swatch" style="background:#edf3eb;border:1.5px solid #326151"></span>绿边绿底 + 勾图标；抽屉为绿左条，标题「答对了」，给出正确形态与规则；答对计数 +1，比例条绿段加宽。</div>
+        </div>
+        <div class="state-row">
+          <div class="state-chip" style="color:var(--stat-incorrect)">S2 判错</div>
+          <div class="state-desc">所选项 <span class="swatch" style="background:#fbf0ed;border:1.5px solid #a54e45"></span>红边红底 + 叉；正确答案项 <span class="swatch" style="background:#fffefa;border:1.5px dashed #326151"></span>绿虚线 + 勾（揭晓）；抽屉为红左条并附「已加入错题本」提示；答错计数 +1，红段加宽。</div>
+        </div>
+        <div class="state-row" style="border-bottom:none">
+          <div class="state-chip">S3 本轮结束</div>
+          <div class="state-desc">第 5 题判定后，抽屉切换为本轮小结（对/错/正确率/本轮新增错题），提供「再来一轮」与「去错题本」。</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>交互逻辑</h2>
+        <p class="sub">一次点击完成「选择 + 提交」，没有提交按钮与输入法；判定后立即锁定，杜绝连点错判。</p>
+        <table class="spec">
+          <tr><th style="width:112px">交互</th><th>行为</th></tr>
+          <tr><td>点选项 / 1–4</td><td>立即判定；选项与抽屉同时进入对应状态；抽屉自动滚入视野。</td></tr>
+          <tr><td>Enter / 「下一题」</td><td>进入下一题：抽屉收起、选项回到 S0、题面读音与大意复位折叠；统计卡保持累计值。</td></tr>
+          <tr><td>规律提示</td><td>题面卡内原位展开（虚线淡绿面板），判题后自动收起——规则改由抽屉承载，不重复占位。</td></tr>
+          <tr><td>滚动</td><td>内容区独立滚动；判定后自动滚动到抽屉顶部，回到题目可上滑。导航栏常驻不参与滚动。</td></tr>
+          <tr><td>错题联动</td><td>S2 判定即写入错题本（沿用加权出题与间隔复习机制）；抽屉给出反馈提示，不弹额外弹窗。</td></tr>
+          <tr><td>无障碍</td><td>选项为原生 button，Tab 可遍历、Enter 激活；判定结果文字进入 liveRegion 播报；色觉障碍下靠「图标 + 边框样式」仍可判读。</td></tr>
+        </table>
+      </section>
+
+      <section class="panel">
+        <h2>应用图标「あ・纸页」</h2>
+        <p class="sub">字形已从 LXGW 楷体提取为<b>真实轮廓路径</b>（不再依赖系统字体），高度 62px、居中于 (54,54)，全部内容落在中央 66dp 安全区内。图标本体只保留单一强元素，保证 48dp 下仍清晰。</p>
+        <div class="icon-strip">
+          <div>
+            <div class="mask circle"><img src="icon-concepts/icon-a-ai-paper.svg" alt="圆形遮罩预览"></div>
+            <div class="mask-cap">圆形</div>
+          </div>
+          <div>
+            <div class="mask rounded"><img src="icon-concepts/icon-a-ai-paper.svg" alt="圆角方遮罩预览"></div>
+            <div class="mask-cap">圆角方</div>
+          </div>
+          <div>
+            <div class="mask squircle"><img src="icon-concepts/icon-a-ai-paper.svg" alt="squircle 遮罩预览"></div>
+            <div class="mask-cap">squircle</div>
+          </div>
+          <div class="icon-label">
+            <b>风格</b>：扁平矢量、纸感双色（纸白 #FFFEFA + 墨绿 #326151）<br>
+            <b>元素</b>：楷体「あ」真实轮廓（主体）+ 淡色纸纹横线（仅预览版营造纸页氛围）<br>
+            <b>场景</b>：桌面浅色壁纸最协调；圆/圆角方/squircle 三种系统遮罩均无裁切
+          </div>
+        </div>
+        <div class="layers">
+          <div class="layer-box">
+            <div class="lh">前景层（透明底）</div>
+            <img src="icon-concepts/icon-a-foreground.svg" alt="前景层">
+            <div class="ln">仅含字形轮廓，无装饰元素；Android 13 单色主题图标可直接复用该层。</div>
+          </div>
+          <div class="layer-box">
+            <div class="lh">背景层（纯色）</div>
+            <img src="icon-concepts/icon-a-background.svg" alt="背景层">
+            <div class="ln">满铺纸白，由系统遮罩裁切；如需纸纹质感可在此层加 3% 透明度细纹。</div>
+          </div>
+        </div>
+        <p class="foot">
+          产出文件：<code>icon-a-ai-paper.svg</code>（预览）· <code>icon-a-foreground.svg</code>（前景层）· <code>icon-a-background.svg</code>（背景层）。
+          接入时前景层转 VectorDrawable，另出 48/72/96/144/192px PNG 兜底与 512×512 商店图。
+        </p>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* 内联 SVG 图标（不使用 emoji） */
+var ICONS = {
+  status: '<svg width="14" height="10" viewBox="0 0 14 10" aria-hidden="true"><path d="M1 9h2V6H1zM5 9h2V4H5zM9 9h2V2H9z" fill="#657268"/></svg>' +
+          '<svg width="16" height="10" viewBox="0 0 16 10" aria-hidden="true"><rect x="0.5" y="1.5" width="12" height="7" rx="2" fill="none" stroke="#657268"/><rect x="2" y="3" width="8" height="4" fill="#657268"/><rect x="13.5" y="3" width="2" height="4" rx="1" fill="#657268"/></svg>',
+  check: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3.8 9.6l3.3 3.3 7-7.4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  cross: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4.6 4.6l8.8 8.8M13.4 4.6l-8.8 8.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  bulb: '<svg width="15" height="15" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 2.2a5 5 0 0 0-2.9 9.1c.5.4.8.9.9 1.5h4c.1-.6.4-1.1.9-1.5A5 5 0 0 0 9 2.2Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7.3 15.2h3.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  home: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.4 8.6 10 3.2l6.6 5.4V16a1 1 0 0 1-1 1h-3.4v-4.4H7.8V17H4.4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  verb: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M13.6 3.4 16.6 6.4 8.4 14.6H5.4v-3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3.4 17h13.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  adj: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4.5h8M6 9.5h8M6 14.5h4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  wrong: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M15.4 5.4a5.6 5.6 0 1 0 .9 6.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4.6 4.2v4h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+
+/* 题目：正确答案均来自引擎实际输出 */
+var QUESTIONS = [
+  { group: "动词 · 五段", word: "読む", meaning: "读（他动词）", target: "て形", mode: "随机练习",
+    options: ["読んで", "読んだ", "読めて", "読みて"], answer: 0, reading: "よんで",
+    explain: "五段动词「む」结尾发生<em>拨音便</em>：む → んで。読む → 読んで。",
+    hint: "词尾是「む／ぶ／ぬ」的五段动词，て形都会变成「んで」。" },
+  { group: "动词 · 五段", word: "買う", meaning: "买", target: "ない形", mode: "间隔复习",
+    options: ["買らない", "買わない", "買いない", "買わなかった"], answer: 1, reading: "かわない",
+    explain: "五段「う」结尾变<em>わ</em>再接ない：買う → 買わない。",
+    hint: "「う」结尾的五段动词，ない形要把う换成わ。" },
+  { group: "动词 · 五段（例外）", word: "行く", meaning: "去", target: "て形", mode: "随机练习",
+    options: ["行いて", "行きて", "行って", "行った"], answer: 2, reading: "いって",
+    explain: "「行く」是唯一走<em>促音便</em>的五段动词：行く → 行って（不是行いて）。",
+    hint: "五段「く」结尾本应变「いて」，但有一个词是例外。" },
+  { group: "形容词 · い", word: "高い", meaning: "高的", target: "过去否定", mode: "随机练习",
+    options: ["高くなかった", "高いではなかった", "高くなった", "高かったない"], answer: 0, reading: "たかくなかった",
+    explain: "い形容词的过去否定 = 去い接<em>くなかった</em>：高い → 高くなかった。",
+    hint: "先否定（くない），再把这部分变成过去。" },
+  { group: "形容词 · な", word: "静か", meaning: "安静的", target: "现在否定", mode: "随机练习",
+    options: ["静かくない", "静かじゃない", "静かじゃなかった", "静かだない"], answer: 1, reading: "しずかじゃない",
+    explain: "な形容词的否定用<em>じゃない</em>（＝ではない），不能接くない。",
+    hint: "「くない」只属于い形容词。" },
+  { group: "形容词 · 特例", word: "いい", meaning: "好的", target: "过去", mode: "间隔复习",
+    options: ["いかった", "よかった", "よくなかった", "いいだった"], answer: 1, reading: "よかった",
+    explain: "「いい」是特例：除原形外全部换成<em>よ</em>系列，过去形是よかった。",
+    hint: "它只有「现在肯定」用いい。" },
+  { group: "动词 · 一段", word: "食べる", meaning: "吃", target: "可能形", mode: "错题重练",
+    options: ["食べれる", "食べさせる", "食べられる", "食べる"], answer: 2, reading: "たべられる",
+    explain: "一段动词去る接られる：食べる → 食べられる。口语里的「食べれる」（ら抜き）不算标准形。",
+    hint: "去掉「る」，再接能表示可能的那个长尾。" },
+  { group: "形容词 · な（形似い）", word: "きれい", meaning: "干净的", target: "现在否定", mode: "随机练习",
+    options: ["きれいくない", "きれいじゃない", "きれいじゃなかった", "きれいだない"], answer: 1, reading: "きれいじゃない",
+    explain: "「きれい」虽以い结尾，但是<em>な形容词</em>，否定用じゃない。",
+    hint: "看词尾没用，要看它修饰名词时接不接「な」。" }
+];
+
+var ROUND_SIZE = 5;
+var LETTERS = ["1", "2", "3", "4"];
+
+var el = {
+  content: document.getElementById("content"),
+  progress: document.getElementById("progress"),
+  roundNo: document.getElementById("round-no"),
+  acc: document.getElementById("acc"),
+  nCorrect: document.getElementById("n-correct"),
+  nWrong: document.getElementById("n-wrong"),
+  nRemain: document.getElementById("n-remain"),
+  ratioC: document.getElementById("ratio-c"),
+  ratioW: document.getElementById("ratio-w"),
+  ratioText: document.getElementById("ratio-text"),
+  chips: document.getElementById("chips"),
+  word: document.getElementById("word"),
+  instruction: document.getElementById("instruction"),
+  reveal: document.getElementById("reveal"),
+  reading: document.getElementById("reading"),
+  meaning: document.getElementById("meaning"),
+  hint: document.getElementById("hint"),
+  btnHint: document.getElementById("btn-hint"),
+  hintIcon: document.getElementById("hint-icon"),
+  options: document.getElementById("options"),
+  drawerSlot: document.getElementById("drawer-slot"),
+  tabbar: document.getElementById("tabbar"),
+  statusIcons: document.getElementById("status-icons")
+};
+
+var state = { index: 0, picked: -1, correct: 0, wrong: 0, roundWrongAdded: 0, hintOpen: false };
+
+function renderTabbar() {
+  var items = [["home", "主页"], ["verb", "动词"], ["adj", "形容词"], ["wrong", "错题本"]];
+  el.tabbar.innerHTML = items.map(function (it) {
+    var on = it[0] === "verb" ? " active" : "";
+    return '<div class="tab' + on + '"><span class="tab-pill">' + ICONS[it[0]] + "</span><span>" + it[1] + "</span></div>";
+  }).join("");
+}
+
+function updateStats() {
+  var answered = state.correct + state.wrong;
+  el.roundNo.textContent = "第 " + Math.min(state.index + 1, ROUND_SIZE) + " / " + ROUND_SIZE + " 题";
+  el.acc.textContent = answered === 0 ? "—" : Math.round(state.correct * 100 / answered) + "%";
+  el.nCorrect.textContent = state.correct;
+  el.nWrong.textContent = state.wrong;
+  el.nRemain.textContent = Math.max(0, ROUND_SIZE - state.index - (state.picked >= 0 ? 1 : 0));
+  var cw = answered === 0 ? 0 : state.correct * 100 / answered;
+  var ww = answered === 0 ? 0 : state.wrong * 100 / answered;
+  el.ratioC.style.width = cw + "%";
+  el.ratioW.style.width = ww + "%";
+  el.ratioText.textContent = answered === 0 ? "尚无作答" : "答对 " + Math.round(cw) + "% · 答错 " + Math.round(ww) + "%";
+  el.progress.style.width = ((state.index + (state.picked >= 0 ? 1 : 0)) * 100 / ROUND_SIZE) + "%";
+}
+
+function renderQuestion() {
+  var q = QUESTIONS[state.index % QUESTIONS.length];
+  el.chips.innerHTML = '<span class="chip">' + q.mode + "</span>" +
+    '<span class="chip group">' + q.group + "</span>" +
+    '<span class="chip target">' + q.target + "</span>";
+  el.word.textContent = q.word;
+  el.instruction.innerHTML = "请选出「<b>" + q.target + "</b>」的正确形态";
+  el.reveal.className = "reveal";
+  el.reading.textContent = "";
+  el.meaning.textContent = "";
+  el.hint.className = "hint-panel";
+  el.hint.innerHTML = "提示：" + q.hint;
+  document.getElementById("hint-icon").outerHTML = ICONS.bulb;
+  el.btnHint.innerHTML = '<span id="hint-icon">' + ICONS.bulb + "</span>显示规律提示";
+  state.hintOpen = false;
+
+  el.options.innerHTML = q.options.map(function (text, i) {
+    return '<button class="opt" data-i="' + i + '">' +
+      '<span class="opt-key">' + LETTERS[i] + "</span>" +
+      '<span class="opt-text">' + text + "</span>" +
+      '<span class="opt-mark"></span></button>';
+  }).join("");
+
+  el.drawerSlot.innerHTML = "";
+  updateStats();
+}
+
+function judge(i) {
+  if (state.picked >= 0 || state.index >= ROUND_SIZE && false) { return; }
+  var q = QUESTIONS[state.index % QUESTIONS.length];
+  state.picked = i;
+  var good = i === q.answer;
+  if (good) { state.correct += 1; } else { state.wrong += 1; state.roundWrongAdded += 1; }
+
+  var opts = el.options.querySelectorAll(".opt");
+  opts.forEach(function (node, idx) {
+    node.classList.add("locked", "compact");
+    var mark = node.querySelector(".opt-mark");
+    if (idx === i && good) { node.classList.add("correct"); mark.innerHTML = ICONS.check; mark.classList.add("show"); }
+    else if (idx === i) { node.classList.add("wrong"); mark.innerHTML = ICONS.cross; mark.classList.add("show"); }
+    else if (idx === q.answer) { node.classList.add("reveal"); mark.innerHTML = ICONS.check; mark.classList.add("show"); }
+  });
+
+  el.reveal.className = "reveal show";
+  el.reading.textContent = "读音：" + q.reading;
+  el.meaning.textContent = "大意：" + q.meaning;
+  el.hint.className = "hint-panel";
+  el.btnHint.querySelector("span").textContent = "";
+
+  var isLast = state.index === ROUND_SIZE - 1;
+  var head = good
+    ? ICONS.check + "<span>答对了</span>"
+    : ICONS.cross + "<span>正确答案是「" + q.options[q.answer] + "」</span>";
+  var drawerClass = "drawer " + (good ? "good" : "bad");
+  var body =
+    '<div class="drawer-handle"></div>' +
+    '<div class="drawer-head">' + head + "</div>" +
+    '<div class="drawer-answer">正确形态：<b>' + q.options[q.answer] + "</b></div>" +
+    '<div class="drawer-reading">读音：' + q.reading + "</div>" +
+    '<div class="drawer-rule">' + q.explain + "</div>" +
+    (good ? "" : '<div class="toast-wrong">已加入错题本，稍后可重练</div>');
+
+  if (isLast) {
+    var answered = state.correct + state.wrong;
+    var acc = answered === 0 ? 0 : Math.round(state.correct * 100 / answered);
+    el.drawerSlot.innerHTML = '<div class="' + drawerClass + '">' + body +
+      '<div class="drawer-rule"><b>本轮小结</b>' +
+      '<div class="summary-grid">' +
+      '<div class="item correct"><div class="k">答对</div><div class="v">' + state.correct + "</div></div>" +
+      '<div class="item wrong"><div class="k">答错</div><div class="v">' + state.wrong + "</div></div>" +
+      '<div class="item"><div class="k">正确率</div><div class="v">' + acc + "%</div></div>" +
+      '<div class="item"><div class="k">本轮新增错题</div><div class="v">' + state.roundWrongAdded + "</div></div>" +
+      "</div></div>" +
+      '<button class="btn-primary" id="btn-restart">再来一轮</button>' +
+      '<button class="btn-primary ghosty" id="btn-goto-wrong">去错题本</button>' +
+      "</div>";
+  } else {
+    el.drawerSlot.innerHTML = '<div class="' + drawerClass + '">' + body +
+      '<button class="btn-primary" id="btn-next">下一题</button></div>';
+  }
+
+  updateStats();
+  setTimeout(function () {
+    var d = el.drawerSlot.firstElementChild;
+    if (d) { d.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+  }, 40);
+}
+
+function nextQuestion() {
+  if (state.index === ROUND_SIZE - 1) { return; }
+  state.index += 1;
+  state.picked = -1;
+  renderQuestion();
+  el.content.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function restartRound() {
+  state.index = 0;
+  state.picked = -1;
+  state.correct = 0;
+  state.wrong = 0;
+  state.roundWrongAdded = 0;
+  renderQuestion();
+  el.content.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+document.getElementById("phone").addEventListener("click", function (ev) {
+  var opt = ev.target.closest(".opt");
+  if (opt && !opt.classList.contains("locked")) { judge(Number(opt.getAttribute("data-i"))); return; }
+  if (ev.target.closest("#btn-next")) { nextQuestion(); return; }
+  if (ev.target.closest("#btn-restart")) { restartRound(); return; }
+  if (ev.target.closest("#btn-hint")) {
+    state.hintOpen = !state.hintOpen;
+    el.hint.className = state.hintOpen ? "hint-panel show" : "hint-panel";
+    el.btnHint.innerHTML = '<span id="hint-icon">' + ICONS.bulb + "</span>" + (state.hintOpen ? "收起规律提示" : "显示规律提示");
+    return;
+  }
+});
+
+document.getElementById("phone").addEventListener("keydown", function (ev) {
+  if (ev.key === "Enter" && state.picked >= 0) {
+    if (state.index === ROUND_SIZE - 1) { restartRound(); } else { nextQuestion(); }
+    return;
+  }
+  var n = Number(ev.key);
+  if (n >= 1 && n <= 4 && state.picked < 0) { judge(n - 1); }
+});
+
+el.statusIcons.innerHTML = ICONS.status;
+renderTabbar();
+renderQuestion();
+</script>
+</body>
+</html>
