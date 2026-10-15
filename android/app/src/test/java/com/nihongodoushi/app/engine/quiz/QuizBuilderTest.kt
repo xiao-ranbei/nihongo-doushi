@@ -121,7 +121,65 @@ class QuizBuilderTest {
     }
 
     // ------------------------------------------------------------------
-    // 3) 优先级：可行时 D3 误形进入选项
+    // 3) 硬性口径：选项必须全部来自当前目标词的变形（不得混入其他词）
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `动词选项全部来自该词的变形`() {
+        var cases = 0
+        for (verb in VerbData.VERBS) {
+            val allowed = mutableSetOf<String>()
+            for (voice in VerbData.VOICES) {
+                for (inflection in VerbData.INFLECTIONS) {
+                    allowed.add(norm(VerbEngine.conjugate(verb, voice.id, inflection.id).written))
+                    allowed.addAll(WrongForms.verbWrongForms(verb, voice.id, inflection.id).map(::norm))
+                }
+            }
+
+            for (voice in VerbData.VOICES) {
+                for (inflection in VerbData.INFLECTIONS) {
+                    val label = "${verb.id} / ${voice.id} / ${inflection.id}"
+                    val options = QuizBuilder.buildVerbOptions(verb, voice.id, inflection.id, Random(3))
+                    for (option in options) {
+                        assertTrue(
+                            norm(option.text) in allowed,
+                            "选项不属于该动词的变形：$label 选项=${option.text}（该词变形数=${allowed.size}）",
+                        )
+                    }
+                    cases += 1
+                }
+            }
+        }
+        assertEquals(VerbData.VERBS.size * VerbData.VOICES.size * VerbData.INFLECTIONS.size, cases)
+    }
+
+    @Test
+    fun `形容词选项全部来自该词的变形`() {
+        var cases = 0
+        for (adjective in AdjectiveData.ADJECTIVES) {
+            val allowed = mutableSetOf<String>()
+            for (form in AdjectiveData.FORMS) {
+                allowed.add(norm(AdjectiveEngine.conjugate(adjective, form.id).written))
+                allowed.addAll(WrongForms.adjectiveWrongForms(adjective, form.id).map(::norm))
+            }
+
+            for (form in AdjectiveData.FORMS) {
+                val label = "${adjective.id} / ${form.id}"
+                val options = QuizBuilder.buildAdjectiveOptions(adjective, form.id, Random(3))
+                for (option in options) {
+                    assertTrue(
+                        norm(option.text) in allowed,
+                        "选项不属于该形容词的变形：$label 选项=${option.text}（该词变形数=${allowed.size}）",
+                    )
+                }
+                cases += 1
+            }
+        }
+        assertEquals(AdjectiveData.ADJECTIVES.size * AdjectiveData.FORMS.size, cases)
+    }
+
+    // ------------------------------------------------------------------
+    // 4) 优先级：可行时 D3 误形进入选项
     // ------------------------------------------------------------------
 
     @Test
