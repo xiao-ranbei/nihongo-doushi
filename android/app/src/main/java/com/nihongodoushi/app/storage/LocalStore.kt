@@ -57,6 +57,42 @@ class LocalStore(context: Context) {
     fun saveDaily(record: DailyRecord): Boolean =
         writeRaw(StorageKeys.DAILY, json.encodeToString(record))
 
+    fun loadHistory(): ActivityHistory {
+        val raw = readRaw(StorageKeys.HISTORY) ?: return ActivityHistory()
+        return try {
+            val history = json.decodeFromString<ActivityHistory>(raw)
+            ActivityHistory(
+                days = history.days
+                    .filter { it.date.isNotBlank() && it.verbAnswers >= 0 && it.adjectiveAnswers >= 0 && it.seconds >= 0 && it.tasks >= 0 }
+                    .sortedBy { it.date },
+            )
+        } catch (error: Exception) {
+            lastLoadInvalid = true
+            ActivityHistory()
+        }
+    }
+
+    fun saveHistory(history: ActivityHistory): Boolean =
+        writeRaw(StorageKeys.HISTORY, json.encodeToString(history))
+
+    fun loadProgress(): PracticeProgress {
+        val raw = readRaw(StorageKeys.PRACTICE) ?: return PracticeProgress()
+        return try {
+            val progress = json.decodeFromString<PracticeProgress>(raw)
+            PracticeProgress(
+                verbIds = progress.verbIds.filter { it.isNotBlank() }.distinct(),
+                adjectiveIds = progress.adjectiveIds.filter { it.isNotBlank() }.distinct(),
+                masteredMistakes = if (progress.masteredMistakes >= 0) progress.masteredMistakes else 0,
+            )
+        } catch (error: Exception) {
+            lastLoadInvalid = true
+            PracticeProgress()
+        }
+    }
+
+    fun saveProgress(progress: PracticeProgress): Boolean =
+        writeRaw(StorageKeys.PRACTICE, json.encodeToString(progress))
+
     private fun loadStats(key: String): ModuleStats {
         val raw = readRaw(key) ?: return ModuleStats()
         return try {

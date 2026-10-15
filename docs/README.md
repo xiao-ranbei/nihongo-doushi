@@ -19,6 +19,8 @@
 | [android-answer-screen-spec.md](android-answer-screen-spec.md) | 已确认的答题界面结构与视觉布局说明（方案 A + 底部判定抽屉、图标方向 1） | 设计规格已定；实现待开始 |
 | [design/answer-choice-prototypes.html](design/answer-choice-prototypes.html) | 三版选择题答题界面可交互原型（对比用） | 讨论用原型，不是正式页面 |
 | [design/answer-screen-A-drawer.html](design/answer-screen-A-drawer.html) | 确认版原型：方案 A + 底部判定抽屉（7 个状态/标注视图） | 讨论用原型，不是正式页面 |
+| [android-two-tab-spec.md](android-two-tab-spec.md) | 底栏两标签（主页/我的）重设计：结构、层级、视觉、数据口径、选定清单与实现记录 | 已实现 |
+| [design/home-mine-prototypes.html](design/home-mine-prototypes.html) | 主页/我的 三版可交互原型（框内底栏可切换） | 讨论用原型，不是正式页面 |
 | [design/icon-concepts/](design/icon-concepts/) | 应用图标方向 1「あ・纸页」资产（已轮廓化，含 VectorDrawable）与生成/自检脚本 | 可接入 |
 
 ## 信息来源与更新规则

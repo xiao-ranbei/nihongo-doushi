@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>主页 / 我的 · 两标签重设计原型（3 版）</title>
+<style>
+  :root {
+    --paper: #f6f5f0;
+    --surface: #fffefa;
+    --ink: #26332e;
+    --muted: #7b867e;
+    --line: #e7e9e1;
+    --line-faint: #eef0eb;
+    --line-control: #dfe5dc;
+    --line-accent: #c6d4c7;
+    --green: #326151;
+    --green-dark: #254a3d;
+    --green-pale: #edf3eb;
+    --bg-pale-green: #f4f8f2;
+    --bg-pale-strong: #e9eee7;
+    --orange: #b8784f;
+    --orange-pale: #f8efe6;
+    --orange-deep: #895936;
+    --red: #a54e45;
+    --red-pale: #fbf0ed;
+    --text-strong: #657268;
+    --reading: #839087;
+    --meaning: #627967;
+    --shadow-card: 0 2px 10px rgba(43, 55, 47, 0.05), 0 12px 32px rgba(43, 55, 47, 0.045);
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  @font-face {
+    font-family: "LXGW ZhenKai GB";
+    src: url("../../web/font/LXGWZhenKaiGB-Regular.subset.woff2") format("woff2");
+    font-display: swap;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #e9ebe4; color: var(--ink);
+    font-family: "LXGW ZhenKai GB", "Yu Gothic", "Noto Sans JP", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page-wrap { max-width: 1500px; margin: 0 auto; padding: 30px 26px 60px; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.14em; color: var(--muted); margin: 0 0 6px; }
+  h1 { font-size: 25px; margin: 0 0 8px; }
+  .lede { margin: 0 0 6px; color: var(--text-strong); font-size: 14px; line-height: 1.75; max-width: 1100px; }
+  .lede b { color: var(--ink); }
+  .hint-line { font-size: 12.5px; color: var(--muted); margin: 12px 0 24px; }
+  .stage { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  .variant { width: 392px; flex: 0 0 auto; }
+  .variant-title { display: flex; align-items: baseline; gap: 8px; margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+  .tag {
+    font-size: 11px; font-weight: 400; color: var(--green-dark);
+    background: var(--green-pale); border: 1px solid var(--line-accent);
+    border-radius: 999px; padding: 2px 8px;
+  }
+  .variant-note { font-size: 12.5px; color: var(--text-strong); line-height: 1.6; margin: 0 0 12px; min-height: 56px; }
+
+  .phone {
+    width: 392px; height: 812px; background: var(--paper);
+    border-radius: 34px; border: 1px solid var(--line-control);
+    box-shadow: 0 24px 60px rgba(43, 55, 47, 0.16);
+    overflow: hidden; display: flex; flex-direction: column; position: relative;
+  }
+  .status-bar {
+    height: 34px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px; font-size: 11px; color: var(--text-strong); flex: 0 0 auto;
+  }
+  .screen { flex: 1 1 auto; overflow-y: auto; padding: 0 16px 12px; scrollbar-width: none; }
+  .screen::-webkit-scrollbar { display: none; }
+  .screen-page { display: none; }
+  .screen-page.active { display: block; animation: rise 200ms var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- 通用 ---------- */
+  .head { padding: 6px 2px 14px; }
+  .head .k { font-size: 11.5px; color: var(--muted); letter-spacing: 0.04em; }
+  .head h2 { font-size: 23px; margin: 4px 0 0; font-weight: 700; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow-card); padding: 15px;
+  }
+  .muted { color: var(--muted); }
+  .strong { color: var(--text-strong); }
+  .icon-block {
+    width: 40px; height: 40px; border-radius: 12px; background: var(--green-pale);
+    display: flex; align-items: center; justify-content: center; color: var(--green-dark); flex: 0 0 auto;
+  }
+  .icon-block.orange { background: var(--orange-pale); color: var(--orange-deep); }
+  .icon-block.red { background: var(--red-pale); color: var(--red); }
+
+  /* 概览条 */
+  .glance { display: flex; align-items: center; gap: 14px; }
+  .glance .item { flex: 1 1 0; text-align: center; }
+  .glance .item .v { font-size: 21px; font-weight: 700; color: var(--green-dark); }
+  .glance .item .k { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+  .glance .sep { width: 1px; height: 30px; background: var(--line); }
+
+  /* 大入口卡 */
+  .entry-card {
+    display: flex; align-items: center; gap: 13px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow-card); padding: 15px 14px; margin-bottom: 11px;
+    cursor: pointer; transition: border-color 140ms var(--ease), background 140ms var(--ease);
+  }
+  .entry-card:hover { border-color: var(--line-accent); background: var(--bg-pale-green); }
+  .entry-card .body { flex: 1 1 auto; min-width: 0; }
+  .entry-card .t { font-size: 16px; font-weight: 700; }
+  .entry-card .s { font-size: 12px; color: var(--text-strong); margin-top: 3px; }
+  .entry-card .go { flex: 0 0 auto; color: var(--muted); }
+
+  /* 紧凑入口（横排） */
+  .entry-row { display: flex; gap: 11px; }
+  .entry-mini {
+    flex: 1 1 0; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 16px; box-shadow: var(--shadow-card); padding: 13px 10px;
+    text-align: center; cursor: pointer;
+  }
+  .entry-mini:hover { border-color: var(--line-accent); }
+  .entry-mini .t { font-size: 13.5px; font-weight: 700; margin-top: 8px; }
+  .entry-mini .s { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .entry-mini .icon-block { margin: 0 auto; }
+
+  /* 列表入口 */
+  .list-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow-card); overflow: hidden;
+  }
+  .list-row {
+    display: flex; align-items: center; gap: 12px; padding: 14px;
+    border-bottom: 1px solid var(--line-faint); cursor: pointer;
+  }
+  .list-row:last-child { border-bottom: none; }
+  .list-row:hover { background: var(--bg-pale-green); }
+  .list-row .body { flex: 1 1 auto; }
+  .list-row .t { font-size: 15px; font-weight: 700; }
+  .list-row .s { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .list-row .num { font-size: 13px; color: var(--text-strong); flex: 0 0 auto; }
+  .list-row .go { color: var(--muted); flex: 0 0 auto; }
+  .list-row.dim { opacity: 0.55; cursor: default; }
+  .list-row.dim:hover { background: var(--surface); }
+
+  /* 周历 */
+  .week { display: flex; justify-content: space-between; }
+  .week .d { text-align: center; }
+  .week .d .n { font-size: 10.5px; color: var(--muted); }
+  .week .d .dot {
+    width: 30px; height: 30px; border-radius: 10px; margin-top: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--text-strong); background: var(--paper);
+    border: 1px solid var(--line);
+  }
+  .week .d.done .dot { background: var(--green-pale); border-color: var(--line-accent); color: var(--green-dark); font-weight: 700; }
+  .week .d.today .dot { background: var(--green); border-color: var(--green); color: #fffefa; font-weight: 700; }
+
+  /* 进度环 */
+  .ring-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 0 2px; }
+  .ring { position: relative; }
+  .ring .val { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring .val b { font-size: 30px; font-weight: 700; color: var(--green-dark); }
+  .ring .val span { font-size: 11px; color: var(--muted); }
+  .ring-mini { position: relative; width: 76px; height: 76px; }
+  .ring-mini .val { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring-mini .val b { font-size: 17px; font-weight: 700; color: var(--green-dark); }
+  .ring-mini .val span { font-size: 9.5px; color: var(--muted); }
+
+  /* 指标格 */
+  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+  .metric { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 13px; }
+  .metric .v { font-size: 22px; font-weight: 700; }
+  .metric .v small { font-size: 11.5px; font-weight: 400; color: var(--muted); margin-left: 3px; }
+  .metric .k { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .metric .bar { height: 5px; border-radius: 999px; background: var(--line-faint); margin-top: 9px; overflow: hidden; }
+  .metric .bar i { display: block; height: 100%; border-radius: 999px; background: var(--green); }
+
+  /* 时长主卡 */
+  .big-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-card); padding: 18px 16px; }
+  .duration { display: flex; align-items: flex-end; gap: 10px; }
+  .duration .num { font-size: 46px; font-weight: 700; line-height: 1; color: var(--green-dark); }
+  .duration .unit { font-size: 14px; color: var(--muted); padding-bottom: 6px; }
+  .duration-side { display: flex; gap: 18px; margin-top: 14px; padding-top: 13px; border-top: 1px dashed var(--line); }
+  .duration-side .item .v { font-size: 18px; font-weight: 700; }
+  .duration-side .item .k { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+
+  /* 模块进度条 */
+  .mod-line { margin-bottom: 13px; }
+  .mod-line .top { display: flex; justify-content: space-between; font-size: 12.5px; }
+  .mod-line .top b { font-weight: 700; }
+  .mod-line .track { height: 7px; border-radius: 999px; background: var(--line-faint); margin-top: 7px; overflow: hidden; }
+  .mod-line .track i { display: block; height: 100%; border-radius: 999px; }
+
+  .section-label { font-size: 11.5px; color: var(--muted); letter-spacing: 0.04em; margin: 16px 2px 9px; }
+
+  /* 待复习横幅 */
+  .banner {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--orange-pale); border: 1px solid var(--orange);
+    border-radius: 14px; padding: 11px 13px; font-size: 12.5px; color: var(--orange-deep);
+  }
+
+  /* 数据来源标记 */
+  .need {
+    display: inline-block; font-size: 9.5px; color: var(--red); background: var(--red-pale);
+    border: 1px solid var(--line); border-radius: 999px; padding: 1px 6px; margin-left: 5px; vertical-align: 2px;
+  }
+
+  /* 底栏（两标签） */
+  .tabbar {
+    flex: 0 0 auto; height: 74px; border-top: 1px solid var(--line); background: var(--surface);
+    display: flex; align-items: center; padding: 0 46px 14px;
+  }
+  .tab {
+    flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 11px; color: var(--muted); cursor: pointer; padding-top: 6px;
+  }
+  .tab .pill {
+    display: flex; align-items: center; justify-content: center;
+    padding: 5px 22px; border-radius: 999px; transition: background 150ms var(--ease), color 150ms var(--ease);
+  }
+  .tab.active { color: var(--green-dark); font-weight: 700; }
+  .tab.active .pill { background: var(--green-pale); }
+  .tab.active .pill svg { color: var(--green); }
+
+  /* 说明区 */
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-card); padding: 22px 24px; margin-top: 30px; }
+  .panel h2 { font-size: 18px; margin: 0 0 4px; }
+  .panel .sub { font-size: 13px; color: var(--text-strong); margin: 0 0 16px; line-height: 1.7; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line-faint); vertical-align: top; }
+  th { color: var(--muted); font-weight: 400; font-size: 11.5px; }
+  td code { font-family: Consolas, monospace; font-size: 11.5px; background: var(--bg-pale-green); padding: 1px 5px; border-radius: 4px; }
+  .ok { color: var(--green-dark); }
+  .warn { color: var(--red); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .kv { font-size: 12.5px; color: var(--text-strong); line-height: 1.9; }
+  .kv b { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <header>
+    <p class="eyebrow">NIhongo-Doushi · 底栏两标签重设计</p>
+    <h1>主页 / 我的 · 三版原型</h1>
+    <p class="lede">
+      底栏从四个标签收敛为 <b>主页 + 我的</b>，动词练习、形容词练习、错题本降为<b>二级页面</b>，由主页入口进入。三个版本的信息组织与视觉重心不同，<b>框内底栏可点击切换两页</b>，请直接感受切换与选中态。
+    </p>
+    <p class="hint-line">标有 <span class="need">需新增采集</span> 的指标当前数据模型算不出来，采集方案见页末「数据口径」表。</p>
+  </header>
+
+  <div class="stage">
+
+    <!-- ================= 版本 1：卡片优先 ================= -->
+    <section class="variant">
+      <h2 class="variant-title">版本 1 · 卡片优先 <span class="tag">推荐</span></h2>
+      <p class="variant-note">主页用三张大卡承载模块入口（热区大、一屏进任何模块）；我的页用「时长主卡 + 指标格」，数字最大、最易扫读。</p>
+      <div class="phone" data-variant="1">
+        <div class="status-bar"><span>9:41</span><span class="status-icons" data-icons="status"></span></div>
+        <div class="screen">
+          <!-- 主页 -->
+          <div class="screen-page active" data-page="home">
+            <div class="head">
+              <div class="k">2026年10月15日 周四</div>
+              <h2>今天继续</h2>
+            </div>
+            <div class="card glance">
+              <div class="item"><div class="v">12</div><div class="k">今日答题</div></div>
+              <div class="sep"></div>
+              <div class="item"><div class="v">5</div><div class="k">连续天数</div></div>
+              <div class="sep"></div>
+              <div class="item"><div class="v">75%</div><div class="k">正确率</div></div>
+            </div>
+            <div class="section-label">练习入口</div>
+            <div class="entry-card">
+              <span class="icon-block" data-icons="verb"></span>
+              <span class="body">
+                <span class="t">动词练习</span>
+                <span class="s">44 个词条 · 上次练到「ます形」</span>
+              </span>
+              <span class="go" data-icons="chev"></span>
+            </div>
+            <div class="entry-card">
+              <span class="icon-block" data-icons="adj"></span>
+              <span class="body">
+                <span class="t">形容词练习</span>
+                <span class="s">15 个词条 · 今日练 4 题</span>
+              </span>
+              <span class="go" data-icons="chev"></span>
+            </div>
+            <div class="entry-card">
+              <span class="icon-block red" data-icons="wrong"></span>
+              <span class="body">
+                <span class="t">错题本</span>
+                <span class="s">7 道待复习 · 其中 2 道今天到期</span>
+              </span>
+              <span class="go" data-icons="chev"></span>
+            </div>
+          </div>
+
+          <!-- 我的 -->
+          <div class="screen-page" data-page="mine">
+            <div class="head">
+              <div class="k">今天 · 10月15日</div>
+              <h2>我的</h2>
+            </div>
+            <div class="big-card">
+              <div class="duration">
+                <span class="num">24</span>
+                <span class="unit">分钟 · 今日学习时长 <span class="need">需新增采集</span></span>
+              </div>
+              <div class="duration-side">
+                <div class="item"><div class="v">3</div><div class="k">完成任务<span class="need">需新增</span></div></div>
+                <div class="item"><div class="v">12</div><div class="k">答题数</div></div>
+                <div class="item"><div class="v">75%</div><div class="k">正确率</div></div>
+              </div>
+            </div>
+            <div class="section-label">学习进度</div>
+            <div class="metrics">
+              <div class="metric">
+                <div class="v">18<small>/ 59</small></div>
+                <div class="k">词库已练词条<span class="need">需新增</span></div>
+                <div class="bar"><i style="width:31%"></i></div>
+              </div>
+              <div class="metric">
+                <div class="v">2<small>/ 9</small></div>
+                <div class="k">错题已掌握</div>
+                <div class="bar"><i style="width:22%"></i></div>
+              </div>
+              <div class="metric">
+                <div class="v">5<small>天</small></div>
+                <div class="k">连续学习</div>
+                <div class="bar"><i style="width:50%"></i></div>
+              </div>
+              <div class="metric">
+                <div class="v">36<small>题</small></div>
+                <div class="k">本周累计答题</div>
+                <div class="bar"><i style="width:60%"></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar" data-tabbar></div>
+      </div>
+    </section>
+
+    <!-- ================= 版本 2：数据优先 ================= -->
+    <section class="variant">
+      <h2 class="variant-title">版本 2 · 数据优先 <span class="tag">进度感强</span></h2>
+      <p class="variant-note">主页顶部一枚大进度环（今日目标完成度）做主视觉，入口收成三个紧凑卡；我的页用三环并列，一眼看全三个维度。</p>
+      <div class="phone" data-variant="2">
+        <div class="status-bar"><span>9:41</span><span class="status-icons" data-icons="status"></span></div>
+        <div class="screen">
+          <div class="screen-page active" data-page="home">
+            <div class="head">
+              <div class="k">2026年10月15日 周四</div>
+              <h2>今日进度</h2>
+            </div>
+            <div class="card ring-wrap">
+              <div class="ring" data-ring="60"></div>
+              <div style="text-align:center">
+                <div style="font-size:12.5px;color:var(--text-strong)">今日目标 12 / 20 题</div>
+                <div style="font-size:11.5px;color:var(--muted);margin-top:3px">连续学习 5 天 · 正确率 75%</div>
+              </div>
+            </div>
+            <div class="section-label">开始练习</div>
+            <div class="entry-row">
+              <div class="entry-mini">
+                <span class="icon-block" data-icons="verb"></span>
+                <div class="t">动词</div>
+                <div class="s">44 词条</div>
+              </div>
+              <div class="entry-mini">
+                <span class="icon-block" data-icons="adj"></span>
+                <div class="t">形容词</div>
+                <div class="s">15 词条</div>
+              </div>
+              <div class="entry-mini">
+                <span class="icon-block red" data-icons="wrong"></span>
+                <div class="t">错题本</div>
+                <div class="s">7 道</div>
+              </div>
+            </div>
+            <div style="margin-top:11px" class="banner">
+              <span data-icons="clock"></span>
+              <span>2 道错题今天到期，建议先重练</span>
+            </div>
+          </div>
+
+          <div class="screen-page" data-page="mine">
+            <div class="head">
+              <div class="k">今天 · 10月15日</div>
+              <h2>我的</h2>
+            </div>
+            <div class="card" style="display:flex;justify-content:space-around;padding:16px 12px">
+              <div style="text-align:center">
+                <div class="ring-mini" data-ring-mini="48"></div>
+                <div style="font-size:10.5px;color:var(--muted);margin-top:4px">时长 24 分<span class="need">新</span></div>
+              </div>
+              <div style="text-align:center">
+                <div class="ring-mini" data-ring-mini="60"></div>
+                <div style="font-size:10.5px;color:var(--muted);margin-top:4px">任务 3 个<span class="need">新</span></div>
+              </div>
+              <div style="text-align:center">
+                <div class="ring-mini" data-ring-mini="31"></div>
+                <div style="font-size:10.5px;color:var(--muted);margin-top:4px">覆盖 31%<span class="need">新</span></div>
+              </div>
+            </div>
+            <div class="section-label">今日明细</div>
+            <div class="list-card">
+              <div class="list-row">
+                <span class="icon-block" data-icons="clock"></span>
+                <span class="body"><span class="t">学习时长</span><span class="s">动词 16 分 · 形容词 8 分<span class="need">需新增采集</span></span></span>
+                <span class="num">24 分</span>
+              </div>
+              <div class="list-row">
+                <span class="icon-block" data-icons="check"></span>
+                <span class="body"><span class="t">完成任务</span><span class="s">每轮 5 题记 1 个<span class="need">需新增</span></span></span>
+                <span class="num">3 个</span>
+              </div>
+              <div class="list-row">
+                <span class="icon-block" data-icons="list"></span>
+                <span class="body"><span class="t">今日答题</span><span class="s">动词 8 · 形容词 4</span></span>
+                <span class="num">12 题</span>
+              </div>
+              <div class="list-row">
+                <span class="icon-block" data-icons="star"></span>
+                <span class="body"><span class="t">正确率</span><span class="s">本轮累计口径</span></span>
+                <span class="num">75%</span>
+              </div>
+              <div class="list-row">
+                <span class="icon-block red" data-icons="wrong"></span>
+                <span class="body"><span class="t">错题掌握</span><span class="s">连续答对 6 次即毕业</span></span>
+                <span class="num">2 / 9</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar" data-tabbar></div>
+      </div>
+    </section>
+
+    <!-- ================= 版本 3：清单优先 ================= -->
+    <section class="variant">
+      <h2 class="variant-title">版本 3 · 清单优先 <span class="tag">信息密度高</span></h2>
+      <p class="variant-note">主页顶部一周打卡条 + 列表式入口（一屏可容纳更多模块，未来扩展不用改结构）；我的页用模块进度条呈现「学到哪了」。</p>
+      <div class="phone" data-variant="3">
+        <div class="status-bar"><span>9:41</span><span class="status-icons" data-icons="status"></span></div>
+        <div class="screen">
+          <div class="screen-page active" data-page="home">
+            <div class="head">
+              <div class="k">2026年10月15日 周四</div>
+              <h2>今天继续</h2>
+            </div>
+            <div class="card">
+              <div class="week">
+                <div class="d done"><div class="n">一</div><div class="dot">12</div></div>
+                <div class="d done"><div class="n">二</div><div class="dot">8</div></div>
+                <div class="d done"><div class="n">三</div><div class="dot">15</div></div>
+                <div class="d done"><div class="n">四</div><div class="dot">10</div></div>
+                <div class="d today"><div class="n">今天</div><div class="dot">12</div></div>
+                <div class="d"><div class="n">六</div><div class="dot">–</div></div>
+                <div class="d"><div class="n">日</div><div class="dot">–</div></div>
+              </div>
+            </div>
+            <div class="section-label">功能模块</div>
+            <div class="list-card">
+              <div class="list-row">
+                <span class="icon-block" data-icons="verb"></span>
+                <span class="body"><span class="t">动词练习</span><span class="s">44 词条 · 7 语态 · 18 活用</span></span>
+                <span class="num">今日 8</span>
+                <span class="go" data-icons="chev"></span>
+              </div>
+              <div class="list-row">
+                <span class="icon-block" data-icons="adj"></span>
+                <span class="body"><span class="t">形容词练习</span><span class="s">15 词条 · 7 形式</span></span>
+                <span class="num">今日 4</span>
+                <span class="go" data-icons="chev"></span>
+              </div>
+              <div class="list-row">
+                <span class="icon-block red" data-icons="wrong"></span>
+                <span class="body"><span class="t">错题本</span><span class="s">7 道待复习 · 2 道今日到期</span></span>
+                <span class="go" data-icons="chev"></span>
+              </div>
+              <div class="list-row dim">
+                <span class="icon-block" data-icons="list"></span>
+                <span class="body"><span class="t">活用速查</span><span class="s">后续版本开放</span></span>
+                <span class="num">待开放</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="screen-page" data-page="mine">
+            <div class="head">
+              <div class="k">今天 · 10月15日</div>
+              <h2>我的</h2>
+            </div>
+            <div class="card" style="display:flex;align-items:center;gap:16px">
+              <div style="flex:1 1 auto">
+                <div class="glance" style="gap:0">
+                  <div class="item" style="text-align:left">
+                    <div class="v" style="font-size:26px">24<small style="font-size:12px;font-weight:400;color:var(--muted)"> 分</small></div>
+                    <div class="k">今日学习时长<span class="need">需新增采集</span></div>
+                  </div>
+                </div>
+              </div>
+              <div style="width:1px;height:44px;background:var(--line)"></div>
+              <div style="text-align:center">
+                <div style="font-size:26px;font-weight:700">3</div>
+                <div style="font-size:10.5px;color:var(--muted)">完成任务<span class="need">新</span></div>
+              </div>
+            </div>
+            <div class="section-label">学习进度</div>
+            <div class="card">
+              <div class="mod-line">
+                <div class="top"><span>动词 · 已练词条</span><b>12 / 44</b></div>
+                <div class="track"><i style="width:27%;background:var(--green)"></i></div>
+              </div>
+              <div class="mod-line">
+                <div class="top"><span>形容词 · 已练词条</span><b>6 / 15</b></div>
+                <div class="track"><i style="width:40%;background:var(--green)"></i></div>
+              </div>
+              <div class="mod-line" style="margin-bottom:0">
+                <div class="top"><span>错题本 · 已掌握</span><b>2 / 9</b></div>
+                <div class="track"><i style="width:22%;background:var(--orange)"></i></div>
+              </div>
+            </div>
+            <div class="section-label">今日明细</div>
+            <div class="list-card">
+              <div class="list-row"><span class="body"><span class="t">答题数</span><span class="s">动词 8 · 形容词 4</span></span><span class="num">12 题</span></div>
+              <div class="list-row"><span class="body"><span class="t">正确率</span><span class="s">本轮累计口径</span></span><span class="num">75%</span></div>
+              <div class="list-row"><span class="body"><span class="t">连续学习</span><span class="s">最长 9 天</span></span><span class="num">5 天</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar" data-tabbar></div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ================= 说明 ================= -->
+  <section class="panel">
+    <h2>两页的结构、层级与优先级</h2>
+    <p class="sub">三个版本共用同一套结构与视觉规范，差别只在「谁做主视觉」与「信息密度」。下表是确定的骨架，版本差异列在最后一列。</p>
+    <table>
+      <thead><tr><th style="width:96px">位置</th><th style="width:150px">区域</th><th style="width:200px">内容与作用</th><th>层级与视觉权重</th><th style="width:150px">版本差异</th></tr></thead>
+      <tbody>
+        <tr>
+          <td rowspan="4">主页</td>
+          <td>① 页头（日期 + 主标题）</td>
+          <td>今天的日期与一句主标题，给「今天在做什么」定调</td>
+          <td>第三权重：11.5sp 灰日期 + 23sp 主标题</td>
+          <td>一致</td>
+        </tr>
+        <tr>
+          <td>② 今日概览 / 进度主视觉</td>
+          <td>今日答题、连续天数、正确率；或今日目标完成度</td>
+          <td><b>第一权重</b>：纸白卡 + 最大数字（21–30sp 主色）</td>
+          <td>v1 概览条 / v2 大进度环 / v3 周历条</td>
+        </tr>
+        <tr>
+          <td>③ 模块入口区</td>
+          <td>动词练习 / 形容词练习 / 错题本（+ 未来的速查占位）</td>
+          <td><b>第二权重</b>：入口卡可点，热区 ≥ 56dp，右箭头暗示二级页</td>
+          <td>v1 三张大卡 / v2 三个紧凑卡 / v3 列表行</td>
+        </tr>
+        <tr>
+          <td>④ 待办提示（条件出现）</td>
+          <td>「2 道错题今天到期」等需要行动的信息</td>
+          <td>第四权重但高对比（淡橙底），仅在有事项时出现</td>
+          <td>v1 并入错题卡副信息 / v2 独立横幅 / v3 并入列表行</td>
+        </tr>
+        <tr>
+          <td rowspan="3">我的</td>
+          <td>① 时长主卡</td>
+          <td>今日学习时长（分钟）+ 完成任务数 + 答题数 + 正确率</td>
+          <td><b>第一权重</b>：46sp 时长数字是整页视觉锚点</td>
+          <td>v1 大数字主卡 / v2 三环并列 / v3 紧凑双数字条</td>
+        </tr>
+        <tr>
+          <td>② 学习进度区</td>
+          <td>词库覆盖（已练/总数）、错题掌握（毕业/总数）、连续天数</td>
+          <td><b>第二权重</b>：指标格或进度条，带 5–7dp 进度条</td>
+          <td>v1 2×2 指标格 / v2 明细列表 / v3 模块横向进度条</td>
+        </tr>
+        <tr>
+          <td>③ 明细列表</td>
+          <td>分模块明细（动词/形容词各自的题量与时长）、口径说明</td>
+          <td>第三权重：14–15sp 标题 + 11.5sp 副信息</td>
+          <td>v2/v3 有独立明细；v1 并入指标格</td>
+        </tr>
+        <tr>
+          <td>底栏</td>
+          <td>两个标签</td>
+          <td>主页 / 我的</td>
+          <td>选中态 = 绿色 pill 底 + 主色图标 + 加粗文字；未选中 = 灰</td>
+          <td>一致</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="two-col" style="margin-top:22px">
+      <div>
+        <h2 style="font-size:15px">导航层级变化（关键）</h2>
+        <div class="kv">
+          <b>改前</b>：底栏四个平级标签（主页 / 动词 / 形容词 / 错题本）<br>
+          <b>改后</b>：底栏两个标签（主页 / 我的），动词、形容词、错题本成为<b>二级页面</b><br>
+          <b>返回方式</b>：二级页顶部返回箭头 + 系统返回键；练习中返回不丢当前题（状态提升在根级，已实现）<br>
+          <b>收益</b>：底栏稳定、模块可扩展（加「听力」「单词」不用动底栏）<br>
+          <b>代价</b>：进模块多一次点击 → 用大热区入口卡补偿
+        </div>
+      </div>
+      <div>
+        <h2 style="font-size:15px">视觉风格（沿用现有纸感，不新造色）</h2>
+        <div class="kv">
+          页面底 <code>#f6f5f0</code> → 纸白卡 <code>#fffefa</code> + 1dp 描边 + 双层轻阴影 → 语义淡色（淡绿 <code>#edf3eb</code> / 淡橙 <code>#f8efe6</code>）三级层次；<br>
+          主色 <code>#326151</code> 只用于「数字与激活态」，橙色只用于「需要行动」，红色只用于「错误与错题」；<br>
+          圆角统一 14–18dp；图标一律 Material Icons（零 emoji）；动效 200ms、统一缓动、禁弹跳。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>数据口径：哪些现在就有、哪些要新增采集</h2>
+    <p class="sub">「我的」页有三项指标当前存储层拿不到，必须先扩采集才有得显示。这张表是这一页能不能按时上的前提。</p>
+    <table>
+      <thead><tr><th style="width:150px">指标</th><th style="width:120px">现状</th><th>口径与采集建议</th></tr></thead>
+      <tbody>
+        <tr><td>今日答题数</td><td class="ok">已有</td><td><code>daily-v1.verbAnswers / adjectiveAnswers</code>，主页与我的页共用同一值</td></tr>
+        <tr><td>连续学习天数</td><td class="ok">已有</td><td><code>daily-v1.streak / best</code>，沿用现有「今天或昨天有记录才连续」的判定</td></tr>
+        <tr><td>正确率</td><td class="ok">已有</td><td><code>stats-v1.correct / incorrect</code>；建议统一为「本轮累计」口径（与练习页统计卡一致）</td></tr>
+        <tr><td>错题掌握</td><td class="ok">已有</td><td>错题本 <code>correctStreak</code>：连续答对 6 次毕业；「已掌握」= 已毕业数，「总数」= 在册 + 已毕业</td></tr>
+        <tr><td><b>学习时长</b></td><td class="warn">需新增</td><td>前台计时：进入练习屏开始计时，退到后台 / 离开模块暂停；按模块累加写入 <code>daily-v1</code> 新增字段 <code>verbSeconds / adjSeconds</code>（或新键 <code>activity-v1</code>，带版本号）。<b>不上报、仅本地</b></td></tr>
+        <tr><td><b>完成任务数</b></td><td class="warn">需新增</td><td>沿用现有「一轮 5 题」（<code>ROUND_SIZE</code>）：完成一轮 +1；完成一次错题重练也 +1。写入 <code>daily-v1.tasksDone</code></td></tr>
+        <tr><td><b>词库覆盖进度</b></td><td class="warn">需新增</td><td>记录「已练过的词条 id 集合」（新键 <code>practice-v1</code>，带版本号 + 防御性校验）；进度 = 已练词条 ÷ 词库总数（动词 44 / 形容词 15，共 59）</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>请选择</h2>
+    <p class="sub">可以整版选，也可以混搭（例如主页用 v1 的大卡、我的页用 v2 的三环）。</p>
+    <div class="kv">
+      <b>Q-A 主页版本</b>：v1 卡片优先（推荐：热区大、一屏进任何模块）／ v2 数据优先（进度感最强，但入口变小）／ v3 清单优先（密度最高，适合模块继续增加）<br>
+      <b>Q-B 我的版本</b>：v1 时长主卡 + 指标格（推荐：数字最大最好扫）／ v2 三环 + 明细（三个维度一眼看全）／ v3 模块进度条 + 明细（最直观回答"学到哪了"）<br>
+      <b>Q-C 是否同时扩采集</b>：学习时长 / 完成任务数 / 词库覆盖三项需新增埋点与存储字段；不做则「我的」页只能显示已有四项（答题数、正确率、连续天数、错题掌握）<br>
+      <b>Q-D 是否保留练习页内的「统计清零」</b>：现挂在筛选抽屉里，若「我的」页承接统计展示，可考虑移到我的页
+    </div>
+  </section>
+
+</div>
+
+<script>
+"use strict";
+
+var ICONS = {
+  status: '<svg width="14" height="10" viewBox="0 0 14 10" aria-hidden="true"><path d="M1 9h2V6H1zM5 9h2V4H5zM9 9h2V2H9z" fill="#657268"/></svg><svg width="16" height="10" viewBox="0 0 16 10" aria-hidden="true"><rect x="0.5" y="1.5" width="12" height="7" rx="2" fill="none" stroke="#657268"/><rect x="2" y="3" width="8" height="4" fill="#657268"/><rect x="13.5" y="3" width="2" height="4" rx="1" fill="#657268"/></svg>',
+  home: '<svg width="21" height="21" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.4 8.6 10 3.2l6.6 5.4V16a1 1 0 0 1-1 1h-3.4v-4.4H7.8V17H4.4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+  mine: '<svg width="21" height="21" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="6.6" r="3.1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3.8 17c0-3.2 2.8-5.4 6.2-5.4s6.2 2.2 6.2 5.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+  verb: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M13.6 3.4 16.6 6.4 8.4 14.6H5.4v-3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3.4 17h13.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  adj: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4.5h8M6 9.5h8M6 14.5h4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  wrong: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M15.4 5.4a5.6 5.6 0 1 0 .9 6.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4.6 4.2v4h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  list: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5.5h12M4 10h12M4 14.5h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  check: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.6l3.6 3.6 7.4-7.8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  star: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.4l2 4.1 4.5.6-3.3 3.2.8 4.5L10 13.7l-4 2.1.8-4.5L3.5 8.1l4.5-.6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  clock: '<svg width="19" height="19" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 6.2V10l2.6 1.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  chev: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M7 4.5l4.5 4.5L7 13.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+
+function injectIcons(root) {
+  root.querySelectorAll("[data-icons]").forEach(function (el) {
+    var svg = ICONS[el.getAttribute("data-icons")];
+    if (svg) { el.innerHTML = svg; }
+  });
+}
+
+function ringSvg(size, stroke, percent, innerText, subText) {
+  var r = (size - stroke) / 2 - 2, c = 2 * Math.PI * r, dash = c * percent / 100;
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">' +
+    '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="#eef0eb" stroke-width="' + stroke + '"/>' +
+    '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="#326151" stroke-width="' + stroke + '" stroke-linecap="round" stroke-dasharray="' + dash.toFixed(1) + ' ' + c.toFixed(1) + '" transform="rotate(-90 ' + size / 2 + ' ' + size / 2 + ')"/></svg>' +
+    '<span class="val"><b>' + innerText + '</b><span>' + (subText || "") + '</span></span>';
+}
+
+function tabbar(active) {
+  return [["home", "主页"], ["mine", "我的"]].map(function (it) {
+    return '<div class="tab' + (it[0] === active ? " active" : "") + '" data-tab="' + it[0] + '">' +
+      '<span class="pill">' + ICONS[it[0]] + "</span><span>" + it[1] + "</span></div>";
+  }).join("");
+}
+
+document.querySelectorAll(".phone").forEach(function (phone) {
+  var bar = phone.querySelector("[data-tabbar]");
+  var pages = phone.querySelectorAll(".screen-page");
+
+  function show(target) {
+    bar.innerHTML = tabbar(target);
+    pages.forEach(function (page) {
+      page.classList.toggle("active", page.getAttribute("data-page") === target);
+    });
+    phone.querySelectorAll(".tab").forEach(function (tab) {
+      tab.addEventListener("click", function () { show(tab.getAttribute("data-tab")); });
+    });
+  }
+  show("home");
+
+  phone.querySelectorAll("[data-ring]").forEach(function (el) {
+    var percent = Number(el.getAttribute("data-ring"));
+    el.innerHTML = ringSvg(132, 11, percent, "12 / 20", "今日目标");
+  });
+  phone.querySelectorAll("[data-ring-mini]").forEach(function (el) {
+    var percent = Number(el.getAttribute("data-ring-mini"));
+    var map = { "48": ["24", "分钟"], "60": ["3", "个"], "31": ["31%", "覆盖"] };
+    var value = map[el.getAttribute("data-ring-mini")] || ["—", ""];
+    el.innerHTML = ringSvg(76, 7, percent, value[0], value[1]);
+  });
+
+  injectIcons(phone);
+});
+</script>
+</body>
+</html>

@@ -203,6 +203,8 @@ class VerbPracticeState(internal val app: AppState) {
         showHint = false
         lastTapIndex = -1
         lastTapTime = 0L
+        // 采集：出过题即记为「已练词条」，用于词库覆盖进度
+        app.markVerbPracticed(question.verb.id)
     }
 
     fun newRandomQuestion() {
@@ -271,7 +273,11 @@ class VerbPracticeState(internal val app: AppState) {
 
         roundAnswered += 1
         if (correct) roundCorrect += 1 else roundWrong += 1
-        if (roundAnswered >= ROUND_SIZE) roundComplete = true
+        if (roundAnswered >= ROUND_SIZE) {
+            roundComplete = true
+            // 采集：完成一轮练习记 1 个任务
+            app.addCompletedTask()
+        }
     }
 
     /** Q3：答对不自动跳转，只能由用户点「下一题」推进 */
@@ -290,6 +296,8 @@ class VerbPracticeState(internal val app: AppState) {
                 return
             }
             reviewingMistakes = false
+            // 采集：完成一轮错题重练也记 1 个任务
+            app.addCompletedTask()
             toast = if (app.verbMistakes().isEmpty()) "错题已全部完成间隔复习。"
             else "本轮错题已复习，剩余题目会按间隔继续复习。"
             newRandomQuestion()
@@ -324,10 +332,11 @@ class VerbPracticeState(internal val app: AppState) {
 }
 
 @Composable
-fun VerbPracticeScreen(state: VerbPracticeState) {
+fun VerbPracticeScreen(state: VerbPracticeState, onBack: (() -> Unit)? = null) {
     LaunchedEffect(Unit) {
         if (state.currentQuestion == null) state.newRandomQuestion()
     }
+    StudyTimeTracker(onSeconds = { state.app.addStudySeconds(it) })
     var sheetOpen by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     val correctRequester = remember { BringIntoViewRequester() }
@@ -341,6 +350,7 @@ fun VerbPracticeScreen(state: VerbPracticeState) {
             progressLabel = state.progressLabel,
             hintEnabled = !state.judged,
             hintOn = state.showHint,
+            onBack = onBack,
             onFilterClick = { sheetOpen = true },
             onHintClick = { state.toggleHint() },
         )
@@ -416,7 +426,6 @@ fun VerbPracticeScreen(state: VerbPracticeState) {
                 level = state.levelFilter,
             ),
             onDismiss = { sheetOpen = false },
-            onResetStats = { state.app.resetVerbStats() },
             onApply = { values ->
                 state.applyFilters(
                     group = values["group"] ?: "all",

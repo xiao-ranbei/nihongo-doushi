@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
@@ -96,7 +97,7 @@ fun ProgressRing(
     }
 }
 
-/** 顶部统计卡：纸白卡（细边 + 轻阴影），含进度环 · 题号 · 本轮统计 · 卡内底部进度条 */
+/** 顶部统计卡：纸白卡（细边 + 轻阴影），含返回 · 进度环 · 题号 · 本轮统计 · 卡内底部进度条 */
 @Composable
 fun PracticeTopArea(
     roundLabel: String,
@@ -105,6 +106,7 @@ fun PracticeTopArea(
     progressLabel: String,
     hintEnabled: Boolean,
     hintOn: Boolean,
+    onBack: (() -> Unit)? = null,
     onFilterClick: () -> Unit,
     onHintClick: () -> Unit,
 ) {
@@ -121,10 +123,19 @@ fun PracticeTopArea(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 14.dp, end = 4.dp, top = 10.dp, bottom = 8.dp),
+                    .padding(start = if (onBack != null) 2.dp else 14.dp, end = 4.dp, top = 10.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
+                if (onBack != null) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "返回主页",
+                            tint = paperColors().textStrong,
+                        )
+                    }
+                }
                 ProgressRing(progress = progress, label = progressLabel)
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -646,5 +657,39 @@ fun ReviewBanner(reviewing: Boolean, remainingCount: Int) {
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onTertiaryContainer,
         )
+    }
+}
+
+/**
+ * 学习时长采集：在当前屏可见期间计时，退到后台暂停，离屏时把累计秒数交给调用方落盘。
+ * 只统计前台时间——应用切到后台不计，避免把挂机时间算成学习时长。
+ */
+@Composable
+fun StudyTimeTracker(onSeconds: (Int) -> Unit) {
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        var startedAt = System.currentTimeMillis()
+        var accumulatedMs = 0L
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> {
+                    if (startedAt > 0) {
+                        accumulatedMs += System.currentTimeMillis() - startedAt
+                        startedAt = 0L
+                    }
+                }
+                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> {
+                    if (startedAt == 0L) startedAt = System.currentTimeMillis()
+                }
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            if (startedAt > 0) accumulatedMs += System.currentTimeMillis() - startedAt
+            val seconds = (accumulatedMs / 1000L).toInt()
+            if (seconds > 0) onSeconds(seconds)
+        }
     }
 }

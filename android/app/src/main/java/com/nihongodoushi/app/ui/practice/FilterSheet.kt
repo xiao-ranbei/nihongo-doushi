@@ -45,7 +45,6 @@ fun FilterSheet(
     summary: String,
     sections: List<FilterSection>,
     onDismiss: () -> Unit,
-    onResetStats: () -> Unit,
     onApply: (Map<String, String>) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -111,9 +110,6 @@ fun FilterSheet(
                     sections.forEach { draft[it.key] = it.defaultValue }
                 }) {
                     Text("重置筛选", style = MaterialTheme.typography.labelLarge)
-                }
-                TextButton(onClick = onResetStats) {
-                    Text("统计清零", style = MaterialTheme.typography.labelLarge)
                 }
                 Button(
                     onClick = { onApply(draft.toMap()) },

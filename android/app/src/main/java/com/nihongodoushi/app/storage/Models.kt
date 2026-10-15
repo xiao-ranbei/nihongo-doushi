@@ -48,3 +48,37 @@ data class DailyRecord(
     val verbAnswers: Int = 0,
     val adjectiveAnswers: Int = 0,
 )
+
+/** 单日学习行为（history-v1 的一天） */
+@Serializable
+data class DayActivity(
+    val date: String,
+    val verbAnswers: Int = 0,
+    val adjectiveAnswers: Int = 0,
+    /** 该日前台学习秒数（进练习屏累计，退到后台暂停） */
+    val seconds: Int = 0,
+    /** 该日完成任务数（一轮 5 题记 1 个；完成一次错题重练也记 1 个） */
+    val tasks: Int = 0,
+) {
+    val answers: Int get() = verbAnswers + adjectiveAnswers
+}
+
+/** 最近若干天的学习历史（history-v1），按日期升序保存 */
+@Serializable
+data class ActivityHistory(
+    val days: List<DayActivity> = emptyList(),
+) {
+    fun dayOf(date: String): DayActivity? = days.firstOrNull { it.date == date }
+
+    /** 今日答题总量（动词 + 形容词） */
+    fun answersOn(date: String): Int = dayOf(date)?.answers ?: 0
+}
+
+/** 学习进度（practice-v1）：已练词条集合 + 错题毕业数（用于「词库覆盖」与「错题掌握」） */
+@Serializable
+data class PracticeProgress(
+    val verbIds: List<String> = emptyList(),
+    val adjectiveIds: List<String> = emptyList(),
+    /** 连续答对达到毕业次数、已从错题本移除的错题数 */
+    val masteredMistakes: Int = 0,
+)

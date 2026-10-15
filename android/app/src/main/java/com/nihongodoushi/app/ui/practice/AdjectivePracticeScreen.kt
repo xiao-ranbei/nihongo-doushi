@@ -188,6 +188,8 @@ class AdjectivePracticeState(internal val app: AppState) {
         showHint = false
         lastTapIndex = -1
         lastTapTime = 0L
+        // 采集：出过题即记为「已练词条」
+        app.markAdjectivePracticed(question.adjective.id)
     }
 
     fun newRandomQuestion() {
@@ -253,7 +255,10 @@ class AdjectivePracticeState(internal val app: AppState) {
 
         roundAnswered += 1
         if (correct) roundCorrect += 1 else roundWrong += 1
-        if (roundAnswered >= ROUND_SIZE) roundComplete = true
+        if (roundAnswered >= ROUND_SIZE) {
+            roundComplete = true
+            app.addCompletedTask()
+        }
     }
 
     /** Q3：答对不自动跳转 */
@@ -306,10 +311,11 @@ class AdjectivePracticeState(internal val app: AppState) {
 }
 
 @Composable
-fun AdjectivePracticeScreen(state: AdjectivePracticeState) {
+fun AdjectivePracticeScreen(state: AdjectivePracticeState, onBack: (() -> Unit)? = null) {
     LaunchedEffect(Unit) {
         if (state.currentQuestion == null) state.newRandomQuestion()
     }
+    StudyTimeTracker(onSeconds = { state.app.addStudySeconds(it) })
     var sheetOpen by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     val correctRequester = remember { BringIntoViewRequester() }
@@ -323,6 +329,7 @@ fun AdjectivePracticeScreen(state: AdjectivePracticeState) {
             progressLabel = state.progressLabel,
             hintEnabled = !state.judged,
             hintOn = state.showHint,
+            onBack = onBack,
             onFilterClick = { sheetOpen = true },
             onHintClick = { state.toggleHint() },
         )
@@ -396,7 +403,6 @@ fun AdjectivePracticeScreen(state: AdjectivePracticeState) {
                 level = state.levelFilter,
             ),
             onDismiss = { sheetOpen = false },
-            onResetStats = { state.app.resetAdjectiveStats() },
             onApply = { values ->
                 state.applyFilters(
                     group = values["group"] ?: "all",
