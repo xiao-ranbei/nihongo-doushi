@@ -96,7 +96,11 @@
     scroll-behavior: smooth;
   }
 
-  /* ---- 层级 2：顶部统计卡 ---- */
+  /* 关键：子项一律不参与收缩。统计卡带 overflow:hidden，按规范其 min-height 解析为 0，
+     若允许收缩，抽屉插入导致内容变高时统计卡会被压成几像素 */
+  .content > * { flex: 0 0 auto; }
+
+  /* ---- 层级 2：顶部统计卡（按方案 A 统计方式还原） ---- */
   .stat-card {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -105,36 +109,27 @@
     overflow: hidden;
   }
 
+  .stat-main { display: flex; align-items: center; gap: 13px; padding: 13px 14px 13px; }
+
+  .stat-ring { flex: 0 0 auto; position: relative; width: 46px; height: 46px; }
+  .stat-ring svg { display: block; transform: rotate(-90deg); }
+  .stat-ring .ring-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--green-dark);
+  }
+
+  .stat-texts { flex: 1 1 auto; min-width: 0; }
+  .stat-round { font-size: 13.5px; font-weight: 700; }
+  .stat-line { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+
   .stat-progress { height: 3px; background: var(--line-faint); }
   .stat-progress i { display: block; height: 100%; width: 20%; background: var(--green); transition: width 260ms var(--ease); }
-
-  .stat-body { padding: 12px 14px 13px; }
-
-  .stat-top { display: flex; align-items: baseline; justify-content: space-between; }
-  .stat-round { font-size: 13.5px; font-weight: 700; }
-  .stat-round span { color: var(--muted); font-weight: 400; font-size: 12px; }
-  .stat-acc { font-size: 12px; color: var(--text-strong); }
-  .stat-acc b { font-size: 15px; color: var(--green-dark); }
-
-  .stat-cells { display: flex; gap: 16px; margin-top: 9px; }
-  .stat-cell { min-width: 56px; }
-  .stat-cell .k { font-size: 10.5px; color: var(--muted); }
-  .stat-cell .v { font-size: 17px; font-weight: 700; line-height: 1.25; }
-  .stat-cell.correct .v { color: var(--stat-correct); }
-  .stat-cell.wrong .v { color: var(--stat-incorrect); }
-  .stat-cell.remain .v { color: var(--text-strong); }
-
-  .ratio-bar {
-    margin-top: 11px;
-    height: 8px;
-    border-radius: 999px;
-    background: var(--line-faint);
-    display: flex;
-    overflow: hidden;
-  }
-  .ratio-bar .c { background: var(--green); transition: width 300ms var(--ease); }
-  .ratio-bar .w { background: var(--red); transition: width 300ms var(--ease); }
-  .ratio-note { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--muted); margin-top: 6px; }
 
   /* ---- 层级 3：题面卡 ---- */
   .prompt-card {
@@ -337,25 +332,16 @@
 
       <div class="content" id="content">
 
-        <!-- 统计卡 -->
+        <!-- 统计卡：方案 A 统计方式（进度环 + 两行文字 + 进度条） -->
         <section class="stat-card">
-          <div class="stat-progress"><i id="progress"></i></div>
-          <div class="stat-body">
-            <div class="stat-top">
-              <div class="stat-round">本轮 <span id="round-no">第 1 / 5 题</span></div>
-              <div class="stat-acc">正确率 <b id="acc">—</b></div>
+          <div class="stat-main">
+            <div class="stat-ring" id="ring"></div>
+            <div class="stat-texts">
+              <div class="stat-round" id="round-no">第 1 / 5 题</div>
+              <div class="stat-line" id="stat-line">答对 0 · 答错 0 · 正确率 —</div>
             </div>
-            <div class="stat-cells">
-              <div class="stat-cell correct"><div class="k">答对</div><div class="v" id="n-correct">0</div></div>
-              <div class="stat-cell wrong"><div class="k">答错</div><div class="v" id="n-wrong">0</div></div>
-              <div class="stat-cell remain"><div class="k">剩余</div><div class="v" id="n-remain">5</div></div>
-            </div>
-            <div class="ratio-bar">
-              <div class="c" id="ratio-c" style="width:0%"></div>
-              <div class="w" id="ratio-w" style="width:0%"></div>
-            </div>
-            <div class="ratio-note"><span>正确率比例条</span><span id="ratio-text">尚无作答</span></div>
           </div>
+          <div class="stat-progress"><i id="progress"></i></div>
         </section>
 
         <!-- 题面卡 -->
@@ -398,8 +384,8 @@
             <td>状态栏</td><td>系统层</td><td>系统状态，不干预；背景与页面纸底同色，避免出现“双色条”。</td>
           </tr>
           <tr>
-            <td>统计卡</td><td>纸白卡 + 顶部 3px 进度条</td>
-            <td>本轮进度（第 n / N 题）· 答对 · 答错 · 剩余 · 正确率大数 · <b>正确率比例条</b>（绿=答对占比，红=答错占比）。每次判定后数字与条宽同步过渡 300ms。</td>
+            <td>统计卡</td><td>纸白卡 + 底部 3px 进度条</td>
+            <td><b>按方案 A 统计方式还原</b>：进度环（环内 n/N）+ 第一行「第 n / N 题」+ 第二行「答对 x · 答错 y · 正确率 z%」+ 底部进度条。环与进度条只反映当前题号（判定后不前进，进入下一题才推进）；文字行反映累计对错与正确率，判定后立即更新。</td>
           </tr>
           <tr>
             <td>题面卡</td><td>纸白卡</td>
@@ -429,11 +415,11 @@
         </div>
         <div class="state-row">
           <div class="state-chip" style="color:var(--stat-correct)">S1 判对</div>
-          <div class="state-desc">所选项 <span class="swatch" style="background:#edf3eb;border:1.5px solid #326151"></span>绿边绿底 + 勾图标；抽屉为绿左条，标题「答对了」，给出正确形态与规则；答对计数 +1，比例条绿段加宽。</div>
+          <div class="state-desc">所选项 <span class="swatch" style="background:#edf3eb;border:1.5px solid #326151"></span>绿边绿底 + 勾图标；抽屉为绿左条，标题「答对了」，给出正确形态与规则；文字行「答对」计数 +1，正确率重算（环与进度条不动）。</div>
         </div>
         <div class="state-row">
           <div class="state-chip" style="color:var(--stat-incorrect)">S2 判错</div>
-          <div class="state-desc">所选项 <span class="swatch" style="background:#fbf0ed;border:1.5px solid #a54e45"></span>红边红底 + 叉；正确答案项 <span class="swatch" style="background:#fffefa;border:1.5px dashed #326151"></span>绿虚线 + 勾（揭晓）；抽屉为红左条并附「已加入错题本」提示；答错计数 +1，红段加宽。</div>
+          <div class="state-desc">所选项 <span class="swatch" style="background:#fbf0ed;border:1.5px solid #a54e45"></span>红边红底 + 叉；正确答案项 <span class="swatch" style="background:#fffefa;border:1.5px dashed #326151"></span>绿虚线 + 勾（揭晓）；抽屉为红左条并附「已加入错题本」提示；文字行「答错」计数 +1，正确率重算（环与进度条不动）。</div>
         </div>
         <div class="state-row" style="border-bottom:none">
           <div class="state-chip">S3 本轮结束</div>
@@ -558,13 +544,8 @@ var el = {
   content: document.getElementById("content"),
   progress: document.getElementById("progress"),
   roundNo: document.getElementById("round-no"),
-  acc: document.getElementById("acc"),
-  nCorrect: document.getElementById("n-correct"),
-  nWrong: document.getElementById("n-wrong"),
-  nRemain: document.getElementById("n-remain"),
-  ratioC: document.getElementById("ratio-c"),
-  ratioW: document.getElementById("ratio-w"),
-  ratioText: document.getElementById("ratio-text"),
+  ring: document.getElementById("ring"),
+  statLine: document.getElementById("stat-line"),
   chips: document.getElementById("chips"),
   word: document.getElementById("word"),
   instruction: document.getElementById("instruction"),
@@ -590,19 +571,26 @@ function renderTabbar() {
   }).join("");
 }
 
+/* 进度环（方案 A 原实现）：r=18、环宽 4、46px 画布，环内文字显示 n/N */
+function ringHtml(percent, label) {
+  var r = 18, c = 2 * Math.PI * r, dash = c * percent / 100;
+  return '<svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">' +
+    '<circle cx="23" cy="23" r="' + r + '" fill="none" stroke="#eef0eb" stroke-width="4"/>' +
+    '<circle cx="23" cy="23" r="' + r + '" fill="none" stroke="#326151" stroke-width="4" stroke-linecap="round" ' +
+    'stroke-dasharray="' + dash.toFixed(1) + ' ' + c.toFixed(1) + '"/></svg>' +
+    '<span class="ring-text">' + label + "</span>";
+}
+
+/* 方案 A 统计更新：环与进度条只反映「当前第几题」，判定后不前进；文字行反映累计对错与正确率 */
 function updateStats() {
   var answered = state.correct + state.wrong;
-  el.roundNo.textContent = "第 " + Math.min(state.index + 1, ROUND_SIZE) + " / " + ROUND_SIZE + " 题";
-  el.acc.textContent = answered === 0 ? "—" : Math.round(state.correct * 100 / answered) + "%";
-  el.nCorrect.textContent = state.correct;
-  el.nWrong.textContent = state.wrong;
-  el.nRemain.textContent = Math.max(0, ROUND_SIZE - state.index - (state.picked >= 0 ? 1 : 0));
-  var cw = answered === 0 ? 0 : state.correct * 100 / answered;
-  var ww = answered === 0 ? 0 : state.wrong * 100 / answered;
-  el.ratioC.style.width = cw + "%";
-  el.ratioW.style.width = ww + "%";
-  el.ratioText.textContent = answered === 0 ? "尚无作答" : "答对 " + Math.round(cw) + "% · 答错 " + Math.round(ww) + "%";
-  el.progress.style.width = ((state.index + (state.picked >= 0 ? 1 : 0)) * 100 / ROUND_SIZE) + "%";
+  var percent = (state.index + 1) * 100 / ROUND_SIZE;
+
+  el.ring.innerHTML = ringHtml(percent, (state.index + 1) + "/" + ROUND_SIZE);
+  el.progress.style.width = percent + "%";
+  el.roundNo.textContent = "第 " + (state.index + 1) + " / " + ROUND_SIZE + " 题";
+  el.statLine.textContent = "答对 " + state.correct + " · 答错 " + state.wrong +
+    " · 正确率 " + (answered === 0 ? "—" : Math.round(state.correct * 100 / answered) + "%");
 }
 
 function renderQuestion() {
