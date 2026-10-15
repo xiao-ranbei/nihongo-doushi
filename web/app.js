@@ -136,6 +136,8 @@
     verbSubviewPractice: document.getElementById("view-practice"),
     verbSubviewReference: document.getElementById("view-reference"),
     appShell: document.getElementById("app-shell"),
+    appMain: document.getElementById("app-main"),
+    homeLinks: Array.from(document.querySelectorAll("[data-home-link]")),
     sidebarCollapse: document.getElementById("sidebar-collapse"),
     mobileNavToggle: document.getElementById("mobile-nav-toggle"),
     sidebarBackdrop: document.getElementById("sidebar-backdrop"),
@@ -1164,6 +1166,13 @@
         tab.removeAttribute("aria-current");
       }
     });
+    elements.homeLinks.forEach(function (link) {
+      if (viewId === "home") {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    });
     renderIntro(viewId);
     if (sidebarWasOpen) {
       elements.introTitle.focus();
@@ -2175,6 +2184,17 @@
     });
   }
 
+  elements.homeLinks.forEach(function (link) {
+    link.addEventListener("click", function (event) {
+      if ((event.button !== undefined && event.button !== 0)
+        || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+      event.preventDefault();
+      showView("home");
+      elements.appMain.scrollTop = 0;
+    });
+  });
   elements.tabs.forEach(function (tab) {
     tab.addEventListener("click", function () {
       showView(tab.dataset.view);

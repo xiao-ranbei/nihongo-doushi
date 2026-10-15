@@ -55,14 +55,33 @@ test("组件样式内不出现硬编码色值（#fff/#000 例外）", function (
   assert.deepEqual(offenders, [], "组件内出现硬编码色值:\n" + offenders.join("\n"));
 });
 
-test("侧栏与主内容分开滚动，窄屏顶部栏固定", function () {
-  assert.match(css, /\.app-shell\s*\{\s*height:\s*100vh;\s*height:\s*100dvh;\s*min-height:\s*0;\s*overflow:\s*hidden;/);
+test("根视口固定且由主内容内部滚动，窄屏顶部栏固定", function () {
+  assert.match(css, /html,\s*body\s*\{\s*height:\s*100vh;\s*height:\s*100dvh;\s*overflow:\s*hidden;\s*overflow:\s*clip;/);
+  assert.match(css, /\.app-shell\s*\{[^}]*width:\s*100%;[^}]*min-height:\s*100vh;/);
+  assert.match(css, /\.app-shell\s*\{[^}]*position:\s*fixed;[^}]*inset:\s*0;[^}]*height:\s*100vh;[^}]*height:\s*100dvh;[^}]*min-height:\s*0;[^}]*overflow:\s*hidden;\s*overflow:\s*clip;/);
   assert.match(css, /\.app-sidebar\s*\{\s*position:\s*relative;\s*top:\s*auto;\s*height:\s*100%;[\s\S]*?overflow-y:\s*auto;/);
   assert.match(css, /\.app-main\s*\{\s*height:\s*100vh;\s*height:\s*100dvh;[\s\S]*?overflow-y:\s*auto;/);
+  assert.match(css, /\.app-main\s*\{[^}]*overflow-y:\s*auto;[^}]*padding-bottom:\s*calc\(16px \+ env\(safe-area-inset-bottom,\s*0px\)\);/);
   assert.match(
     css,
     /@media \(max-width: 840px\)[\s\S]*?\.mobile-topbar\s*\{\s*position:\s*sticky;\s*top:\s*0;/
   );
+});
+
+test("桌面布局不通过缩放 body 改变动态视口尺寸", function () {
+  assert.doesNotMatch(css, /body\s*\{\s*zoom\s*:/);
+});
+
+test("内嵌答题统计不单独显示悬停特效", function () {
+  assert.doesNotMatch(css, /\.practice-stats:hover/);
+});
+
+test("桌面侧栏折叠后用浅色横线分隔复习区", function () {
+  const separator = /@media \(min-width: 841px\)\s*\{\s*\.app-shell\.is-sidebar-collapsed \.sidebar-section-review\s*\{([^}]*)\}/.exec(css);
+  assert.ok(separator, "桌面折叠侧栏应有复习区分隔线");
+  assert.match(separator[1], /width:\s*24px;/);
+  assert.match(separator[1], /height:\s*1px;/);
+  assert.match(separator[1], /background:\s*var\(--line-faint\);/);
 });
 
 test("答题结果扫过整张练习卡且不阻挡操作", function () {

@@ -243,7 +243,10 @@ function createElement(tag) {
       type: type,
       target: element,
       isComposing: false,
-      preventDefault: noop,
+      defaultPrevented: false,
+      preventDefault: function () {
+        event.defaultPrevented = true;
+      },
       stopPropagation: noop
     }, extra || {});
     (element._listeners[type] || []).slice().forEach(function (handler) {
@@ -467,7 +470,7 @@ function createApp(options) {
       return element;
     },
     click: function (element) {
-      element.dispatch("click");
+      return element.dispatch("click");
     },
     // 模拟一次作答；extra 可注入 isComposing 等事件字段。
     answer: function (value, extra) {

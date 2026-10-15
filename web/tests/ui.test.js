@@ -64,6 +64,11 @@ function inflectionLabelOf(app) {
 }
 
 function tab(app, viewId) {
+  if (viewId === "home") {
+    const homeLink = app.$("brand-home");
+    app.click(homeLink);
+    return homeLink;
+  }
   if (viewId === "practice" || viewId === "reference") {
     const moduleTab = app.document.querySelectorAll("[data-view]").filter(function (node) {
       return node.dataset.view === "verb";
@@ -103,6 +108,11 @@ test("初始化：注入字体、渲染首题并默认显示学习主页", funct
   assert.equal(app.$("home-active-module-count").textContent, "0");
   assert.equal(app.$("review-banner").hidden, true);
   assert.equal(app.$("feedback-panel").hidden, true);
+  assert.equal(
+    app.document.querySelector(".footer").parentNode,
+    app.document.querySelector(".app-main"),
+    "页脚应位于主内容滚动区域内"
+  );
   assert.equal(app.$("question-index").textContent, "随机练习");
   assert.equal(app.$("question-group").textContent, "动词");
   assert.equal(app.$("question-reading").textContent, "假名");
@@ -113,12 +123,17 @@ test("初始化：注入字体、渲染首题并默认显示学习主页", funct
 
 test("导航：侧栏可折叠，窄屏抽屉可打开并关闭", function () {
   const app = createApp();
-  const homeNav = app.document.querySelectorAll("[data-view]").filter(function (node) {
-    return node.dataset.view === "home";
-  })[0];
-  assert.equal(homeNav.getAttribute("aria-label"), "学习主页");
-  assert.ok(homeNav.querySelector(".nav-label"), "展开侧栏时应显示主页文字");
-  assert.ok(homeNav.querySelector(".home-icon-shape"), "主页导航应有可视图标");
+  const homeLinks = app.document.querySelectorAll("[data-home-link]");
+  assert.equal(homeLinks.length, 2, "桌面侧栏和窄屏顶部品牌都应能返回主页");
+  assert.equal(homeLinks[0].getAttribute("href"), "./index.html");
+  assert.equal(homeLinks[1].getAttribute("href"), "./index.html");
+  assert.equal(
+    app.document.querySelectorAll("[data-view]").some(function (node) {
+      return node.dataset.view === "home";
+    }),
+    false,
+    "侧栏不应重复显示主页按钮"
+  );
   assert.ok(app.$("sidebar-collapse").querySelector("svg"), "侧栏控制应使用箭头图标");
   assert.equal(app.$("sidebar-collapse").querySelector(".nav-label"), null);
   assert.equal(app.$("sidebar-collapse").getAttribute("aria-label"), "折叠侧栏");
@@ -127,6 +142,12 @@ test("导航：侧栏可折叠，窄屏抽屉可打开并关闭", function () {
   assert.equal(app.$("app-shell").classList.contains("is-sidebar-collapsed"), true);
   assert.equal(app.$("sidebar-collapse").getAttribute("aria-pressed"), "true");
   assert.equal(app.$("sidebar-collapse").title, "展开侧栏");
+  app.$("app-main").scrollTop = 120;
+  const brandClick = app.click(app.$("brand-home"));
+  assert.equal(brandClick.defaultPrevented, true, "主页链接应在应用内导航，避免重新加载");
+  assert.equal(app.$("app-shell").classList.contains("is-sidebar-collapsed"), true);
+  assert.equal(app.$("view-home").hidden, false);
+  assert.equal(app.$("app-main").scrollTop, 0, "返回主页时应滚回内容顶部");
   app.click(app.$("sidebar-collapse"));
   assert.equal(app.$("app-shell").classList.contains("is-sidebar-collapsed"), false);
   assert.equal(app.$("sidebar-collapse").title, "折叠侧栏");
@@ -138,6 +159,9 @@ test("导航：侧栏可折叠，窄屏抽屉可打开并关闭", function () {
   assert.equal(app.$("mobile-nav-toggle").getAttribute("aria-expanded"), "false");
   assert.equal(app.$("sidebar-backdrop").hidden, true);
   assert.equal(app.$("view-verb").hidden, false);
+  app.click(homeLinks[1]);
+  assert.equal(app.$("view-home").hidden, false, "窄屏顶部品牌应返回主页");
+  assert.equal(homeLinks[1].getAttribute("aria-current"), "page");
 });
 
 test("练习统计位于各自随机练习卡片的标题区", function () {
@@ -204,6 +228,7 @@ test("答对：显示 ✓、统计 +1、不记入错题", function () {
   assert.equal(app.$("mistake-count").textContent, "0");
   assert.equal(app.$("answer-input").disabled, true, "作答后输入框应锁定");
   assert.equal(app.$("next-question").hidden, false);
+  assert.equal(app.$("next-question").focused, true, "答题后应将键盘焦点交给下一题");
   assert.equal(app.document.querySelector(".verb-prompt").getAttribute("aria-expanded"), "true");
   assert.equal(practiceCard.classList.contains("is-answer-correct"), true);
   assert.equal(practiceCard.classList.contains("is-answer-incorrect"), false);
@@ -599,6 +624,7 @@ test("形容词：答对计入独立统计且不进错题本", function () {
   assert.equal(app.$("mistake-count").textContent, "0", "形容词答错答对都不应写入动词错题本");
   assert.equal(app.$("adj-answer-input").disabled, true, "作答后输入框应锁定");
   assert.equal(app.$("adj-next-question").hidden, false);
+  assert.equal(app.$("adj-next-question").focused, true, "答题后应将键盘焦点交给下一题");
   assert.equal(practiceCard.classList.contains("is-answer-correct"), true);
   assert.equal(practiceCard.classList.contains("is-answer-incorrect"), false);
   assert.equal(app.$("correct-answer-count").textContent, "0", "动词统计不应被形容词作答污染");

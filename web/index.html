@@ -15,7 +15,7 @@
 <body>
   <div class="app-shell" id="app-shell">
     <aside class="app-sidebar" id="app-sidebar" aria-label="日语学习导航">
-      <a class="brand" href="./index.html" aria-label="日语学习主页">
+      <a class="brand" id="brand-home" data-home-link href="./index.html" aria-label="日语学习主页" aria-current="page">
         <span class="brand-mark" aria-hidden="true">日</span>
         <span>
           <strong>日语学习</strong>
@@ -30,10 +30,6 @@
       </button>
       <nav class="primary-nav" id="primary-nav" aria-label="主要导航">
         <p class="sidebar-section-label">学习</p>
-        <button class="nav-item nav-item-home is-active" type="button" data-view="home" aria-current="page" aria-label="学习主页" title="学习主页">
-          <span class="nav-label">学习主页</span>
-          <span class="nav-icon nav-icon-home" aria-hidden="true"><span class="home-icon-shape"></span></span>
-        </button>
         <button class="nav-item" type="button" data-view="verb" aria-label="动词活用" title="动词活用">
           <span class="nav-icon" aria-hidden="true">动</span><span class="nav-label">动词活用</span>
         </button>
@@ -49,15 +45,15 @@
       <div class="sidebar-footer"><span class="offline-dot" aria-hidden="true"></span><span class="nav-label">离线可用 · 记录保存在本机</span></div>
     </aside>
 
-    <div class="app-main">
+    <div class="app-main" id="app-main">
       <header class="mobile-topbar">
         <button class="mobile-nav-toggle" id="mobile-nav-toggle" type="button" aria-label="打开导航" aria-controls="app-sidebar" aria-expanded="false">
           <span class="mobile-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
         </button>
-        <div class="mobile-topbar-brand">
+        <a class="mobile-topbar-brand" data-home-link href="./index.html" aria-label="日语学习主页" aria-current="page">
           <span class="brand-mark" aria-hidden="true">日</span>
           <strong>日语学习</strong>
-        </div>
+        </a>
       </header>
 
       <main>

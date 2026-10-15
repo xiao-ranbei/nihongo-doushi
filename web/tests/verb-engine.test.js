@@ -29,6 +29,60 @@ test("行く和一段动词使用正确的特例", function () {
   assert.equal(form("taberu", "potential", "dictionary").written, "食べられる");
 });
 
+test("得る（える）按一段动词活用", function () {
+  assert.equal(VERB_BY_ID.get("eru").reading, "える");
+  assert.equal(form("eru", "base", "masu").written, "得ます");
+  assert.equal(form("eru", "base", "masu").kana, "えます");
+  assert.equal(form("eru", "base", "negative").written, "得ない");
+  assert.equal(form("eru", "base", "past").written, "得た");
+  assert.equal(form("eru", "potential", "dictionary").written, "得られる");
+});
+
+test("补充的常用动词按各自类别正确活用", function () {
+  [
+    ["iu", "言います"],
+    ["aruku", "歩きます"],
+    ["yasumu", "休みます"],
+    ["hataraku", "働きます"],
+    ["noru", "乗ります"],
+    ["furu", "降ります"],
+    ["uru", "売ります"],
+    ["kaesu", "返します"],
+    ["kesu", "消します"],
+    ["erabu", "選びます"],
+    ["yobu", "呼びます"],
+    ["okuru", "送ります"],
+    ["sagasu", "探します"],
+    ["wakaru", "分かります"],
+    ["modoru", "戻ります"],
+    ["morau", "もらいます"],
+    ["warau", "笑います"],
+    ["naku", "泣きます"],
+    ["hajimaru", "始まります"],
+    ["owaru", "終わります"],
+    ["iru", "います"],
+    ["kiru-wear", "着ます"],
+    ["ireru", "入れます"],
+    ["miseru", "見せます"],
+    ["kimeru", "決めます"],
+    ["shiraberu", "調べます"],
+    ["oboeru", "覚えます"],
+    ["dekakeru", "出かけます"],
+    ["tsuzukeru", "続けます"],
+    ["atsumeru", "集めます"],
+    ["denwa-suru", "電話します"],
+    ["ryouri-suru", "料理します"],
+    ["ryokou-suru", "旅行します"],
+    ["renshu-suru", "練習します"]
+  ].forEach(function (item) {
+    assert.equal(form(item[0], "base", "masu").written, item[1], item[0]);
+  });
+
+  assert.equal(form("noru", "base", "negative").written, "乗らない");
+  assert.equal(form("iru", "base", "negative").written, "いない");
+  assert.equal(form("kiru-wear", "base", "negative").written, "着ない");
+});
+
 test("五段、一段与不规则动词支持所有派生语态", function () {
   assert.equal(form("yomu", "potential", "te").written, "読めて");
   assert.equal(form("yomu", "passive", "masu").written, "読まれます");
