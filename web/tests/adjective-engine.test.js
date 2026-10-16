@@ -36,7 +36,7 @@ test("全词库 × 全形式冒烟：written/kana 恒非空，alts 结构合法"
   });
 });
 
-test("い形容词「高い」的七种形式", function () {
+test("い形容词「高い」的常用形式与六形专项形式", function () {
   const takai = byWord("高い");
   const expected = {
     attributive: "高い",
@@ -45,7 +45,10 @@ test("い形容词「高い」的七种形式", function () {
     past: "高かった",
     pastNegative: "高くなかった",
     te: "高くて",
-    adverbial: "高く"
+    conditional: "高ければ",
+    adverbial: "高く",
+    mizen: "高かろう",
+    imperativeRequest: "高くしてください"
   };
   FORM_IDS.forEach(function (formId) {
     const result = adjEngine.conjugate(takai, formId);
@@ -55,7 +58,7 @@ test("い形容词「高い」的七种形式", function () {
   });
 });
 
-test("な形容词「静か」的七种形式与礼貌变体", function () {
+test("な形容词「静か」的常用形式与六形专项形式", function () {
   const shizuka = byWord("静か");
   const main = {
     attributive: "静かな",
@@ -64,7 +67,10 @@ test("な形容词「静か」的七种形式与礼貌变体", function () {
     past: "静かだった",
     pastNegative: "静かではなかった",
     te: "静かで",
-    adverbial: "静かに"
+    conditional: "静かなら",
+    adverbial: "静かに",
+    mizen: "静かだろう",
+    imperativeRequest: "静かにしてください"
   };
   FORM_IDS.forEach(function (formId) {
     const result = adjEngine.conjugate(shizuka, formId);
@@ -86,6 +92,9 @@ test("な形容词「静か」的七种形式与礼貌变体", function () {
   const pastNegative = adjEngine.conjugate(shizuka, "pastNegative");
   assert.ok(pastNegative.alts.some(function (alt) { return alt.written === "静かじゃなかった"; }));
   assert.ok(pastNegative.alts.some(function (alt) { return alt.written === "静かではありませんでした"; }));
+
+  const conditional = adjEngine.conjugate(shizuka, "conditional");
+  assert.deepEqual(conditional.alts.map(function (alt) { return alt.written; }), ["静かならば"]);
 });
 
 test("特例「いい」全部换成よく系列", function () {
@@ -97,7 +106,10 @@ test("特例「いい」全部换成よく系列", function () {
     past: "よかった",
     pastNegative: "よくなかった",
     te: "よくて",
-    adverbial: "よく"
+    conditional: "よければ",
+    adverbial: "よく",
+    mizen: "よかろう",
+    imperativeRequest: "よくしてください"
   };
   FORM_IDS.forEach(function (formId) {
     const result = adjEngine.conjugate(ii, formId);
@@ -139,6 +151,12 @@ test("explain 文本包含目标形式与变化提示", function () {
   const shizuka = byWord("静か");
   assert.match(adjEngine.explain(shizuka, "attributive"), /「な」/);
   assert.match(adjEngine.explain(shizuka, "adverbial"), /「に」/);
+  assert.match(adjEngine.explain(shizuka, "conditional"), /仮定形/);
+  assert.match(adjEngine.explain(shizuka, "mizen"), /未然形/);
+  assert.match(adjEngine.explain(shizuka, "imperativeRequest"), /没有独立命令形/);
+
+  assert.match(adjEngine.explain(ii, "conditional"), /「よければ」/);
+  assert.match(adjEngine.explain(ii, "mizen"), /「よかろう」/);
 });
 
 test("未知形式与非法输入按类型报错", function () {

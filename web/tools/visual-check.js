@@ -49,11 +49,15 @@ async function readQuestion(page) {
 }
 
 async function shoot(page, outDir, name, options) {
-  // 归零滚动：提交后 nextQuestion.focus() 会滚动到按钮，若不归零两次运行会错位。
+  // 归零主内容滚动：页面外层锁定视口，练习区在 app-main 内滚动。
   // keepScroll 为 true 时保留当前位置（用于拍摄页内锚点区域）。
   const keepScroll = Boolean(options && options.keepScroll);
   if (!keepScroll) {
-    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.evaluate(() => {
+      const main = document.getElementById("app-main");
+      if (main) main.scrollTop = 0;
+      window.scrollTo(0, 0);
+    });
     await page.waitForTimeout(150);
   }
   const file = path.join(outDir, name + ".png");
@@ -69,6 +73,7 @@ async function main() {
 
   const engine = require(path.join(dir, "verb-engine.js"));
   const adjectiveEngine = require(path.join(dir, "adjective-engine.js"));
+  const particleEngine = require(path.join(dir, "particle-engine.js"));
   const verbByDictionary = new Map(engine.VERBS.map((v) => [v.dictionary, v]));
   const labelToVoice = new Map(engine.VOICES.map((v) => [v.label, v.id]));
   const labelToInflection = new Map(engine.INFLECTIONS.map((f) => [f.label, f.id]));
@@ -159,6 +164,29 @@ async function main() {
     await page.waitForTimeout(300);
     await shoot(page, outDir, "10-adjective-guide");
 
+    // 助词综合练习、句义判断与学习地图
+    await page.click('[data-view="particle"]');
+    await page.waitForTimeout(400);
+    await shoot(page, outDir, "11-particle-mixed-practice");
+    await page.selectOption("#particle-practice-mode-select", "function");
+    await page.waitForTimeout(350);
+    await shoot(page, outDir, "12-particle-function-practice");
+    const particleQuestionId = await page.locator("#particle-question-card").getAttribute("data-question-id");
+    const particleQuestion = particleEngine.getQuestion(particleQuestionId);
+    if (!particleQuestion || particleQuestion.type !== "function") {
+      throw new Error("助词作用判断题未正确载入: " + particleQuestionId);
+    }
+    await page.getByRole("button", { name: particleQuestion.acceptedAnswers[0], exact: true }).click();
+    await page.click("#particle-check-answer");
+    await page.waitForTimeout(400);
+    await shoot(page, outDir, "13-particle-function-correct");
+    await page.selectOption("#particle-level-select", "advanced");
+    await page.waitForTimeout(300);
+    await shoot(page, outDir, "14-particle-function-advanced");
+    await page.click('[data-particle-subview="learn"]');
+    await page.waitForTimeout(300);
+    await shoot(page, outDir, "15-particle-map");
+
     // 移动端主页与练习视图
     const mobile = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const mobilePage = await mobile.newPage();
@@ -167,11 +195,15 @@ async function main() {
     });
     await mobilePage.goto(url);
     await settle(mobilePage);
-    await shoot(mobilePage, outDir, "11-mobile-home");
+    await shoot(mobilePage, outDir, "16-mobile-home");
     await mobilePage.click("#mobile-nav-toggle");
     await mobilePage.click('[data-view="verb"]');
     await settle(mobilePage);
-    await shoot(mobilePage, outDir, "12-mobile-practice");
+    await shoot(mobilePage, outDir, "17-mobile-practice");
+    await mobilePage.click("#mobile-nav-toggle");
+    await mobilePage.click('[data-view="particle"]');
+    await settle(mobilePage);
+    await shoot(mobilePage, outDir, "18-mobile-particle-practice");
     await mobile.close();
 
     console.log("完成 -> " + outDir);

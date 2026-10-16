@@ -3,34 +3,55 @@
 
   const VOICES = [
     { id: "base", label: "原形", meaning: "普通形态，不附加可能、受身或使役等语态意义。" },
-    { id: "potential", label: "可能形", meaning: "表示“能／可以做……”，常见为能力或许可。" },
-    { id: "passive", label: "受身形", meaning: "表示“被……”，也可表达受到影响或感受；是否带负面语气看上下文。" },
-    { id: "causative", label: "使役形", meaning: "表示“让／使某人做……”，也可表示允许对方做。" },
-    { id: "causativeShort", label: "短使役形", meaning: "与使役形大意相同的短形，较多见于口语；使用场合会因动词和语境而异。" },
-    { id: "causativePassive", label: "使役受身形", meaning: "表示“被迫做……”或“不得不做……”，强调受到他人驱使。" },
-    { id: "causativePassiveShort", label: "短使役受身形", meaning: "与使役受身形大意相同的短形，较多见于口语；实际用法因动词和语境而异。" }
+    { id: "potential", label: "可能形", meaning: "表示动作主体有能力、条件或许可去做，理解为“做得到／可以做”，不表示已经做了；能力还是许可要看语境，如「泳げる」（会／能游）。" },
+    { id: "passive", label: "受身形", meaning: "主语承受他人的动作，常译为“被……”，施事常用「に」标出，如「先生にほめられた」（被老师表扬）。也可表示间接受到影响，如「雨に降られた」；不一定带负面语气。" },
+    { id: "causative", label: "使役形", meaning: "表示让、使或准许某人做某事；可理解为把促成动作的人放在句子主语位置，如「先生が学生に本を読ませる」（老师让／准许学生读书）。是强制还是许可由语境判断。" },
+    { id: "causativeShort", label: "短使役形", meaning: "较短的使役说法，意思大致同使役形，表示让、使或准许某人做事。较常见于口语；正式场合优先使用完整使役形，具体用法因动词和语境而异。" },
+    { id: "causativePassive", label: "使役受身形", meaning: "表示主语被要求、安排或迫使去做某事，可理解为“别人让我做”转成“我被迫做”，如「先生に本を読まされた」（被老师要求读书）。常带不情愿或负担感，但语气仍看语境。" },
+    { id: "causativePassiveShort", label: "短使役受身形", meaning: "与使役受身大意相同，突出主语被迫或被安排去做；五段动词口语中常见「行かされる」一类缩约，部分动词仍用完整形式。正式表达优先使用完整使役受身形。" }
   ];
 
   const INFLECTIONS = [
-    { id: "dictionary", label: "辞书形", level: "basic", meaning: "普通形的非过去表达，可表示习惯、事实或将来；具体时间由语境判断。" },
-    { id: "masuStem", label: "连用形（ます词干）", level: "basic", meaning: "连用词干本身通常不单独表达时态或礼貌，常接「ます」及其他后续表达。" },
-    { id: "masu", label: "ます形", level: "basic", meaning: "礼貌的非过去表达，可表示习惯、事实或将来。" },
+    { id: "dictionary", label: "辞书形", level: "basic", meaning: "普通形的非过去表达；句尾作終止形，修饰名词时同形作連体形（如「書く人」），现代动词这两种用法通常同形。" },
+    { id: "masuStem", label: "连用形（ます词干）", level: "basic", meaning: "连用形本身通常不单独表达时态或礼貌，常接「ます」「たい」「そう」等；接「て／た」时常发生音便。" },
+    { id: "masu", label: "ます形", level: "basic", meaning: "连用形接「ます」后的礼貌非过去表达，可表示习惯、事实或将来。" },
     { id: "masuNegative", label: "ます否定形", level: "basic", meaning: "礼貌地表示不做、不会做或目前不是……。" },
     { id: "masuPast", label: "ます过去形", level: "basic", meaning: "礼貌地表示过去做了某事或过去的状态。" },
     { id: "masuNegativePast", label: "ます过去否定形", level: "basic", meaning: "礼貌地表示过去没有做某事或不处于某状态。" },
-    { id: "negative", label: "ない形", level: "basic", meaning: "普通形的非过去否定，可表示不做、不会做或不是……。" },
-    { id: "negativePast", label: "ない过去形", level: "basic", meaning: "普通形的过去否定，表示过去没有做某事或不处于某状态。" },
-    { id: "past", label: "た形", level: "basic", meaning: "普通形的过去／完成表达；也可结合语境表示经历或结果状态。" },
-    { id: "te", label: "て形", level: "basic", meaning: "用于连接动作或状态；也常用于请求「てください」、持续或结果「ている」等，具体含义取决于后续表达。" },
-    { id: "conditionalBa", label: "条件形（ば）", level: "basic", meaning: "表示“如果……就……”，常用于一般条件、规律或假设。" },
-    { id: "conditionalTara", label: "条件形（たら）", level: "basic", meaning: "表示“如果……／当……时”；也可表示前项完成后再发生后项。" },
-    { id: "volitional", label: "意向形", level: "advanced", meaning: "表示提议“一起……吧”或说话者的意志“我来……／打算……”。" },
-    { id: "imperative", label: "命令形", level: "advanced", meaning: "直接命令对方“做……！”，语气较强，使用时注意场合。" },
+    { id: "negative", label: "ない形", level: "basic", meaning: "普通形的非过去否定，常由未然形接「ない」，可表示不做、不会做或不是……。" },
+    { id: "negativePast", label: "ない过去形", level: "basic", meaning: "先用未然形接「ない」，再把「ない」变成「なかった」，表示过去没有做某事或不处于某状态。" },
+    { id: "past", label: "た形", level: "basic", meaning: "连用形发生音便后接「た」，表达过去或完成；也可结合语境表示经历或结果状态。" },
+    { id: "te", label: "て形", level: "basic", meaning: "连用形发生音便后接「て」，用于连接动作或状态；也常见于请求「てください」、持续或结果「ている」等。" },
+    { id: "conditionalBa", label: "条件形（ば）", level: "basic", meaning: "仮定形接「ば」，表示“如果……就……”，常用于一般条件、规律或假设。" },
+    { id: "conditionalTara", label: "条件形（たら）", level: "basic", meaning: "由「た形」接「ら」形成，不是仮定形接「ば」；表示“如果……／当……时”，也可表示前项完成后再发生后项。" },
+    { id: "volitional", label: "意向形", level: "advanced", meaning: "未然形接「う／よう」，表示提议“一起……吧”或说话者的意志“我来……／打算……”。" },
+    { id: "imperative", label: "命令形", level: "advanced", meaning: "直接命令对方“做……！”，语气较强；这是命令形，使用时注意场合。" },
     { id: "sou", label: "そう形", level: "advanced", meaning: "根据外观或迹象表示“看起来要……／似乎……”（样态）；注意与传闻「そうだ」区分。" },
     { id: "tai", label: "たい形", level: "advanced", meaning: "表示（说话者）想做……；主语和具体用法受语境影响。" },
     { id: "zu", label: "ず形", level: "advanced", meaning: "表示“不……／未……”；偏书面，常见于「〜ずに」（不做……而……）。" },
     { id: "tari", label: "たり形", level: "advanced", meaning: "用来举例列举动作，如“做做……之类的事”，常和「する」搭配，不表示穷举。" }
   ];
+
+  const TRADITIONAL_FORM_HINTS = {
+    dictionary: "句末陈述是終止形；修饰名词时同形作連体形。",
+    masuStem: "这一词干就是連用形（ます词干）。",
+    masu: "連用形接「ます」。",
+    masuNegative: "連用形接礼貌否定「ません」。",
+    masuPast: "連用形接礼貌过去「ました」。",
+    masuNegativePast: "連用形接「ませんでした」。",
+    negative: "未然形接「ない」。",
+    negativePast: "未然形接「ない」后，再将「ない」变为「なかった」。",
+    past: "連用形发生音便后接「た」。",
+    te: "連用形发生音便后接「て」。",
+    conditionalBa: "仮定形接「ば」。",
+    conditionalTara: "由「た形」接「ら」；不是仮定形接「ば」。",
+    volitional: "未然形接「う／よう」。",
+    imperative: "这一形式就是命令形。",
+    sou: "連用形接样态「そう」。",
+    tai: "連用形接「たい」。",
+    zu: "未然形接「ず」。",
+    tari: "先形成「た形」，再接「り」。"
+  };
 
   const VERBS = [
     { id: "iku", dictionary: "行く", reading: "いく", meaning: "去、前往", group: "godan", kind: "iku" },
@@ -551,13 +572,14 @@
     }
     const derived = deriveVoice(verb.dictionary, verb.kind, voiceId, "written");
     const baseRule = inflectionRule(derived.kind, inflectionId, verb, voiceId);
+    const formRule = baseRule + "\n六形对应：" + TRADITIONAL_FORM_HINTS[inflectionId];
     const voice = VOICES.find(function (item) { return item.id === voiceId; });
     const inflection = INFLECTIONS.find(function (form) { return form.id === inflectionId; });
     if (voiceId === "base") {
-      return "变「" + inflection.label + "」：" + baseRule;
+      return "变「" + inflection.label + "」：" + formRule;
     }
     return "先变「" + voice.label + "」：" + explainVoice(verb, voiceId)
-      + "\n再变「" + inflection.label + "」：" + baseRule;
+      + "\n再变「" + inflection.label + "」：" + formRule;
   }
 
   function toHiraganaFromRomaji(input) {

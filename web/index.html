@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f6f5f0">
   <title>日语学习</title>
-  <link rel="icon" type="image/svg+xml" href="./icon/note-icon.svg">
+  <link rel="icon" type="image/svg+xml" href="./icon/favicon.svg">
   <link rel="stylesheet" href="styles.css">
   <script src="font/fonts.js" defer></script>
   <script src="verb-engine.js" defer></script>
   <script src="adjective-engine.js" defer></script>
+  <script src="particle-engine.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -35,6 +36,9 @@
         </button>
         <button class="nav-item" type="button" data-view="adjective" aria-label="形容词活用" title="形容词活用">
           <span class="nav-icon" aria-hidden="true">形</span><span class="nav-label">形容词活用</span>
+        </button>
+        <button class="nav-item" type="button" data-view="particle" aria-label="助词学习" title="助词学习">
+          <span class="nav-icon" aria-hidden="true">助</span><span class="nav-label">助词学习</span>
         </button>
         <p class="sidebar-section-label sidebar-section-review">复习</p>
         <button class="nav-item" type="button" data-view="mistakes" aria-label="错题本" title="错题本">
@@ -82,7 +86,7 @@
           <article class="home-summary-card">
             <span class="home-summary-label">今日练习</span>
             <strong id="home-today-total">0 题</strong>
-            <small id="home-today-breakdown">动词 0 题 · 形容词 0 题</small>
+            <small id="home-today-breakdown">动词 0 题 · 形容词 0 题 · 助词 0 题</small>
           </article>
           <article class="home-summary-card">
             <span class="home-summary-label">连续学习</span>
@@ -125,6 +129,16 @@
               <span class="home-module-count" id="home-adjective-today">0 题</span>
               <span class="home-module-arrow" aria-hidden="true">→</span>
             </button>
+            <button class="home-module-card" type="button" data-open-view="particle" data-particle-subview="practice">
+              <span class="home-module-mark" aria-hidden="true">助</span>
+              <span class="home-module-copy">
+                <strong>助词学习</strong>
+                <small>通过例句练习理解助词用法</small>
+                <span class="home-module-status" id="home-particle-status">今日尚未练习</span>
+              </span>
+              <span class="home-module-count" id="home-particle-today">0 题</span>
+              <span class="home-module-arrow" aria-hidden="true">→</span>
+            </button>
           </div>
         </section>
 
@@ -132,7 +146,7 @@
           <div>
             <p class="eyebrow">REVIEW</p>
             <h2>把没掌握的变化再练一次。</h2>
-            <p><strong id="home-mistake-count">0</strong> 道错题按模块保存在本机。</p>
+            <p><strong id="home-mistake-count">0</strong> 道动词与形容词错题保存在本机；助词错题在助词模块内复习。</p>
           </div>
           <button class="outline-button" type="button" data-open-view="mistakes">打开错题本 <span aria-hidden="true">→</span></button>
         </section>
@@ -143,7 +157,14 @@
           <button class="module-subtab is-active" type="button" data-verb-subview="practice" aria-selected="true">练习</button>
           <button class="module-subtab" type="button" data-verb-subview="reference" aria-selected="false">活用速查</button>
         </nav>
-      <section class="module-subview" id="view-practice" aria-labelledby="practice-title">
+      <section class="module-subview" id="view-practice" aria-labelledby="verb-practice-view-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">VERB PRACTICE</p>
+            <h2 id="verb-practice-view-title">动词练习</h2>
+            <p>根据目标语态和活用形式写出答案；速查页会说明它与传统六种活用形的关系。</p>
+          </div>
+        </div>
         <div class="filter-bar">
           <label>
             <span>动词类别</span>
@@ -155,11 +176,11 @@
             </select>
           </label>
           <label>
-            <span>变形类型</span>
+            <span>变形类型（语态）</span>
             <select id="voice-filter"></select>
           </label>
           <label>
-            <span>活用形式</span>
+            <span>活用形式（含六形）</span>
             <select id="inflection-filter"></select>
           </label>
           <label>
@@ -179,7 +200,6 @@
           </span>
           <button class="text-button review-banner-exit" id="exit-review" type="button">退出重练</button>
         </div>
-
         <div class="practice-layout">
           <article class="practice-card">
             <div class="practice-card-head">
@@ -311,7 +331,7 @@
           <div>
             <p class="eyebrow">REFERENCE</p>
             <h2 id="reference-title">活用速查</h2>
-            <p>选择动词和变形类型，查看常见表达大意与变化提示；具体含义会随语境变化。</p>
+            <p>先看六种活用形如何决定后续接法，再查不同语态和活用结果；具体表达大意会随语境变化。</p>
           </div>
         </div>
         <div class="reference-controls">
@@ -336,10 +356,41 @@
           </div>
           <span class="class-pill" id="reference-group"></span>
         </div>
+        <details class="morphology-guide" id="verb-morphology-guide" open>
+          <summary>先学用言的六种活用形</summary>
+          <p class="morphology-guide-caption" id="verb-morphology-guide-caption"></p>
+          <div class="table-wrap morphology-guide-table-wrap">
+            <table class="reference-table morphology-guide-table" id="verb-morphology-guide-table" aria-label="动词六种活用形与对应练习">
+              <thead>
+                <tr>
+                  <th scope="col">活用形</th>
+                  <th scope="col">后面接什么／句中作用</th>
+                  <th scope="col">当前动词例子</th>
+                  <th scope="col" class="reference-practice-col">练一练</th>
+                </tr>
+              </thead>
+              <tbody id="verb-morphology-guide-table-body"></tbody>
+            </table>
+          </div>
+          <p class="morphology-guide-note"><strong>记忆关键</strong> 六形不是六个意思，也不和「ない形／ます形」一一对应：先看后面要接什么。现代动词的終止形与連体形通常同形，前者用于句尾，后者修饰名词；「たら」由「た形＋ら」构成，不是仮定形。</p>
+        </details>
         <details class="reference-voice-guide" id="reference-voice-guide" open>
-          <summary>变形类型规则</summary>
+          <summary>变形类型说明</summary>
           <p class="reference-voice-guide-caption" id="reference-voice-guide-caption"></p>
-          <ul class="reference-voice-guide-list" id="reference-voice-guide-list"></ul>
+          <div class="table-wrap reference-voice-guide-table-wrap">
+            <table class="reference-table reference-voice-table" id="reference-voice-guide-table" aria-label="各类变形的结果、大意与变化提示">
+              <thead>
+                <tr>
+                  <th scope="col">活用形式</th>
+                  <th scope="col">变形结果</th>
+                  <th scope="col">常见表达大意</th>
+                  <th scope="col">变化提示</th>
+                  <th scope="col" class="reference-practice-col">练一练</th>
+                </tr>
+              </thead>
+              <tbody id="reference-voice-guide-table-body"></tbody>
+            </table>
+          </div>
         </details>
         <div class="table-wrap">
           <table class="reference-table">
@@ -359,16 +410,16 @@
       </section>
 
       <section class="view" id="view-adjective" aria-labelledby="adjective-title" hidden>
-        <div class="subtabs" role="tablist" aria-label="形容词模块视图">
-          <button class="subtab is-active" type="button" role="tab" aria-selected="true" data-adj-subview="practice">练习</button>
-          <button class="subtab" type="button" role="tab" aria-selected="false" data-adj-subview="reference">速查</button>
-        </div>
-        <div id="adj-subview-practice">
+        <nav class="module-subnav" id="adj-subnav" aria-label="形容词模块功能">
+          <button class="module-subtab is-active" type="button" data-adj-subview="practice" aria-selected="true">练习</button>
+          <button class="module-subtab" type="button" data-adj-subview="reference" aria-selected="false">速查</button>
+        </nav>
+        <div class="module-subview" id="adj-subview-practice">
         <div class="section-heading">
           <div>
             <p class="eyebrow">ADJECTIVE</p>
             <h2 id="adjective-title">形容词练习</h2>
-            <p>先分「い・な」两类，再记词尾变化。支持修饰名词、谓语、状语与常用时态。</p>
+            <p>先分「い・な」两类，再记词尾变化；速查页会对照六种活用形。支持修饰名词、谓语、状语与常用时态。</p>
           </div>
         </div>
         <div class="filter-bar">
@@ -381,7 +432,7 @@
             </select>
           </label>
           <label>
-            <span>活用形式</span>
+            <span>活用形式（含六形）</span>
             <select id="adj-inflection-filter"></select>
           </label>
           <label>
@@ -401,7 +452,6 @@
           </span>
           <button class="text-button review-banner-exit" id="adj-exit-review" type="button">退出重练</button>
         </div>
-
         <div class="practice-layout">
           <article class="practice-card" id="adj-practice-card">
             <div class="practice-card-head">
@@ -523,12 +573,12 @@
         </div>
         </div>
 
-        <div id="adj-subview-reference" hidden>
+        <div class="module-subview" id="adj-subview-reference" hidden>
         <div class="section-heading adj-guide-heading" id="adjective-guide">
           <div>
             <p class="eyebrow">ADJECTIVE GUIDE</p>
             <h2>形容词速查</h2>
-            <p>以「高い・静か」为例；表中绿色是词尾变化，橙色是接续词。</p>
+            <p>以「高い・静か」为例；统一高亮标出需要留意的词尾与接续形式。</p>
           </div>
         </div>
         <div class="adj-class-grid">
@@ -556,6 +606,69 @@
           <span>别只看结尾：きれい・ゆうめい・しんせつ 都是な形容词，需要按词记忆。</span>
         </p>
 
+        <details class="morphology-guide adj-morphology-guide" id="adjective-morphology-guide" open>
+          <summary>把六种用言活用形放进形容词里看</summary>
+          <p class="morphology-guide-caption">“用言”包括动词和形容词；这里的な形容词在传统学校语法中称为形容动词。形容词的六形接法和动词不同，而且一般没有独立的命令形。</p>
+          <div class="table-wrap morphology-guide-table-wrap">
+            <table class="reference-table morphology-guide-table adjective-morphology-table" id="adjective-morphology-guide-table" aria-label="い形容词和な形容词的六种活用形对照">
+              <thead>
+                <tr>
+                  <th scope="col">活用形</th>
+                  <th scope="col">后面接什么／句中作用</th>
+                  <th scope="col">い形容词 · 高い</th>
+                  <th scope="col">な形容词 · 静か</th>
+                  <th scope="col" class="reference-practice-col">练一练</th>
+                </tr>
+              </thead>
+              <tbody id="adjective-morphology-guide-table-body">
+                <tr data-morphology-form="mizen">
+                  <th scope="row">未然形</th>
+                  <td>可接推量「う」；形容词否定另看连用形，如「高く＋ない」。</td>
+                  <td><strong>高かろう</strong><small class="morphology-example-note">高かろ＋う（较书面；日常常说「高いだろう」）</small></td>
+                  <td><strong>静かだろう</strong><small class="morphology-example-note">静かだろ＋う</small></td>
+                  <td class="morphology-guide-practice"><button type="button" class="practice-link" data-adj-morphology-practice="mizen">练未然形</button></td>
+                </tr>
+                <tr data-morphology-form="renyou">
+                  <th scope="row">連用形</th>
+                  <td>连接「て／た」等，也可作状语修饰动词。</td>
+                  <td><strong>高く／高かっ</strong><small class="morphology-example-note">高くない・高かった・高くて</small></td>
+                  <td><strong>静かで／静かに／静かだっ</strong><small class="morphology-example-note">静かで・静かに話す・静かだった</small></td>
+                  <td class="morphology-guide-practice"><button type="button" class="practice-link" data-adj-morphology-practice="renyou">练連用形</button></td>
+                </tr>
+                <tr data-morphology-form="shushi">
+                  <th scope="row">終止形</th>
+                  <td>作谓语并结束陈述句。</td>
+                  <td><strong>高い。</strong></td>
+                  <td><strong>静かだ。</strong></td>
+                  <td class="morphology-guide-practice"><button type="button" class="practice-link" data-adj-morphology-practice="shushi">练終止形</button></td>
+                </tr>
+                <tr data-morphology-form="rentai">
+                  <th scope="row">連体形</th>
+                  <td>放在名词前，限定或说明名词。</td>
+                  <td><strong>高い山</strong></td>
+                  <td><strong>静かな部屋</strong></td>
+                  <td class="morphology-guide-practice"><button type="button" class="practice-link" data-adj-morphology-practice="rentai">练連体形</button></td>
+                </tr>
+                <tr data-morphology-form="katei">
+                  <th scope="row">仮定形</th>
+                  <td>表示假设条件；い形容词接「ば」，な形容词接「なら（ば）」。</td>
+                  <td><strong>高ければ</strong><small class="morphology-example-note">高けれ＋ば</small></td>
+                  <td><strong>静かなら（ば）</strong></td>
+                  <td class="morphology-guide-practice"><button type="button" class="practice-link" data-adj-morphology-practice="katei">练仮定形</button></td>
+                </tr>
+                <tr data-morphology-form="meirei">
+                  <th scope="row">命令形</th>
+                  <td>形容词本身没有独立命令形；改用「～にして」「～してください」等表达。</td>
+                  <td>无独立命令形</td>
+                  <td>无独立命令形</td>
+                  <td class="morphology-guide-practice"><button type="button" class="practice-link" data-adj-morphology-practice="meirei">练替代表达</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="morphology-guide-note"><strong>特别注意</strong>「高い」的終止形和連体形外形相同，但句尾说「山很高」，名词前说「高山」；「静か」则用「静かだ／静かな」把两种位置区分开。</p>
+        </details>
+
         <div class="table-wrap">
           <table class="adj-table">
             <thead>
@@ -568,25 +681,25 @@
             </thead>
             <tbody>
               <tr data-adj-form="attributive">
-                <th scope="row">修饰名词<small>い直接接 · な加「な」</small></th>
+                <th scope="row">連体形 · 修饰名词<small>い直接接 · な加「な」</small></th>
                 <td><strong>高い山</strong></td>
                 <td><strong>静か<em class="adj-tail-na">な</em>部屋</strong></td>
                 <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="attributive">练这题</button></td>
               </tr>
               <tr data-adj-form="present">
-                <th scope="row">现在肯定<small>い直接结句 · な加「だ・です」</small></th>
+                <th scope="row">終止形 · 现在肯定<small>い直接结句 · な加「だ・です」</small></th>
                 <td><strong>高い</strong><small>（です）</small></td>
                 <td><strong>静か<em class="adj-tail-na">だ（です）</em></strong></td>
                 <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="present">练这题</button></td>
               </tr>
               <tr data-adj-form="presentNegative">
-                <th scope="row">现在否定<small>い→くない · な＋じゃない</small></th>
+                <th scope="row">现在否定<small>い：連用形「く」＋ない · な：ではない／じゃない</small></th>
                 <td><strong>高<em class="adj-tail-i">くない</em></strong></td>
                 <td><strong>静か<em class="adj-tail-na">じゃない</em></strong></td>
                 <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="presentNegative">练这题</button></td>
               </tr>
               <tr data-adj-form="past">
-                <th scope="row">过去肯定<small>い→かった · な＋だった</small></th>
+                <th scope="row">連用形 · 过去肯定<small>い：かっ＋た · な：だっ＋た</small></th>
                 <td><strong>高<em class="adj-tail-i">かった</em></strong></td>
                 <td><strong>静か<em class="adj-tail-na">だった</em></strong></td>
                 <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="past">练这题</button></td>
@@ -598,13 +711,19 @@
                 <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="pastNegative">练这题</button></td>
               </tr>
               <tr data-adj-form="te">
-                <th scope="row">て形<small>い→くて · な＋で</small></th>
+                <th scope="row">連用形 · て形<small>い→くて · な＋で</small></th>
                 <td><strong>高<em class="adj-tail-i">くて</em></strong></td>
                 <td><strong>静か<em class="adj-tail-na">で</em></strong></td>
                 <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="te">练这题</button></td>
               </tr>
+              <tr data-adj-form="conditional">
+                <th scope="row">仮定形 · 条件形<small>い→ければ · な→なら（ば）</small></th>
+                <td><strong>高<em class="adj-tail-i">ければ</em></strong></td>
+                <td><strong>静か<em class="adj-tail-na">なら（ば）</em></strong></td>
+                <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="conditional">练这题</button></td>
+              </tr>
               <tr data-adj-form="adverbial">
-                <th scope="row">状语<small>い→く · な→に</small></th>
+                <th scope="row">連用形 · 状语<small>い→く · な→に</small></th>
                 <td><strong>高<em class="adj-tail-i">く</em></strong></td>
                 <td><strong>静か<em class="adj-tail-na">に</em></strong></td>
                 <td class="adj-practice-col"><button type="button" class="practice-link" data-adj-practice="adverbial">练这题</button></td>
@@ -668,6 +787,144 @@
           </div>
         </div>
         </div>
+      </section>
+
+      <section class="view particle-module-view" id="view-particle" aria-labelledby="particle-view-title" hidden>
+        <nav class="module-subnav particle-subnav" id="particle-subnav" aria-label="助词模块功能">
+          <button class="module-subtab is-active" type="button" data-particle-subview="practice" aria-selected="true">练习</button>
+          <button class="module-subtab" type="button" data-particle-subview="learn" aria-selected="false">学习地图</button>
+          <button class="module-subtab" type="button" data-particle-subview="review" aria-selected="false">错题复习 <span class="particle-review-nav-count" id="particle-mistake-count">0</span></button>
+        </nav>
+
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow" id="particle-view-eyebrow">PARTICLE PRACTICE</p>
+            <h2 id="particle-view-title">在句子中练习</h2>
+            <p id="particle-view-description">综合练习会交替出现“选助词”和“判断助词作用”两种题型。</p>
+          </div>
+        </div>
+
+        <div class="filter-bar particle-controls-panel" id="particle-controls-panel">
+          <label class="particle-level-controls" id="particle-level-controls">
+            <span>练习层级</span>
+            <select id="particle-level-select">
+              <option value="beginner">入门</option>
+              <option value="advanced">进阶</option>
+            </select>
+          </label>
+          <div class="particle-practice-modes" id="particle-practice-modes">
+            <label class="particle-control-label" for="particle-practice-mode-select">练习题型</label>
+            <select id="particle-practice-mode-select" aria-describedby="particle-practice-mode-hint">
+              <option value="mixed">综合练习</option>
+              <option value="fill">选助词</option>
+              <option value="function">判作用</option>
+            </select>
+            <small class="particle-practice-mode-hint" id="particle-practice-mode-hint">两种题型交替出现</small>
+          </div>
+        </div>
+
+        <section class="module-subview particle-learn-view" id="particle-view-learn" aria-labelledby="particle-view-title" hidden>
+          <div class="particle-lesson-grid" id="particle-lesson-grid"></div>
+        </section>
+
+        <section class="module-subview particle-practice-view" id="particle-view-practice" aria-labelledby="particle-view-title">
+          <div class="practice-layout particle-practice-layout">
+            <article class="practice-card particle-question-card" id="particle-question-card">
+              <div class="practice-card-head">
+                <div class="card-topline">
+                  <div>
+                    <p class="eyebrow particle-question-progress" id="particle-question-progress"></p>
+                    <h2 id="particle-question-title">选择合适的助词</h2>
+                  </div>
+                  <span class="target-pill" id="particle-question-target">助词</span>
+                </div>
+                <section class="practice-stats practice-stats-inline" id="particle-practice-stats" role="group" aria-label="助词答题统计">
+                  <div class="practice-stats-heading">
+                    <div class="practice-stats-counts">
+                      <div class="practice-stat practice-stat-correct">
+                        <span class="practice-stat-dot" aria-hidden="true"></span>
+                        <span>答对</span>
+                        <strong id="particle-correct-count" aria-live="polite">0</strong>
+                      </div>
+                      <div class="practice-stat practice-stat-incorrect">
+                        <span class="practice-stat-dot" aria-hidden="true"></span>
+                        <span>答错</span>
+                        <strong id="particle-incorrect-count" aria-live="polite">0</strong>
+                      </div>
+                    </div>
+                    <button
+                      class="text-button reset-stats-button"
+                      id="particle-reset-stats"
+                      type="button"
+                      aria-label="清零助词答题统计，不影响错题集"
+                      title="清零统计，不会清空错题集"
+                      disabled
+                    >清零</button>
+                  </div>
+                  <div class="practice-stats-content">
+                    <div class="practice-stats-track" id="particle-answer-distribution" role="img" aria-label="尚未作答">
+                      <span class="practice-stats-segment practice-stats-segment-correct" id="particle-correct-segment"></span>
+                      <span class="practice-stats-segment practice-stats-segment-incorrect" id="particle-incorrect-segment"></span>
+                    </div>
+                    <div class="practice-stats-summary">
+                      <span>共 <strong id="particle-total-count">0</strong> 题</span>
+                      <span>正确率 <strong id="particle-accuracy">—</strong></span>
+                    </div>
+                  </div>
+                </section>
+              </div>
+              <p class="particle-question-context" id="particle-question-context"></p>
+              <p class="particle-question-prompt" id="particle-question-prompt"></p>
+              <p class="particle-question-sentence">
+                <span id="particle-sentence-before"></span><strong class="particle-answer-slot" id="particle-answer-slot">＿</strong><span id="particle-sentence-after"></span>
+              </p>
+              <p class="particle-question-reading" id="particle-question-reading"></p>
+              <p class="particle-question-translation" id="particle-question-translation"></p>
+              <div class="particle-options" id="particle-options" role="group" aria-label="选择合适的助词"></div>
+              <div class="particle-practice-actions">
+                <button class="primary-button" id="particle-check-answer" type="button" disabled>检查判断</button>
+                <button class="outline-button" id="particle-next-question" type="button" hidden>下一题</button>
+              </div>
+              <section class="particle-feedback" id="particle-feedback" aria-live="polite" hidden>
+                <strong id="particle-feedback-title"></strong>
+                <p id="particle-feedback-answer"></p>
+                <p id="particle-feedback-explanation"></p>
+              </section>
+            </article>
+            <div class="practice-sidebar">
+              <aside class="learning-card particle-learning-card">
+                <p class="eyebrow">做题思路</p>
+                <h2>先看关系，再判断助词。</h2>
+                <div class="class-note">
+                  <span class="class-note-mark">1</span>
+                  <div><strong>找到谓语</strong><p>先分清句子表达的是动作、状态还是存在。</p></div>
+                </div>
+                <div class="class-note">
+                  <span class="class-note-mark">2</span>
+                  <div><strong>定位关系</strong><p>看目标助词标记的成分与谓语之间是什么关系。</p></div>
+                </div>
+                <div class="class-note">
+                  <span class="class-note-mark">3</span>
+                  <div><strong>结合语境</strong><p>同一个助词在不同句子里可能表达不同作用。</p></div>
+                </div>
+                <button class="text-link" id="particle-guide-link" type="button">查看助词学习地图 <span aria-hidden="true">→</span></button>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        <section class="module-subview particle-review-view" id="particle-view-review" aria-labelledby="particle-view-title" hidden>
+          <div class="particle-review-actions">
+            <div class="particle-review-count" id="particle-review-count"></div>
+            <button class="primary-button" id="particle-start-review" type="button" disabled>开始复习</button>
+          </div>
+          <div class="particle-review-list" id="particle-review-list"></div>
+          <div class="empty-state particle-review-empty" id="particle-review-empty" hidden>
+            <span aria-hidden="true">◎</span>
+            <strong>还没有助词错题</strong>
+            <p>完成对比练习后，答错的题目会收集到这里。</p>
+          </div>
+        </section>
       </section>
 
       <section class="view" id="view-mistakes" aria-labelledby="mistakes-title" hidden>

@@ -762,30 +762,26 @@ select {
   line-height: 1.7;
 }
 
-.question-instruction strong,
-.rule-emphasis {
+.keyword-highlight,
+.adj-tail-i,
+.adj-tail-na {
   display: inline-block;
+  margin: 0 0.12em;
+  padding: 0 0.42em;
   border: 1px solid rgba(184, 120, 79, 0.32);
   border-radius: 999px;
   background: linear-gradient(135deg, var(--bg-orange-pale), var(--orange-pale));
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 2px 5px rgba(184, 120, 79, 0.12);
   color: var(--orange-text-deep);
   font-weight: 700;
+  line-height: 1.35;
+  vertical-align: 0.04em;
   white-space: nowrap;
 }
 
-.question-instruction strong {
-  margin: 0 3px;
-  padding: 2px 10px;
-  line-height: 1.4;
-  vertical-align: 0.08em;
-}
-
-.rule-emphasis {
-  margin: 0 0.12em;
-  padding: 0 0.42em;
-  line-height: 1.35;
-  vertical-align: 0.04em;
+.adj-tail-i,
+.adj-tail-na {
+  font-style: normal;
 }
 
 .answer-form > label {
@@ -1252,53 +1248,134 @@ select {
   line-height: 1.6;
 }
 
-.reference-voice-guide-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
-  margin: 0;
-  padding: 0 12px 12px;
-  list-style: none;
+.reference-voice-guide-table-wrap {
+  margin: 0 12px 12px;
 }
 
-.reference-voice-guide-item {
-  min-width: 0;
-  padding: 8px 9px;
-  border: 1px solid var(--line-faint);
-  border-radius: 9px;
-  background: var(--bg-pale-cool);
+.morphology-guide {
+  margin-bottom: 11px;
+  border: 1px solid var(--line-control);
+  border-radius: 13px;
+  background: var(--surface);
 }
 
-.reference-voice-guide-item.is-selected {
-  border-color: var(--line-accent);
-  background: var(--bg-pale-green);
-}
-
-.reference-voice-guide-item-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 3px 8px;
-}
-
-.reference-voice-guide-item-heading strong {
-  color: var(--text-green-mid);
-  font-size: 9px;
-}
-
-.reference-voice-guide-example {
-  color: var(--green-dark);
+.morphology-guide > summary {
+  padding: 10px 13px;
+  color: var(--text-green-deep);
   font-size: 10px;
   font-weight: 600;
-  overflow-wrap: anywhere;
+  cursor: pointer;
 }
 
-.reference-voice-guide-rule {
-  margin: 4px 0 0;
+.morphology-guide[open] > summary {
+  border-bottom: 1px solid var(--line-faint);
+}
+
+.morphology-guide-caption {
+  margin: 9px 13px;
   color: var(--text-muted-soft);
   font-size: 9px;
-  line-height: 1.55;
+  line-height: 1.6;
+}
+
+.morphology-guide-table-wrap {
+  margin: 0 12px 12px;
+}
+
+.morphology-guide-table {
+  min-width: 840px;
+}
+
+.adjective-morphology-table {
+  min-width: 1040px;
+}
+
+.morphology-guide-table th[scope="row"] {
+  width: 135px;
+  background: var(--surface);
+  color: var(--text-green-mid);
+  font-size: 10px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.morphology-guide-table td:nth-child(2) {
+  min-width: 230px;
+}
+
+.morphology-guide-examples {
+  min-width: 230px;
+}
+
+.morphology-guide-example-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin-bottom: 4px;
+}
+
+.morphology-guide-example-line > small:first-child {
+  min-width: 84px;
+  color: var(--text-muted-soft);
+}
+
+.morphology-guide-example-line strong,
+.morphology-guide-table td strong {
+  color: var(--text-green-deep);
+  font-weight: 600;
+}
+
+.morphology-guide-reading,
+.morphology-example-note {
+  display: block;
+  color: var(--text-faint-soft);
+  font-size: 9px;
+}
+
+.morphology-guide-practice {
+  width: 120px;
+  min-width: 120px;
+  text-align: center;
+  white-space: normal;
+}
+
+.morphology-guide-practice .practice-link {
+  white-space: normal;
+}
+
+.morphology-guide-note {
+  margin: 0 12px 12px;
+  padding: 8px 11px;
+  border-radius: 9px;
+  background: var(--bg-pale-green);
+  color: var(--text-green-deep);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.morphology-guide-note strong {
+  margin-right: 4px;
+}
+
+.reference-voice-table {
+  min-width: 820px;
+}
+
+.reference-voice-table th[scope="row"] {
+  width: 155px;
+  background: var(--surface);
+  color: var(--text-green-mid);
+  font-size: 10px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.reference-voice-table tr.is-selected th,
+.reference-voice-table tr.is-selected td {
+  background: var(--bg-pale-green);
 }
 
 .table-wrap {
@@ -1351,6 +1428,12 @@ select {
 .reference-table td:nth-child(4) {
   min-width: 220px;
   white-space: pre-line;
+}
+
+.morphology-guide-table td.morphology-guide-practice {
+  width: 120px;
+  min-width: 120px;
+  white-space: normal;
 }
 
 .reference-table .reference-practice-col,
@@ -1700,10 +1783,6 @@ select:disabled {
     grid-template-columns: 1fr;
   }
 
-  .reference-voice-guide-list {
-    grid-template-columns: 1fr;
-  }
-
   .section-heading,
   .reference-summary {
     padding: 14px;
@@ -1779,32 +1858,6 @@ select:disabled {
 
 /* ===================== 形容词模块 ===================== */
 
-/* 形容词模块二级切换：练习（做题训练）与速查（规则查阅）明确分视 */
-.subtabs {
-  display: flex;
-  gap: 8px;
-}
-
-.subtab {
-  padding: 8px 16px;
-  border: 1px solid var(--line-soft);
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--text-strong);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.subtab.is-active {
-  border-color: transparent;
-  background: var(--green-pale);
-  color: var(--green);
-}
-
-#view-adjective > .subtabs {
-  margin-bottom: -4px;
-}
-
 /* 错题页按模块分组：动词错题与形容词错题各自成区，互不混排 */
 .mistake-group {
   margin-top: 18px;
@@ -1829,17 +1882,6 @@ select:disabled {
   color: var(--text-faint-soft);
   font-size: 12px;
   font-weight: 400;
-}
-
-/* 视图内部统一纵向节奏，区块间距由 gap 控制 */
-#view-adjective {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
-
-#view-adjective > .adj-guide-heading {
-  margin-top: 12px;
 }
 
 /* 形容词题面为静态展示，不提供折叠 */
@@ -1972,7 +2014,7 @@ select:disabled {
   color: var(--orange-text-deep);
 }
 
-/* い／な 对照总表：绿色为词尾变化，橙色为接续词 */
+/* い／な 对照总表：词尾变化与接续形式统一使用关键词高亮 */
 .adj-table {
   width: 100%;
   border-collapse: collapse;
@@ -2020,16 +2062,6 @@ select:disabled {
   color: var(--text-faint);
   font-size: 11px;
   font-weight: 400;
-}
-
-.adj-tail-i {
-  font-style: normal;
-  color: var(--text-green-deep);
-}
-
-.adj-tail-na {
-  font-style: normal;
-  color: var(--orange-text-deep);
 }
 
 .adj-table tbody tr:last-child th,
@@ -2389,12 +2421,14 @@ select:disabled {
   display: none;
 }
 
-.verb-module-view > .module-subnav {
+.view > .module-subnav {
   margin-bottom: 18px;
 }
 
 .module-subnav {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 7px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--line);
@@ -2424,6 +2458,364 @@ select:disabled {
 
 .module-subview:not([hidden]) {
   animation: view-enter 260ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.particle-controls-panel {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.55fr);
+  align-items: center;
+}
+
+.particle-practice-modes {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.particle-control-label {
+  color: var(--intro-copy);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.particle-control-label {
+  color: var(--intro-copy);
+  font-size: 10px;
+}
+
+.particle-controls-panel.is-single-column {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 840px) {
+  .particle-controls-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.particle-practice-mode-hint {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+
+
+.particle-lesson-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 13px;
+}
+
+@media (max-width: 840px) {
+  .particle-lesson-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.particle-lesson-card,
+.particle-question-card,
+.particle-review-item {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.particle-lesson-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 16px;
+}
+
+.particle-lesson-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.particle-lesson-heading h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.particle-lesson-particles {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--bg-pale-strong);
+  color: var(--text-green-deep);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.particle-lesson-summary {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.particle-lesson-examples {
+  display: grid;
+  gap: 8px;
+}
+
+.particle-lesson-example {
+  display: grid;
+  gap: 3px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: var(--bg-pale-cool);
+}
+
+.particle-example-context,
+.particle-example-reading,
+.particle-example-note {
+  color: var(--text-faint);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.particle-example-japanese {
+  color: var(--green-dark);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.particle-example-translation {
+  color: var(--text-strong);
+  font-size: 10px;
+}
+
+.particle-lesson-start {
+  justify-self: start;
+}
+
+.particle-practice-view {
+  max-width: none;
+  margin: 0;
+}
+
+.particle-question-progress {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.particle-question-card {
+  display: grid;
+  gap: 12px;
+  padding: clamp(16px, 3vw, 24px);
+}
+
+.particle-question-context {
+  margin: 0;
+  color: var(--text-green-mid);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.particle-question-prompt {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 650;
+  text-align: center;
+}
+
+.particle-question-sentence {
+  margin: 0;
+  padding: 22px 14px;
+  border: 1px solid var(--line-prompt);
+  border-radius: 12px;
+  background: var(--bg-pale-cool);
+  color: var(--green-dark);
+  font-size: clamp(21px, 3.2vw, 30px);
+  line-height: 1.55;
+  text-align: center;
+}
+
+.particle-answer-slot {
+  display: inline-block;
+  min-width: 1.2em;
+  border-bottom: 2px solid var(--line-accent);
+  color: var(--green);
+  text-align: center;
+}
+
+.particle-answer-slot.is-target-particle {
+  min-width: 0;
+  padding: 0 0.08em;
+  border-bottom: 0;
+  border-radius: 0.2em;
+  background: var(--green-pale);
+}
+
+.particle-question-reading,
+.particle-question-translation {
+  margin: 0;
+  text-align: center;
+}
+
+.particle-question-reading {
+  color: var(--reading);
+  font-size: 11px;
+}
+
+.particle-question-translation {
+  color: var(--text-strong);
+  font-size: 12px;
+}
+
+.particle-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.particle-options.is-function-question {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.particle-option {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--green-dark);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.particle-options.is-function-question .particle-option {
+  min-height: 66px;
+  font-size: 12px;
+  line-height: 1.55;
+  text-align: left;
+}
+
+.particle-option:hover,
+.particle-option.is-selected {
+  border-color: var(--line-accent);
+  background: var(--green-pale);
+}
+
+.particle-option:disabled {
+  cursor: default;
+}
+
+.particle-practice-actions {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+}
+
+.particle-feedback {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+.particle-feedback strong {
+  color: var(--text-strong);
+  font-size: 12px;
+}
+
+.particle-feedback p {
+  margin: 5px 0 0;
+  color: var(--text-strong);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.particle-feedback.is-correct {
+  border-color: var(--line-green);
+  background: var(--bg-pale-green);
+}
+
+.particle-feedback.is-correct strong {
+  color: var(--stat-correct-text);
+}
+
+.particle-feedback.is-incorrect {
+  border-color: var(--line-red);
+  background: var(--bg-red-pale);
+}
+
+.particle-feedback.is-incorrect strong {
+  color: var(--stat-incorrect-text);
+}
+
+.particle-review-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.particle-review-count {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.particle-review-list {
+  display: grid;
+  gap: 9px;
+}
+
+.particle-review-item {
+  display: grid;
+  gap: 5px;
+  padding: 12px 14px;
+}
+
+.particle-review-item strong {
+  color: var(--text-green-deep);
+  font-size: 11px;
+}
+
+.particle-review-item span {
+  color: var(--text-muted-soft);
+  font-size: 10px;
+}
+
+.particle-review-item p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.particle-review-target {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: var(--green-pale);
+  color: var(--green-dark);
+}
+
+.particle-review-nav-count {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--bg-neutral);
+  color: var(--tab-count-text);
+  font-size: 10px;
 }
 
 .home-view {
@@ -2836,6 +3228,27 @@ select:disabled {
 @media (max-width: 580px) {
   .app-main {
     padding: 0 16px;
+  }
+
+  .particle-controls-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .particle-practice-modes {
+    gap: 6px;
+  }
+
+  .particle-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .particle-options.is-function-question {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .particle-review-actions {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .mobile-topbar {

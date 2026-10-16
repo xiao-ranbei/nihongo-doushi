@@ -1,0 +1,1206 @@
+(function (root) {
+  "use strict";
+
+  const LEVELS = [
+    { id: "beginner", label: "入门" },
+    { id: "advanced", label: "进阶" }
+  ];
+
+  const LESSONS = [
+    {
+      id: "topic-focus",
+      title: "话题与焦点：は／が",
+      particles: ["は", "が"],
+      beginnerSummary: "は提示这句话要谈论的主题；が常用来回答“谁／什么”，指出焦点信息。",
+      advancedSummary: "は也能形成对比话题；が可以标记焦点、从句主语或存在主体。两者不能简单等同于“主题”和“主语”。",
+      examples: [
+        {
+          context: "自我介绍",
+          sentence: "私は学生です。",
+          reading: "わたしはがくせいです。",
+          translation: "说到我，我是学生。",
+          note: "は把「我」设为本句的话题。"
+        },
+        {
+          context: "回答“谁来了？”",
+          sentence: "田中さんが来ました。",
+          reading: "たなかさんがきました。",
+          translation: "田中先生来了。",
+          note: "回答疑问词时，が标出新信息。"
+        }
+      ]
+    },
+    {
+      id: "location",
+      title: "存在地点与动作地点：に／で",
+      particles: ["に", "で"],
+      beginnerSummary: "表示人或物“在哪里”时常用に；表示动作“在哪里发生”时常用で。",
+      advancedSummary: "に可标记存在位置、到达点或时间点；で标记动作事件的场所，也可表示手段。先判断句子表达的是状态还是动作。",
+      examples: [
+        {
+          context: "说明猫的位置",
+          sentence: "猫は部屋にいます。",
+          reading: "ねこはへやにいます。",
+          translation: "猫在房间里。",
+          note: "いる表示存在，所在地点用に。"
+        },
+        {
+          context: "说明学习发生的地点",
+          sentence: "図書館で日本語を勉強します。",
+          reading: "としょかんでにほんごをべんきょうします。",
+          translation: "在图书馆学习日语。",
+          note: "勉強する是动作，动作发生地用で。"
+        }
+      ]
+    },
+    {
+      id: "destination-direction",
+      title: "到达点与方向：に／へ",
+      particles: ["に", "へ"],
+      beginnerSummary: "に常把地点当作移动的目标；へ更突出前进的方向。很多移动句中两者都自然。",
+      advancedSummary: "に倾向于把目的地作为目标或到达点；へ强调朝向。实际可替换的场景很多，需结合动词与语境判断。",
+      examples: [
+        {
+          context: "强调到达的地点",
+          sentence: "駅に着きました。",
+          reading: "えきにつきました。",
+          translation: "到车站了。",
+          note: "着く表示到达，目标地点用に。"
+        },
+        {
+          context: "强调前进方向",
+          sentence: "京都へ向かいます。",
+          reading: "きょうとへむかいます。",
+          translation: "朝京都方向前进。",
+          note: "へ突出朝某方向移动；京都に向かう也常见。"
+        }
+      ]
+    },
+    {
+      id: "object-route",
+      title: "动作对象与经过路线：を",
+      particles: ["を"],
+      beginnerSummary: "を常标记动作直接作用的对象；移动动词也可用を标出经过的路线。",
+      advancedSummary: "を不只表示宾语。歩く、通る、渡る等移动动词可用を标记离开的地点或经过的空间。",
+      examples: [
+        {
+          context: "咖啡是喝的对象",
+          sentence: "毎朝コーヒーを飲みます。",
+          reading: "まいあさこーひーをのみます。",
+          translation: "每天早上喝咖啡。",
+          note: "を标记直接作用的对象。"
+        },
+        {
+          context: "公园是走过的路线",
+          sentence: "公園を一周しました。",
+          reading: "こうえんをいっしゅうしました。",
+          translation: "绕公园走了一圈。",
+          note: "移动路线也可以用を标记。"
+        }
+      ]
+    },
+    {
+      id: "noun-link",
+      title: "所属与修饰：の",
+      particles: ["の"],
+      beginnerSummary: "の连接两个名词，常表示所属、类别或说明关系。",
+      advancedSummary: "前项限定或说明后项，语义关系由名词和上下文决定，不只表示所有权。",
+      examples: [
+        {
+          context: "说明物品属于谁",
+          sentence: "これは私の本です。",
+          reading: "これはわたしのほんです。",
+          translation: "这是我的书。",
+          note: "私の连接所有者和物品。"
+        },
+        {
+          context: "说明学习内容",
+          sentence: "日本語の助詞を学びます。",
+          reading: "にほんごのじょしをまなびます。",
+          translation: "学习日语助词。",
+          note: "日本語の说明助詞的类别，不表示所有权。"
+        }
+      ]
+    },
+    {
+      id: "listing",
+      title: "完整列举与举例：と／や",
+      particles: ["と", "や"],
+      beginnerSummary: "と常用于把列出的项目说完整；や表示举例，暗示还有其他项目。",
+      advancedSummary: "や常与など呼应，形成非穷举列举；没有明确语境时，完整性可能依靠上下文判断。",
+      examples: [
+        {
+          context: "只买了列出的两种水果",
+          sentence: "りんごとバナナを買いました。",
+          reading: "りんごとばななをかいました。",
+          translation: "买了苹果和香蕉（就这两种）。",
+          note: "这里把项目列举为完整清单。"
+        },
+        {
+          context: "买了列出的水果，还买了别的",
+          sentence: "りんごやバナナを買いました。",
+          reading: "りんごやばななをかいました。",
+          translation: "买了苹果、香蕉等。",
+          note: "や表示举例，不穷举所有项目。"
+        }
+      ]
+    },
+    {
+      id: "addition",
+      title: "追加与强调：も",
+      particles: ["も"],
+      beginnerSummary: "も表示“也”；放在数量或时间表达后，还可以强调数量超出预期。",
+      advancedSummary: "も替换或叠加在其他成分标记之后，强调该成分也成立；与数量搭配时可表达“竟有这么多”。",
+      examples: [
+        {
+          context: "在前一句信息上追加另一个人",
+          sentence: "兄は学生です。私も学生です。",
+          reading: "あにはがくせいです。わたしもがくせいです。",
+          translation: "哥哥是学生，我也是学生。",
+          note: "も表示“我也符合前面说的情况”。"
+        },
+        {
+          context: "强调等待时间很长",
+          sentence: "三時間も待ちました。",
+          reading: "さんじかんもまちました。",
+          translation: "竟等了三个小时。",
+          note: "数量词后的も可带有超出预期的语气。"
+        }
+      ]
+    },
+    {
+      id: "range",
+      title: "起点与终点：から／まで",
+      particles: ["から", "まで"],
+      beginnerSummary: "から标起点或开始时间；まで标终点或截止时间。",
+      advancedSummary: "两者可分别标记空间、时间或抽象范围的边界，也可以单独使用。",
+      examples: [
+        {
+          context: "说明一周中的工作范围",
+          sentence: "月曜日から金曜日まで働きます。",
+          reading: "げつようびからきんようびまではたらきます。",
+          translation: "从星期一工作到星期五。",
+          note: "から是起点，まで是终点。"
+        },
+        {
+          context: "说明工作时间",
+          sentence: "九時から五時まで働きます。",
+          reading: "くじからごじまではたらきます。",
+          translation: "从九点工作到五点。",
+          note: "时间范围也可以用から和まで标记。"
+        }
+      ]
+    },
+    {
+      id: "limitation",
+      title: "限制范围：だけ／しか",
+      particles: ["だけ", "しか"],
+      beginnerSummary: "だけ表示“只有”；しか通常和否定搭配，表示“除了……以外没有”。",
+      advancedSummary: "だけ可与肯定或否定搭配；しか要求后续否定表达，限制语气通常更强。",
+      examples: [
+        {
+          context: "用肯定句说明只喝了水",
+          sentence: "今日は水だけ飲みました。",
+          reading: "きょうはみずだけのみました。",
+          translation: "今天只喝了水。",
+          note: "だけ可以直接搭配肯定谓语。"
+        },
+        {
+          context: "用否定句强调只有水",
+          sentence: "水しか飲みませんでした。",
+          reading: "みずしかのみませんでした。",
+          translation: "除了水什么也没喝。",
+          note: "しか后接否定谓语。"
+        }
+      ]
+    }
+  ];
+
+  const FILL_QUESTIONS = [
+    {
+      id: "wa-topic",
+      lessonId: "topic-focus",
+      level: "beginner",
+      context: "自我介绍，说明自己的身份。",
+      before: "私",
+      after: "学生です。",
+      readingBefore: "わたし",
+      readingAfter: "がくせいです。",
+      translation: "我是学生。",
+      options: ["は", "が", "を", "で"],
+      acceptedAnswers: ["は"],
+      beginnerExplanation: "は把「我」设为这句话的话题，后面说明关于我的信息。",
+      advancedExplanation: "这是中性的话题句。若上下文在对比“我和别人”，は也可以带对比语气。"
+    },
+    {
+      id: "ga-focus",
+      lessonId: "topic-focus",
+      level: "beginner",
+      context: "回答“谁来了？”",
+      before: "田中さん",
+      after: "来ました。",
+      readingBefore: "たなかさん",
+      readingAfter: "きました。",
+      translation: "田中先生来了。",
+      options: ["は", "が", "に", "も"],
+      acceptedAnswers: ["が"],
+      beginnerExplanation: "问题问“谁”，回答中的新信息是田中さん，因此用が。",
+      advancedExplanation: "が把焦点落在回答疑问词的新信息上；若改用は，话题和对比关系会不同。"
+    },
+    {
+      id: "wa-contrast",
+      lessonId: "topic-focus",
+      level: "advanced",
+      context: "强调“鱼我不吃，其他食物可以吃”。",
+      before: "私は魚",
+      after: "食べません。",
+      readingBefore: "わたしはさかな",
+      readingAfter: "たべません。",
+      translation: "鱼我不吃（其他东西可以吃）。",
+      options: ["は", "が", "を", "も"],
+      acceptedAnswers: ["は"],
+      beginnerExplanation: "这里把鱼作为话题，并和其他食物形成对比。",
+      advancedExplanation: "は替代宾语位置通常使用的を，形成对比话题；它不是普通的中性主题句。"
+    },
+    {
+      id: "ni-existence",
+      lessonId: "location",
+      level: "beginner",
+      context: "说明猫所在的位置。",
+      before: "猫は部屋",
+      after: "います。",
+      readingBefore: "ねこはへや",
+      readingAfter: "います。",
+      translation: "猫在房间里。",
+      options: ["に", "で", "を", "へ"],
+      acceptedAnswers: ["に"],
+      beginnerExplanation: "いる表示存在，存在的位置用に标记。",
+      advancedExplanation: "这里描述的是存在状态，而不是某个动作发生的场所，所以用に。"
+    },
+    {
+      id: "de-action-place",
+      lessonId: "location",
+      level: "beginner",
+      context: "说明学习动作发生的地点。",
+      before: "図書館",
+      after: "日本語を勉強します。",
+      readingBefore: "としょかん",
+      readingAfter: "にほんごをべんきょうします。",
+      translation: "在图书馆学习日语。",
+      options: ["に", "で", "を", "へ"],
+      acceptedAnswers: ["で"],
+      beginnerExplanation: "勉強する是动作，动作发生的地点用で。",
+      advancedExplanation: "で标记事件发生的场所；若说“人在图书馆”，则用「図書館にいる」。"
+    },
+    {
+      id: "ni-arrival",
+      lessonId: "destination-direction",
+      level: "beginner",
+      context: "强调到达的地点。",
+      before: "駅",
+      after: "着きました。",
+      readingBefore: "えき",
+      readingAfter: "つきました。",
+      translation: "到车站了。",
+      options: ["に", "へ", "で", "を"],
+      acceptedAnswers: ["に"],
+      beginnerExplanation: "着く表示到达某处，到达点通常用に。",
+      advancedExplanation: "へ偏向方向；着く描写抵达目标，通常选择に。"
+    },
+    {
+      id: "he-destination",
+      lessonId: "destination-direction",
+      level: "advanced",
+      context: "表示去东京；へ更突出移动方向，但に也可用于这个句子。",
+      before: "東京",
+      after: "行きます。",
+      readingBefore: "とうきょう",
+      readingAfter: "いきます。",
+      translation: "去东京。",
+      options: ["へ", "に", "で", "を"],
+      acceptedAnswers: ["へ", "に"],
+      beginnerExplanation: "表示移动目标时，へ和に在很多场景都可以使用。",
+      advancedExplanation: "两种答案都自然：へ较突出方向，に把东京作为移动目标。"
+    },
+    {
+      id: "wo-object",
+      lessonId: "object-route",
+      level: "beginner",
+      context: "咖啡是“喝”这个动作直接作用的对象。",
+      before: "毎朝コーヒー",
+      after: "飲みます。",
+      readingBefore: "まいあさこーひー",
+      readingAfter: "のみます。",
+      translation: "每天早上喝咖啡。",
+      options: ["を", "に", "で", "から"],
+      acceptedAnswers: ["を"],
+      beginnerExplanation: "を标记直接作用的对象：喝什么？喝咖啡。",
+      advancedExplanation: "这里是典型的他动词宾语标记；注意を也可用于移动路线。"
+    },
+    {
+      id: "wo-route",
+      lessonId: "object-route",
+      level: "advanced",
+      context: "把公园作为走过的路线。",
+      before: "公園",
+      after: "一周しました。",
+      readingBefore: "こうえん",
+      readingAfter: "いっしゅうしました。",
+      translation: "绕公园走了一圈。",
+      options: ["を", "で", "に", "が"],
+      acceptedAnswers: ["を"],
+      beginnerExplanation: "这里不是“对公园做动作”，而是把公园表示为经过的路线。",
+      advancedExplanation: "移动动词可用を标记经过或离开的空间，如「道を歩く」「家を出る」。"
+    },
+    {
+      id: "no-possession",
+      lessonId: "noun-link",
+      level: "beginner",
+      context: "说明书属于谁。",
+      before: "これは私",
+      after: "本です。",
+      readingBefore: "これはわたし",
+      readingAfter: "ほんです。",
+      translation: "这是我的书。",
+      options: ["の", "も", "が", "で"],
+      acceptedAnswers: ["の"],
+      beginnerExplanation: "の连接「我」和「书」，表示所属关系。",
+      advancedExplanation: "の也能表示类别或说明关系，并不总是所有权。"
+    },
+    {
+      id: "to-complete-list",
+      lessonId: "listing",
+      level: "beginner",
+      context: "买的水果只有苹果和香蕉这两种。",
+      before: "りんご",
+      after: "バナナを買いました。",
+      readingBefore: "りんご",
+      readingAfter: "ばななをかいました。",
+      translation: "买了苹果和香蕉（就这两种）。",
+      options: ["と", "や", "も", "の"],
+      acceptedAnswers: ["と"],
+      beginnerExplanation: "语境说明清单完整，所以这里用と连接列举项目。",
+      advancedExplanation: "穷举列举通常使用と；是否完整要看上下文。"
+    },
+    {
+      id: "ya-open-list",
+      lessonId: "listing",
+      level: "beginner",
+      context: "除了苹果和香蕉，还买了其他水果。",
+      before: "りんご",
+      after: "バナナを買いました。",
+      readingBefore: "りんご",
+      readingAfter: "ばななをかいました。",
+      translation: "买了苹果、香蕉等。",
+      options: ["と", "や", "も", "の"],
+      acceptedAnswers: ["や"],
+      beginnerExplanation: "这里没有列出所有水果，用や表示举例。",
+      advancedExplanation: "や通常表达非穷举列举；常和「など」搭配。"
+    },
+    {
+      id: "mo-addition",
+      lessonId: "addition",
+      level: "beginner",
+      context: "哥哥是学生，说话人也要表达自己是学生。",
+      before: "兄は学生です。私",
+      after: "学生です。",
+      readingBefore: "あにはがくせいです。わたし",
+      readingAfter: "がくせいです。",
+      translation: "哥哥是学生，我也是学生。",
+      options: ["も", "は", "が", "を"],
+      acceptedAnswers: ["も"],
+      beginnerExplanation: "も表示“我也符合前面说的情况”。",
+      advancedExplanation: "も常表达追加或类比；它会替换当前成分上原本可能出现的主题标记。"
+    },
+    {
+      id: "kara-start",
+      lessonId: "range",
+      level: "beginner",
+      context: "说明工作从星期几开始。",
+      before: "月曜日",
+      after: "金曜日まで働きます。",
+      readingBefore: "げつようび",
+      readingAfter: "きんようびまではたらきます。",
+      translation: "从星期一工作到星期五。",
+      options: ["から", "まで", "に", "で"],
+      acceptedAnswers: ["から"],
+      beginnerExplanation: "から标记范围或时间的起点。",
+      advancedExplanation: "から指出范围起始端；终点可由まで补出。"
+    },
+    {
+      id: "made-end",
+      lessonId: "range",
+      level: "beginner",
+      context: "说明工作到几点结束。",
+      before: "九時から五時",
+      after: "働きます。",
+      readingBefore: "くじからごじ",
+      readingAfter: "はたらきます。",
+      translation: "从九点工作到五点。",
+      options: ["まで", "から", "に", "で"],
+      acceptedAnswers: ["まで"],
+      beginnerExplanation: "まで标记范围或时间的终点。",
+      advancedExplanation: "まで指出范围终止端，不一定表示动作恰好在该时刻停止。"
+    },
+    {
+      id: "dake-limit",
+      lessonId: "limitation",
+      level: "beginner",
+      context: "用肯定句说明今天只喝了水。",
+      before: "今日は水",
+      after: "飲みました。",
+      readingBefore: "きょうはみず",
+      readingAfter: "のみました。",
+      translation: "今天只喝了水。",
+      options: ["だけ", "しか", "も", "まで"],
+      acceptedAnswers: ["だけ"],
+      beginnerExplanation: "だけ表示“只有”，可以直接搭配肯定句。",
+      advancedExplanation: "だけ不要求后续否定；与しか相比，限制语气通常较中性。"
+    },
+    {
+      id: "shika-negative",
+      lessonId: "limitation",
+      level: "beginner",
+      context: "限定为水，并使用否定谓语。",
+      before: "水",
+      after: "飲みませんでした。",
+      readingBefore: "みず",
+      readingAfter: "のみませんでした。",
+      translation: "除了水，什么也没喝。",
+      options: ["しか", "だけ", "も", "から"],
+      acceptedAnswers: ["しか"],
+      beginnerExplanation: "しか通常和否定搭配，句尾要用否定形式。",
+      advancedExplanation: "「しか～ない」整体表达排他限制；不能只把しか理解为独立的“只有”。"
+    },
+    {
+      id: "ni-time",
+      lessonId: "location",
+      level: "advanced",
+      context: "三点是会议开始的时间点。",
+      before: "会議は三時",
+      after: "始まります。",
+      readingBefore: "かいぎはさんじ",
+      readingAfter: "はじまります。",
+      translation: "会议三点开始。",
+      options: ["に", "で", "を", "へ"],
+      acceptedAnswers: ["に"],
+      beginnerExplanation: "具体时间点常用に标记。",
+      advancedExplanation: "に可标记事件发生的时间点；相对期间一般不一定需要に。"
+    },
+    {
+      id: "ni-recipient",
+      lessonId: "location",
+      level: "advanced",
+      context: "标记收到礼物的人。",
+      before: "友達",
+      after: "本をあげました。",
+      readingBefore: "ともだち",
+      readingAfter: "ほんをあげました。",
+      translation: "把书送给了朋友。",
+      options: ["に", "で", "を", "から"],
+      acceptedAnswers: ["に"],
+      beginnerExplanation: "に可以标记动作的到达对象，这里是礼物送到的人。",
+      advancedExplanation: "あげる的授受方向指向友達，所以用に标记接受者。"
+    },
+    {
+      id: "no-category",
+      lessonId: "noun-link",
+      level: "advanced",
+      context: "说明所学习的助词属于哪个语言。",
+      before: "日本語",
+      after: "助詞を学びます。",
+      readingBefore: "にほんご",
+      readingAfter: "じょしをまなびます。",
+      translation: "学习日语助词。",
+      options: ["の", "は", "が", "と"],
+      acceptedAnswers: ["の"],
+      beginnerExplanation: "の连接两个名词，说明后一个名词的类别或所属关系。",
+      advancedExplanation: "这里是名词修饰关系，不表示某个人拥有助词。"
+    },
+    {
+      id: "to-together",
+      lessonId: "listing",
+      level: "advanced",
+      context: "说明和朋友一起看电影。",
+      before: "友達",
+      after: "映画を見ました。",
+      readingBefore: "ともだち",
+      readingAfter: "えいがをみました。",
+      translation: "和朋友看了电影。",
+      options: ["と", "や", "も", "で"],
+      acceptedAnswers: ["と"],
+      beginnerExplanation: "と也能表示一起行动的对象。",
+      advancedExplanation: "这里的と表示共同参与者，不是并列列举。"
+    },
+    {
+      id: "mo-emphasis",
+      lessonId: "addition",
+      level: "advanced",
+      context: "强调等待了很长时间，超过预期。",
+      before: "三時間",
+      after: "待ちました。",
+      readingBefore: "さんじかん",
+      readingAfter: "まちました。",
+      translation: "竟然等了三个小时。",
+      options: ["も", "は", "が", "を"],
+      acceptedAnswers: ["も"],
+      beginnerExplanation: "数量表达后面的も可以加强“这么多／这么久”的语气。",
+      advancedExplanation: "数量＋も常带说话人的评价或超出预期的强调。"
+    },
+    {
+      id: "kara-source",
+      lessonId: "range",
+      level: "advanced",
+      context: "说明信是从谁那里收到的。",
+      before: "友達",
+      after: "手紙をもらいました。",
+      readingBefore: "ともだち",
+      readingAfter: "てがみをもらいました。",
+      translation: "从朋友那里收到了信。",
+      options: ["から", "まで", "に", "で"],
+      acceptedAnswers: ["から"],
+      beginnerExplanation: "から也可以表示来源，相当于“从……那里”。",
+      advancedExplanation: "もらう的来源由から标记；友達に手紙をもらう在口语中也常见。"
+    },
+    {
+      id: "shika-only",
+      lessonId: "limitation",
+      level: "advanced",
+      context: "限定剩余金额为一百日元，后接否定存在表达。",
+      before: "百円",
+      after: "ありません。",
+      readingBefore: "ひゃくえん",
+      readingAfter: "ありません。",
+      translation: "只剩一百日元。",
+      options: ["しか", "だけ", "も", "まで"],
+      acceptedAnswers: ["しか"],
+      beginnerExplanation: "しか后面接否定形式；「百円しかありません」表示仅有一百日元。",
+      advancedExplanation: "しか与否定谓语组合，把可用范围限制为百円。"
+    }
+  ];
+
+  const QUESTION_TYPES = [
+    { id: "fill", label: "选助词" },
+    { id: "function", label: "判作用" }
+  ];
+
+  const FUNCTION_QUESTIONS = [
+    {
+      id: "function-weather-ga",
+      type: "function",
+      lessonId: "topic-focus",
+      level: "beginner",
+      context: "看着天气不错，正在商量接下来做什么。",
+      before: "天気",
+      targetParticle: "が",
+      targetReading: "が",
+      after: "いいから、散歩しましょう。",
+      readingBefore: "てんき",
+      readingAfter: "いいから、さんぽしましょう。",
+      translation: "天气很好，所以散散步吧。",
+      options: [
+        "标出「いい」所描述的主体（天气）",
+        "把天气设为整段谈话的话题",
+        "表示天气是散步提议的原因",
+        "连接前后分句表示转折"
+      ],
+      acceptedAnswers: ["标出「いい」所描述的主体（天气）"],
+      beginnerExplanation: "这里是在说“什么是好的”：天気是「いい」描述的主体。整句的原因关系由「から」表达，不是「が」。",
+      advancedExplanation: "格助词「が」标记评价谓语「いい」的主体；「天気がいい」整体作为「から」所接的理由。"
+    },
+    {
+      id: "function-mother-wa",
+      type: "function",
+      lessonId: "topic-focus",
+      level: "beginner",
+      context: "聊到家人的日常习惯。",
+      before: "母",
+      targetParticle: "は",
+      targetReading: "わ",
+      after: "毎朝コーヒーを飲みます。",
+      readingBefore: "はは",
+      readingAfter: "まいあさこーひーをのみます。",
+      translation: "妈妈每天早上喝咖啡。",
+      options: [
+        "把“妈妈”设为本句话题，后面说明她的习惯",
+        "指出“妈妈”是回答“谁”的新信息焦点",
+        "标记喝咖啡动作发生的地点",
+        "标记喝咖啡动作直接作用的对象"
+      ],
+      acceptedAnswers: ["把“妈妈”设为本句话题，后面说明她的习惯"],
+      beginnerExplanation: "「は」把妈妈设为谈论对象，后面的内容是在说明妈妈的习惯。",
+      advancedExplanation: "这里的「は」是中性话题标记；只有在合适的上下文中，它才会进一步带出对比语气。"
+    },
+    {
+      id: "function-key-ni",
+      type: "function",
+      lessonId: "location",
+      level: "beginner",
+      context: "说明钥匙现在在哪里。",
+      before: "机の上",
+      targetParticle: "に",
+      targetReading: "に",
+      after: "鍵があります。",
+      readingBefore: "つくえのうえ",
+      readingAfter: "かぎがあります。",
+      translation: "桌子上有钥匙。",
+      options: [
+        "标记存在物所在的位置",
+        "标记某个动作发生的地点",
+        "标记移动的到达方向",
+        "标记动作直接作用的对象"
+      ],
+      acceptedAnswers: ["标记存在物所在的位置"],
+      beginnerExplanation: "「あります」表示存在；「机の上」是钥匙存在的位置，所以用「に」。",
+      advancedExplanation: "这里的「に」标记存在主体的静态位置；若是在某处进行动作，通常用「で」。"
+    },
+    {
+      id: "function-kids-de",
+      type: "function",
+      lessonId: "location",
+      level: "beginner",
+      context: "说话人看到孩子们正在公园里玩。",
+      before: "公園",
+      targetParticle: "で",
+      targetReading: "で",
+      after: "子どもが遊んでいます。",
+      readingBefore: "こうえん",
+      readingAfter: "こどもがあそんでいます。",
+      translation: "孩子们正在公园里玩。",
+      options: [
+        "标记游玩这个动作发生的地点",
+        "标记人或物静止存在的位置",
+        "标记移动的到达地点",
+        "标记游玩动作直接作用的对象"
+      ],
+      acceptedAnswers: ["标记游玩这个动作发生的地点"],
+      beginnerExplanation: "「遊んでいます」描述正在进行的动作；动作发生的地点用「で」标记。",
+      advancedExplanation: "「で」标记事件发生场所；若只说明“孩子在公园”，存在位置通常用「公園にいる」。"
+    },
+    {
+      id: "function-kyoto-e",
+      type: "function",
+      lessonId: "destination-direction",
+      level: "beginner",
+      context: "说话人说明接下来要朝哪个方向出发。",
+      before: "これから京都",
+      targetParticle: "へ",
+      targetReading: "え",
+      after: "向かいます。",
+      readingBefore: "これからきょうと",
+      readingAfter: "むかいます。",
+      translation: "接下来朝京都方向前进。",
+      options: [
+        "突出移动朝向的方向",
+        "标记动作发生的地点",
+        "标记移动的起点",
+        "标记移动动作直接作用的对象"
+      ],
+      acceptedAnswers: ["突出移动朝向的方向"],
+      beginnerExplanation: "「へ」突出朝京都这个方向前进；它强调方向，不是在说动作发生在那里。",
+      advancedExplanation: "移动句中的「へ」偏重方向性；与「に」相比，它不把到达点作为主要焦点。"
+    },
+    {
+      id: "function-book-wo",
+      type: "function",
+      lessonId: "object-route",
+      level: "beginner",
+      context: "说明睡觉前会做什么。",
+      before: "寝る前に本",
+      targetParticle: "を",
+      targetReading: "お",
+      after: "読みます。",
+      readingBefore: "ねるまえにほん",
+      readingAfter: "よみます。",
+      translation: "睡觉前读书。",
+      options: [
+        "标记阅读动作直接作用的对象（书）",
+        "标记阅读动作发生的地点",
+        "标记移动经过的路线",
+        "标记动作的接受对象"
+      ],
+      acceptedAnswers: ["标记阅读动作直接作用的对象（书）"],
+      beginnerExplanation: "问“读什么？”答案是书；「を」标记阅读动作直接作用的对象。",
+      advancedExplanation: "这里的「を」是典型的直接宾语标记；移动动词还可能用「を」表示经过路线。"
+    },
+    {
+      id: "function-mother-no",
+      type: "function",
+      lessonId: "noun-link",
+      level: "beginner",
+      context: "介绍一件属于妈妈的衣物。",
+      before: "これは母",
+      targetParticle: "の",
+      targetReading: "の",
+      after: "着物です。",
+      readingBefore: "これははは",
+      readingAfter: "きものです。",
+      translation: "这是妈妈的和服。",
+      options: [
+        "连接“妈妈”和“和服”，表示所属关系",
+        "标记妈妈是动作发生的地点",
+        "标记和服是动作直接作用的对象",
+        "表示和服是移动的到达地点"
+      ],
+      acceptedAnswers: ["连接“妈妈”和“和服”，表示所属关系"],
+      beginnerExplanation: "「の」连接两个名词；这里说明和服属于妈妈。",
+      advancedExplanation: "这里的「の」表达所属关系；它也可以用于类别或属性修饰，不总是表示所有权。"
+    },
+    {
+      id: "function-fruit-to",
+      type: "function",
+      lessonId: "listing",
+      level: "beginner",
+      context: "买完后确认这次只买了列出的两种水果。",
+      before: "りんご",
+      targetParticle: "と",
+      targetReading: "と",
+      after: "みかんを買いました。",
+      readingBefore: "りんご",
+      readingAfter: "みかんをかいました。",
+      translation: "买了苹果和橘子（就这两种）。",
+      options: [
+        "把列出的水果作为完整清单",
+        "举出部分水果，暗示还有其他种类",
+        "表示和某人一起行动",
+        "连接两个名词表示所属关系"
+      ],
+      acceptedAnswers: ["把列出的水果作为完整清单"],
+      beginnerExplanation: "上下文说明水果只有这两种；「と」把它们作为完整清单列出来。",
+      advancedExplanation: "这里的「と」是穷举列举；清单是否完整需要结合上下文，而不能只看助词本身。"
+    },
+    {
+      id: "function-fruit-ya",
+      type: "function",
+      lessonId: "listing",
+      level: "beginner",
+      context: "桌上还摆着其他东西，句子只举出其中几样。",
+      before: "机の上に本",
+      targetParticle: "や",
+      targetReading: "や",
+      after: "ノートがあります。",
+      readingBefore: "つくえのうえにほん",
+      readingAfter: "のーとがあります。",
+      translation: "桌上有书、笔记本等。",
+      options: [
+        "举出部分项目，暗示还有其他内容",
+        "把列出的项目说成完整清单",
+        "表示和某人一起做动作",
+        "连接两个名词表示所属关系"
+      ],
+      acceptedAnswers: ["举出部分项目，暗示还有其他内容"],
+      beginnerExplanation: "「や」用于举例，表示书和笔记本只是其中一部分。",
+      advancedExplanation: "「や」表达非穷举列举；若要明确提示还有其他项目，可以再接「など」。"
+    },
+    {
+      id: "function-brother-mo",
+      type: "function",
+      lessonId: "addition",
+      level: "beginner",
+      context: "朋友已经先到了，说话人补充弟弟也快到了。",
+      before: "友達は先に着きました。弟",
+      targetParticle: "も",
+      targetReading: "も",
+      after: "もうすぐ来ます。",
+      readingBefore: "ともだちはさきにつきました。おとうと",
+      readingAfter: "もうすぐきます。",
+      translation: "朋友已经先到了，弟弟也马上来。",
+      options: [
+        "把弟弟追加到前面提到的人里，表示“也”",
+        "把弟弟设为与朋友对比的话题",
+        "标记动作直接作用的对象",
+        "标记动作发生的地点"
+      ],
+      acceptedAnswers: ["把弟弟追加到前面提到的人里，表示“也”"],
+      beginnerExplanation: "前面已经提到朋友会到；「も」把弟弟追加进来，表示弟弟也会来。",
+      advancedExplanation: "这里的「も」表达追加；它替代了该名词位置上常见的主题标记「は」。"
+    },
+    {
+      id: "function-home-kara",
+      type: "function",
+      lessonId: "range",
+      level: "beginner",
+      context: "说明步行路线从家开始，到车站结束。",
+      before: "家",
+      targetParticle: "から",
+      targetReading: "から",
+      after: "駅まで歩きます。",
+      readingBefore: "いえ",
+      readingAfter: "えきまであるきます。",
+      translation: "从家步行到车站。",
+      options: [
+        "标记步行范围的起点",
+        "标记步行范围的终点",
+        "标记步行动作发生的地点",
+        "表示步行提议的原因"
+      ],
+      acceptedAnswers: ["标记步行范围的起点"],
+      beginnerExplanation: "「から」标记从哪里开始；这里的起点是家。",
+      advancedExplanation: "「から」指出空间范围的起始端；与「まで」搭配时，两者分别标记起点和终点。"
+    },
+    {
+      id: "function-station-made",
+      type: "function",
+      lessonId: "range",
+      level: "beginner",
+      context: "说话人强调今天步行到车站这个终点。",
+      before: "今日は駅",
+      targetParticle: "まで",
+      targetReading: "まで",
+      after: "歩いて行きます。",
+      readingBefore: "きょうはえき",
+      readingAfter: "あるいていきます。",
+      translation: "今天步行到车站去。",
+      options: [
+        "标记步行路线的终点",
+        "标记步行路线的起点",
+        "标记动作发生的地点",
+        "表示和某人一起步行"
+      ],
+      acceptedAnswers: ["标记步行路线的终点"],
+      beginnerExplanation: "「まで」表示范围到哪里结束；这里的终点是车站。",
+      advancedExplanation: "「まで」标记空间范围的终止端，表示到达该边界，不强调之后是否立刻停止其他活动。"
+    },
+    {
+      id: "function-water-dake",
+      type: "function",
+      lessonId: "limitation",
+      level: "beginner",
+      context: "说明今天喝的内容只有水，句尾使用肯定形式。",
+      before: "今日は水",
+      targetParticle: "だけ",
+      targetReading: "だけ",
+      after: "飲みました。",
+      readingBefore: "きょうはみず",
+      readingAfter: "のみました。",
+      translation: "今天只喝了水。",
+      options: [
+        "限定喝的内容为水，后面可以接肯定谓语",
+        "表示除了水以外什么都没有，必须接否定",
+        "标记喝水动作发生的地点",
+        "表示步行范围的起点"
+      ],
+      acceptedAnswers: ["限定喝的内容为水，后面可以接肯定谓语"],
+      beginnerExplanation: "「だけ」表示范围限制；这里后面是肯定的「飲みました」，句子仍然自然。",
+      advancedExplanation: "「だけ」可以直接与肯定谓语搭配；与「しか」不同，它不要求后续否定。"
+    },
+    {
+      id: "function-money-shika",
+      type: "function",
+      lessonId: "limitation",
+      level: "beginner",
+      context: "说明钱包里只剩下一千日元，谓语使用否定形式。",
+      before: "財布には千円",
+      targetParticle: "しか",
+      targetReading: "しか",
+      after: "ありません。",
+      readingBefore: "さいふにはせんえん",
+      readingAfter: "ありません。",
+      translation: "钱包里只剩一千日元。",
+      options: [
+        "限定范围只有一千日元，并与否定谓语搭配",
+        "中性地表示“只有”，可以直接接肯定谓语",
+        "标记钱包里存在的地点",
+        "标记金额范围的起点"
+      ],
+      acceptedAnswers: ["限定范围只有一千日元，并与否定谓语搭配"],
+      beginnerExplanation: "「しか」和否定形式「ありません」一起表达“只有一千日元”。",
+      advancedExplanation: "「しか～ない」整体构成排他限制；否定是这个句型的一部分，不能把しか单独替换成だけ。"
+    },
+    {
+      id: "function-focus-ga",
+      type: "function",
+      lessonId: "topic-focus",
+      level: "advanced",
+      context: "对“谁打开了窗户？”这个问题作出回答。",
+      before: "質問：誰が窓を開けましたか。田中さん",
+      targetParticle: "が",
+      targetReading: "が",
+      after: "開けました。",
+      readingBefore: "しつもん：だれがまどをあけましたか。たなかさん",
+      readingAfter: "あけました。",
+      translation: "问：谁打开了窗户？答：田中先生打开了。",
+      options: [
+        "直接回答“谁”的新信息焦点",
+        "把田中设为整段对话的话题",
+        "标记窗户是打开动作的主体",
+        "连接前后分句表示转折"
+      ],
+      acceptedAnswers: ["直接回答“谁”的新信息焦点"],
+      beginnerExplanation: "问题问“谁”，回答中的「田中さん」就是新信息；「が」把焦点落在这个答案上。",
+      advancedExplanation: "这里「が」标记主语并承载疑问焦点；这种焦点作用需要结合前面的疑问语境判断，不能概括成“が总是强调”。"
+    },
+    {
+      id: "function-meeting-ni",
+      type: "function",
+      lessonId: "location",
+      level: "advanced",
+      context: "说明会议开始的具体钟点。",
+      before: "会議は午後三時",
+      targetParticle: "に",
+      targetReading: "に",
+      after: "始まります。",
+      readingBefore: "かいぎはごごさんじ",
+      readingAfter: "はじまります。",
+      translation: "会议下午三点开始。",
+      options: [
+        "标记会议开始的具体时间点",
+        "标记会议发生的场所",
+        "标记会议的参加对象",
+        "表示会议移动的方向"
+      ],
+      acceptedAnswers: ["标记会议开始的具体时间点"],
+      beginnerExplanation: "「午後三時」是明确的时间点；具体时间点常用「に」标记。",
+      advancedExplanation: "这里的「に」标记事件发生时间；表达一段持续期间时，通常不一定需要「に」。"
+    },
+    {
+      id: "function-recipient-ni",
+      type: "function",
+      lessonId: "location",
+      level: "advanced",
+      context: "说明邮件发送给谁，而不是邮件从谁那里来。",
+      before: "先生",
+      targetParticle: "に",
+      targetReading: "に",
+      after: "メールを送りました。",
+      readingBefore: "せんせい",
+      readingAfter: "めーるをおくりました。",
+      translation: "给老师发了邮件。",
+      options: [
+        "标记发送邮件的接收对象",
+        "标记发送邮件动作发生的地点",
+        "标记邮件来源的起点",
+        "标记发送动作直接作用的物（邮件）"
+      ],
+      acceptedAnswers: ["标记发送邮件的接收对象"],
+      beginnerExplanation: "邮件送到老师那里；「に」标记动作的到达对象。",
+      advancedExplanation: "授受方向指向「先生」，因此用「に」标记接受者；邮件本身由「を」标记。"
+    },
+    {
+      id: "function-venue-e",
+      type: "function",
+      lessonId: "destination-direction",
+      level: "advanced",
+      context: "描述前往会场的途中，而不是已经抵达会场。",
+      before: "会場",
+      targetParticle: "へ",
+      targetReading: "え",
+      after: "向かう途中で、雨が降り始めました。",
+      readingBefore: "かいじょう",
+      readingAfter: "むかうとちゅうで、あめがふりはじめました。",
+      translation: "在前往会场的途中，开始下雨了。",
+      options: [
+        "突出朝会场前进的方向",
+        "标记已经抵达的终点",
+        "标记下雨动作发生的地点",
+        "标记移动的出发起点"
+      ],
+      acceptedAnswers: ["突出朝会场前进的方向"],
+      beginnerExplanation: "句子说的是“前往途中”；「へ」突出朝会场的方向移动。",
+      advancedExplanation: "「へ」把注意力放在行进方向上；这里的「途中」也说明句子没有把抵达作为重点。"
+    },
+    {
+      id: "function-road-wo",
+      type: "function",
+      lessonId: "object-route",
+      level: "advanced",
+      context: "说话人在描述跑步路线，不是把道路当作被作用的对象。",
+      before: "川沿いの道",
+      targetParticle: "を",
+      targetReading: "お",
+      after: "走りました。",
+      readingBefore: "かわぞいのみち",
+      readingAfter: "はしりました。",
+      translation: "沿着河边的道路跑了。",
+      options: [
+        "标出跑步经过的路线",
+        "标记跑步动作直接作用的对象",
+        "标记跑步的起点",
+        "标记跑步发生的具体时间"
+      ],
+      acceptedAnswers: ["标出跑步经过的路线"],
+      beginnerExplanation: "「道」不是被跑的对象，而是跑步经过的路线；移动动词也可以用「を」标路线。",
+      advancedExplanation: "移动动词「走る」前的「を」表示经过空间；它与他动词宾语标记是不同的用法。"
+    },
+    {
+      id: "function-wood-no",
+      type: "function",
+      lessonId: "noun-link",
+      level: "advanced",
+      context: "说明桌子的材质，不是在说桌子属于谁。",
+      before: "木",
+      targetParticle: "の",
+      targetReading: "の",
+      after: "机を買いました。",
+      readingBefore: "き",
+      readingAfter: "つくえをかいました。",
+      translation: "买了一张木桌。",
+      options: [
+        "连接名词，说明桌子的材料或属性",
+        "表示桌子属于某个人",
+        "标记买桌子的动作地点",
+        "连接列举项目，表示还有其他物品"
+      ],
+      acceptedAnswers: ["连接名词，说明桌子的材料或属性"],
+      beginnerExplanation: "「木の机」里的「の」说明桌子的材料；它不一定表示所有权。",
+      advancedExplanation: "「の」连接两个名词并建立修饰关系，具体是材料、类别还是所属，需要结合名词语义判断。"
+    },
+    {
+      id: "function-bag-ya",
+      type: "function",
+      lessonId: "listing",
+      level: "advanced",
+      context: "列出的只是包里物品的一部分，后面还用「など」提示还有其他东西。",
+      before: "かばんには財布",
+      targetParticle: "や",
+      targetReading: "や",
+      after: "鍵などが入っています。",
+      readingBefore: "かばんにはさいふ",
+      readingAfter: "かぎなどがはいっています。",
+      translation: "包里有钱包、钥匙等东西。",
+      options: [
+        "举例列出部分物品，暗示清单不完整",
+        "把列出的物品说成完整清单",
+        "表示和某人一起行动",
+        "连接两个名词表示所属关系"
+      ],
+      acceptedAnswers: ["举例列出部分物品，暗示清单不完整"],
+      beginnerExplanation: "「や」列出部分例子，「など」进一步提醒还有其他物品。",
+      advancedExplanation: "「や～など」构成典型的非穷举列举；它与完整列举的「と」不同。"
+    },
+    {
+      id: "function-three-hours-mo",
+      type: "function",
+      lessonId: "addition",
+      level: "advanced",
+      context: "说话人觉得等待时间远超预期。",
+      before: "昨日は三時間",
+      targetParticle: "も",
+      targetReading: "も",
+      after: "待ちました。",
+      readingBefore: "きのうはさんじかん",
+      readingAfter: "まちました。",
+      translation: "昨天竟然等了三个小时。",
+      options: [
+        "强调等待时间超出预期",
+        "仅标记等待动作的直接对象",
+        "标记等待开始的时间点",
+        "把“三小时”设为整段谈话的话题"
+      ],
+      acceptedAnswers: ["强调等待时间超出预期"],
+      beginnerExplanation: "数量「三時間」后面的「も」带出“竟然这么久”的评价。",
+      advancedExplanation: "数量词后的「も」可表达超出说话人预期的量；这里是语气效果，不是普通的“也”。"
+    },
+    {
+      id: "function-work-made",
+      type: "function",
+      lessonId: "range",
+      level: "advanced",
+      context: "强调工作时间的结束边界。",
+      before: "午前九時から午後五時",
+      targetParticle: "まで",
+      targetReading: "まで",
+      after: "働きます。",
+      readingBefore: "ごぜんくじからごごごじ",
+      readingAfter: "はたらきます。",
+      translation: "从上午九点工作到下午五点。",
+      options: [
+        "标记工作时间范围的终点",
+        "标记工作时间范围的起点",
+        "标记工作的地点",
+        "表示工作是从某处寄来的"
+      ],
+      acceptedAnswers: ["标记工作时间范围的终点"],
+      beginnerExplanation: "「まで」标出范围到哪里结束；这里的终点是下午五点。",
+      advancedExplanation: "「まで」标记时间区间的终止边界；它不等于说明工作恰好在该时刻完成。"
+    },
+    {
+      id: "function-cash-shika",
+      type: "function",
+      lessonId: "limitation",
+      level: "advanced",
+      context: "店里只接受现金，其他付款方式都不能使用。",
+      before: "この店では現金",
+      targetParticle: "しか",
+      targetReading: "しか",
+      after: "使えません。",
+      readingBefore: "このみせではげんきん",
+      readingAfter: "つかえません。",
+      translation: "这家店只能使用现金。",
+      options: [
+        "限定可用方式只有现金，并要求与否定形式搭配",
+        "中性地表示“只有”，后面可以直接接肯定形式",
+        "标记店铺是使用现金的目的地",
+        "表示现金是付款动作的起点"
+      ],
+      acceptedAnswers: ["限定可用方式只有现金，并要求与否定形式搭配"],
+      beginnerExplanation: "「しか」和否定形式「使えません」一起表示“只能用现金”。",
+      advancedExplanation: "「しか～ない」表达排他限制；此处的否定可能形「使えません」是句型要求的一部分。"
+    }
+  ];
+
+  const QUESTIONS = FILL_QUESTIONS.map(function (question) {
+    return Object.assign({ type: "fill" }, question);
+  }).concat(FUNCTION_QUESTIONS);
+
+  const QUESTION_TYPE_BY_ID = new Map(QUESTION_TYPES.map(function (type) {
+    return [type.id, type];
+  }));
+  const LEVEL_BY_ID = new Map(LEVELS.map(function (level) { return [level.id, level]; }));
+  const LESSON_BY_ID = new Map(LESSONS.map(function (lesson) { return [lesson.id, lesson]; }));
+  const QUESTION_BY_ID = new Map(QUESTIONS.map(function (question) { return [question.id, question]; }));
+
+  function getQuestions(levelId, lessonId, questionTypeId) {
+    if (!LEVEL_BY_ID.has(levelId)) {
+      throw new RangeError("Unknown particle learning level: " + levelId);
+    }
+    if (lessonId && !LESSON_BY_ID.has(lessonId)) {
+      throw new RangeError("Unknown particle lesson: " + lessonId);
+    }
+    if (questionTypeId && !QUESTION_TYPE_BY_ID.has(questionTypeId)) {
+      throw new RangeError("Unknown particle question type: " + questionTypeId);
+    }
+    return QUESTIONS.filter(function (question) {
+      return question.level === levelId
+        && (!lessonId || question.lessonId === lessonId)
+        && (!questionTypeId || question.type === questionTypeId);
+    });
+  }
+
+  function normalizeAnswer(answer) {
+    return typeof answer === "string" ? answer.trim().normalize("NFKC") : "";
+  }
+
+  function checkAnswer(question, answer) {
+    const resolved = typeof question === "string" ? QUESTION_BY_ID.get(question) : question;
+    if (!resolved || !Array.isArray(resolved.acceptedAnswers)) {
+      throw new TypeError("A particle question with accepted answers is required.");
+    }
+    const normalized = normalizeAnswer(answer);
+    return resolved.acceptedAnswers.some(function (candidate) {
+      return normalizeAnswer(candidate) === normalized;
+    });
+  }
+
+  const api = {
+    LEVELS: LEVELS,
+    QUESTION_TYPES: QUESTION_TYPES,
+    LESSONS: LESSONS,
+    QUESTIONS: QUESTIONS,
+    getLesson: function (lessonId) {
+      return LESSON_BY_ID.get(lessonId) || null;
+    },
+    getQuestion: function (questionId) {
+      return QUESTION_BY_ID.get(questionId) || null;
+    },
+    getQuestions: getQuestions,
+    normalizeAnswer: normalizeAnswer,
+    checkAnswer: checkAnswer
+  };
+
+  if (typeof module === "object" && module.exports) {
+    module.exports = api;
+  } else {
+    root.JapaneseParticleEngine = api;
+  }
+})(typeof window !== "undefined" ? window : globalThis);

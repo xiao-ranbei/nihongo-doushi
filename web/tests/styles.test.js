@@ -55,6 +55,12 @@ test("组件样式内不出现硬编码色值（#fff/#000 例外）", function (
   assert.deepEqual(offenders, [], "组件内出现硬编码色值:\n" + offenders.join("\n"));
 });
 
+test("题干、规则与形容词词尾统一使用关键词高亮样式", function () {
+  assert.match(css, /\.keyword-highlight,\s*\.adj-tail-i,\s*\.adj-tail-na\s*\{/);
+  assert.match(css, /\.keyword-highlight,\s*\.adj-tail-i,\s*\.adj-tail-na\s*\{[^}]*border-radius:\s*999px;/);
+  assert.doesNotMatch(css, /\.question-instruction strong,\s*\.rule-emphasis\s*\{/);
+});
+
 test("根视口固定且由主内容内部滚动，窄屏顶部栏固定", function () {
   assert.match(css, /html,\s*body\s*\{\s*height:\s*100vh;\s*height:\s*100dvh;\s*overflow:\s*hidden;\s*overflow:\s*clip;/);
   assert.match(css, /\.app-shell\s*\{[^}]*width:\s*100%;[^}]*min-height:\s*100vh;/);
@@ -66,6 +72,44 @@ test("根视口固定且由主内容内部滚动，窄屏顶部栏固定", funct
     css,
     /@media \(max-width: 840px\)[\s\S]*?\.mobile-topbar\s*\{\s*position:\s*sticky;\s*top:\s*0;/
   );
+});
+
+test("助词专题卡在窄屏下改为单列", function () {
+  const baseRule = css.indexOf(".particle-lesson-grid {");
+  const responsiveRule = /@media \(max-width: 840px\)\s*\{\s*\.particle-lesson-grid\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\);/.exec(css);
+  assert.ok(baseRule >= 0, "助词专题应使用网格布局");
+  assert.ok(responsiveRule, "应为窄屏定义助词专题单列布局");
+  assert.ok(responsiveRule.index > baseRule, "窄屏规则必须覆盖后声明的双列基础布局");
+});
+
+test("助词作用判断选项适配长文本和窄屏", function () {
+  assert.match(
+    css,
+    /\.particle-options\.is-function-question\s*\{\s*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/
+  );
+  assert.match(css, /\.particle-options\.is-function-question \.particle-option\s*\{[^}]*text-align:\s*left;/);
+  assert.match(
+    css,
+    /\.particle-options\.is-function-question\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\);/
+  );
+});
+
+test("三个模块共享页签、说明卡和练习控制面板", function () {
+  assert.match(css, /\.view > \.module-subnav\s*\{[^}]*margin-bottom:\s*18px;/);
+  assert.match(css, /\.module-subtab\.is-active\s*\{[^}]*background:\s*var\(--green-pale\);/);
+  assert.match(
+    css,
+    /\.practice-card,\s*\.learning-card,\s*\.practice-stats,\s*\.section-heading,\s*\.reference-summary,\s*\.mistake-card\s*\{[^}]*border:\s*1px solid/
+  );
+  assert.match(css, /\.filter-bar\s*\{[^}]*padding:\s*13px;/);
+  assert.match(css, /\.particle-controls-panel\s*\{[^}]*grid-template-columns:/);
+  assert.doesNotMatch(css, /\.subtabs\s*\{/);
+});
+
+test("形容词说明卡不额外叠加页签上方留白", function () {
+  assert.doesNotMatch(css, /#view-adjective\s*\{[^}]*gap:\s*22px;/);
+  assert.doesNotMatch(css, /#view-adjective > \.adj-guide-heading\s*\{[^}]*margin-top:/);
+  assert.match(css, /\.view > \.module-subnav\s*\{[^}]*margin-bottom:\s*18px;/);
 });
 
 test("桌面布局不通过缩放 body 改变动态视口尺寸", function () {

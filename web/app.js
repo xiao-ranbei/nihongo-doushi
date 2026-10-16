@@ -34,6 +34,11 @@
     throw new Error("The adjective engine did not load.");
   }
 
+  const particleEngine = window.JapaneseParticleEngine;
+  if (!particleEngine) {
+    throw new Error("The Japanese particle learning engine did not load.");
+  }
+
   const VOICES = engine.VOICES;
   const INFLECTIONS = engine.INFLECTIONS;
   const VERBS = engine.VERBS;
@@ -61,6 +66,77 @@
   // 速查表分组行需要跨全部列；列数以 index.html 表头为准（活用形式/变形结果/
   // 常见表达大意/变化提示/练一练），改表头时同步这里。
   const REFERENCE_COLUMN_COUNT = 5;
+  const MORPHOLOGY_FILTER_PREFIX = "morphology:";
+  const VERB_MORPHOLOGY_FORMS = [
+    {
+      id: "mizen",
+      label: "未然形",
+      usage: "接「ない」「れる／せる」等；意向形也接「う／よう」。五段动词会依接续出现「あ段／お段」两路；未然形不等于完整的ない形。",
+      examples: [
+        { inflectionId: "negative", label: "接「ない」" },
+        { inflectionId: "volitional", label: "接「う／よう」" }
+      ],
+      targetLabel: "未然形（接ない）",
+      instruction: "请写出接「ない」时使用的<strong class=\"keyword-highlight\">未然形</strong>，并组成完整的ない形。",
+      practiceInflectionId: "negative",
+      practiceLabel: "练ない形"
+    },
+    {
+      id: "renyou",
+      label: "連用形",
+      usage: "连接「ます」「たい」等；接「て／た」时常先发生音便。词干通常不单独作完整句子。",
+      examples: [
+        { inflectionId: "masuStem", label: "ます词干" },
+        { inflectionId: "masu", label: "接「ます」" },
+        { inflectionId: "te", label: "音便后接「て」" },
+        { inflectionId: "past", label: "音便后接「た」" }
+      ],
+      targetLabel: "連用形（ます词干）",
+      instruction: "请写出接「ます」的<strong class=\"keyword-highlight\">連用形</strong>，只写ます词干。",
+      practiceInflectionId: "masuStem",
+      practiceLabel: "练ます词干"
+    },
+    {
+      id: "shushi",
+      label: "終止形",
+      usage: "用于句尾作陈述；现代动词的辞书形常作終止形。",
+      examples: [{ inflectionId: "dictionary", label: "句尾陈述", suffix: "。" }],
+      targetLabel: "終止形（句尾）",
+      instruction: "请写出句尾作陈述时使用的<strong class=\"keyword-highlight\">終止形</strong>（辞书形）。",
+      practiceInflectionId: "dictionary",
+      practiceLabel: "练辞书形"
+    },
+    {
+      id: "rentai",
+      label: "連体形",
+      usage: "放在名词前修饰名词；现代动词通常与終止形同形，要看它后面是否接名词。",
+      examples: [{ inflectionId: "dictionary", label: "修饰名词", suffix: "人", readingSuffix: "ひと" }],
+      targetLabel: "連体形（名词前）",
+      instruction: "请写出修饰名词「人」时使用的<strong class=\"keyword-highlight\">連体形</strong>（只写动词）。",
+      practiceInflectionId: "dictionary",
+      practiceLabel: "练同形辞书形"
+    },
+    {
+      id: "katei",
+      label: "仮定形",
+      usage: "表示假设条件，常见结构是仮定形接「ば」；「たら」是「た形＋ら」，不是这一形。",
+      examples: [{ inflectionId: "conditionalBa", label: "接「ば」" }],
+      targetLabel: "仮定形（接ば）",
+      instruction: "请写出接「ば」的<strong class=\"keyword-highlight\">仮定形</strong>，并组成完整条件表达。",
+      practiceInflectionId: "conditionalBa",
+      practiceLabel: "练ば条件形"
+    },
+    {
+      id: "meirei",
+      label: "命令形",
+      usage: "直接要求对方做某事，语气较强；请求时常用更委婉的其他表达。",
+      examples: [{ inflectionId: "imperative", label: "直接命令" }],
+      targetLabel: "命令形",
+      instruction: "请写出直接命令对方时使用的<strong class=\"keyword-highlight\">命令形</strong>。",
+      practiceInflectionId: "imperative",
+      practiceLabel: "练命令形"
+    }
+  ];
   // 难度档位从 INFLECTIONS.level 派生，新增档位时只需补上面的中文标签。
   INFLECTIONS.forEach(function (form) {
     const existing = LEVELS.some(function (level) { return level.id === form.level; });
@@ -77,8 +153,54 @@
   const ADJ_FORMS = adjEngine.FORMS;
   const ADJ_GROUP_LABELS = { i: "い形容词", na: "な形容词" };
   const ADJ_BY_ID = new Map(ADJECTIVES.map(function (adjective) { return [adjective.id, adjective]; }));
+  const ADJECTIVE_MORPHOLOGY_FORMS = [
+    {
+      id: "mizen",
+      label: "未然形",
+      formId: "mizen",
+      targetLabel: "未然形（接推量う）",
+      instruction: "请用<strong class=\"keyword-highlight\">未然形</strong>接推量「う」，写出完整表达。"
+    },
+    {
+      id: "renyou",
+      label: "連用形",
+      formId: "te",
+      targetLabel: "連用形（连接后句）",
+      instruction: "请把形容词连接到下一分句，写出<strong class=\"keyword-highlight\">連用形</strong>的连接形式。"
+    },
+    {
+      id: "shushi",
+      label: "終止形",
+      formId: "present",
+      targetLabel: "終止形（句尾）",
+      instruction: "请让形容词作句尾谓语，写出<strong class=\"keyword-highlight\">終止形</strong>。"
+    },
+    {
+      id: "rentai",
+      label: "連体形",
+      formId: "attributive",
+      targetLabel: "連体形（名词前）",
+      instruction: "请写出放在名词前修饰名词时的<strong class=\"keyword-highlight\">連体形</strong>。"
+    },
+    {
+      id: "katei",
+      label: "仮定形",
+      formId: "conditional",
+      targetLabel: "仮定形（接ば）",
+      instruction: "请接「ば」写出<strong class=\"keyword-highlight\">仮定形</strong>条件表达。"
+    },
+    {
+      id: "meirei",
+      label: "命令形（形容词无独立形）",
+      formId: "imperativeRequest",
+      targetLabel: "命令表达（无独立形）",
+      instruction: "形容词本身没有独立命令形；请用「<strong class=\"keyword-highlight\">～く／にしてください</strong>」改写成礼貌请求。"
+    }
+  ];
   const ADJ_STATS_STORAGE_KEY = "japanese-verb-practice-adj-stats-v1";
+  const PARTICLE_STATS_STORAGE_KEY = "japanese-particle-practice-stats-v1";
   const DAILY_STORAGE_KEY = "japanese-verb-practice-daily-v1";
+  const PARTICLE_MISTAKES_STORAGE_KEY = "japanese-particle-practice-mistakes-v1";
   // 形容词错题与动词错题共用一本错题集：记录带 module 字段区分，
   // 旧存档没有 module 字段（即动词错题），缺失即视为 verb 的兼容迁移。
   const ADJ_MISTAKE_KEY_PREFIX = "adj::";
@@ -100,7 +222,7 @@
       eyebrow: "每天学一点，积累成习惯",
       main: "把日语学习，",
       accent: "拆成今天的一小步。",
-      copy: "从学习主页进入动词、形容词等模块，按自己的节奏练习。"
+      copy: "从学习主页进入动词、形容词与助词模块，按自己的节奏练习。"
     },
     verb: {
       eyebrow: "一题一变，练到熟悉",
@@ -114,11 +236,35 @@
       accent: "想起接续。",
       copy: "和动词同一套练法：主动写出答案，再用变化规律记住它。支持い形容词与な形容词的常用变形与三种接续。"
     },
+    particle: {
+      eyebrow: "例句练习，读懂助词",
+      main: "在句子里反复练习，",
+      accent: "逐渐掌握助词用法。",
+      copy: "综合练习交替训练选助词和判断助词作用；学习地图随时可查。"
+    },
     mistakes: {
       eyebrow: "REVIEW",
       main: "复习错题，",
       accent: "巩固每一次练习。",
-      copy: "动词与形容词错题集中保存，并按模块分组复习。"
+      copy: "动词与形容词错题集中保存；助词错题在助词模块内复习。"
+    }
+  };
+
+  const PARTICLE_SUBVIEW_COPY = {
+    learn: {
+      eyebrow: "PARTICLE MAP",
+      title: "先看语境，再选助词",
+      copy: "从常见助词对比开始；入门侧重核心意义，进阶补充焦点、语气和细微区别。"
+    },
+    practice: {
+      eyebrow: "PARTICLE PRACTICE",
+      title: "在句子中练习",
+      copy: "综合练习会交替出现“选助词”和“判断助词作用”两种题型。"
+    },
+    review: {
+      eyebrow: "REVIEW",
+      title: "助词错题复习",
+      copy: "错题按具体题目保存；答对后从本模块复习队列移除。"
     }
   };
 
@@ -130,11 +276,59 @@
       home: document.getElementById("view-home"),
       verb: document.getElementById("view-verb"),
       adjective: document.getElementById("view-adjective"),
+      particle: document.getElementById("view-particle"),
       mistakes: document.getElementById("view-mistakes")
     },
     verbSubviewNav: document.getElementById("verb-subnav"),
     verbSubviewPractice: document.getElementById("view-practice"),
     verbSubviewReference: document.getElementById("view-reference"),
+    particleSubviewNav: document.getElementById("particle-subnav"),
+    particleViewEyebrow: document.getElementById("particle-view-eyebrow"),
+    particleViewTitle: document.getElementById("particle-view-title"),
+    particleViewDescription: document.getElementById("particle-view-description"),
+    particleSubtabs: Array.from(document.querySelectorAll("[data-particle-subview]")),
+    particleSubviewLearn: document.getElementById("particle-view-learn"),
+    particleSubviewPractice: document.getElementById("particle-view-practice"),
+    particleSubviewReview: document.getElementById("particle-view-review"),
+    particleControlsPanel: document.getElementById("particle-controls-panel"),
+    particleLevelControls: document.getElementById("particle-level-controls"),
+    particleLevelSelect: document.getElementById("particle-level-select"),
+    particlePracticeModes: document.getElementById("particle-practice-modes"),
+    particlePracticeModeSelect: document.getElementById("particle-practice-mode-select"),
+    particlePracticeModeHint: document.getElementById("particle-practice-mode-hint"),
+    particleLessonGrid: document.getElementById("particle-lesson-grid"),
+    particleQuestionProgress: document.getElementById("particle-question-progress"),
+    particleQuestionTitle: document.getElementById("particle-question-title"),
+    particleQuestionTarget: document.getElementById("particle-question-target"),
+    particleQuestionCard: document.getElementById("particle-question-card"),
+    particleQuestionContext: document.getElementById("particle-question-context"),
+    particleQuestionPrompt: document.getElementById("particle-question-prompt"),
+    particleSentenceBefore: document.getElementById("particle-sentence-before"),
+    particleAnswerSlot: document.getElementById("particle-answer-slot"),
+    particleSentenceAfter: document.getElementById("particle-sentence-after"),
+    particleQuestionReading: document.getElementById("particle-question-reading"),
+    particleQuestionTranslation: document.getElementById("particle-question-translation"),
+    particleOptions: document.getElementById("particle-options"),
+    particleCheckAnswer: document.getElementById("particle-check-answer"),
+    particleNextQuestion: document.getElementById("particle-next-question"),
+    particleFeedback: document.getElementById("particle-feedback"),
+    particleFeedbackTitle: document.getElementById("particle-feedback-title"),
+    particleFeedbackAnswer: document.getElementById("particle-feedback-answer"),
+    particleFeedbackExplanation: document.getElementById("particle-feedback-explanation"),
+    particleCorrectCount: document.getElementById("particle-correct-count"),
+    particleIncorrectCount: document.getElementById("particle-incorrect-count"),
+    particleTotalCount: document.getElementById("particle-total-count"),
+    particleAccuracy: document.getElementById("particle-accuracy"),
+    particleAnswerDistribution: document.getElementById("particle-answer-distribution"),
+    particleCorrectSegment: document.getElementById("particle-correct-segment"),
+    particleIncorrectSegment: document.getElementById("particle-incorrect-segment"),
+    particleResetStats: document.getElementById("particle-reset-stats"),
+    particleGuideLink: document.getElementById("particle-guide-link"),
+    particleStartReview: document.getElementById("particle-start-review"),
+    particleReviewCount: document.getElementById("particle-review-count"),
+    particleReviewList: document.getElementById("particle-review-list"),
+    particleReviewEmpty: document.getElementById("particle-review-empty"),
+    particleMistakeCount: document.getElementById("particle-mistake-count"),
     appShell: document.getElementById("app-shell"),
     appMain: document.getElementById("app-main"),
     homeLinks: Array.from(document.querySelectorAll("[data-home-link]")),
@@ -156,6 +350,8 @@
     homeVerbStatus: document.getElementById("home-verb-status"),
     homeAdjectiveToday: document.getElementById("home-adjective-today"),
     homeAdjectiveStatus: document.getElementById("home-adjective-status"),
+    homeParticleToday: document.getElementById("home-particle-today"),
+    homeParticleStatus: document.getElementById("home-particle-status"),
     correctAnswerCount: document.getElementById("correct-answer-count"),
     incorrectAnswerCount: document.getElementById("incorrect-answer-count"),
     totalAnswerCount: document.getElementById("total-answer-count"),
@@ -203,9 +399,12 @@
     referenceMeaning: document.getElementById("reference-meaning"),
     referenceVoiceMeaning: document.getElementById("reference-voice-meaning"),
     referenceGroup: document.getElementById("reference-group"),
+    verbMorphologyGuide: document.getElementById("verb-morphology-guide"),
+    verbMorphologyGuideCaption: document.getElementById("verb-morphology-guide-caption"),
+    verbMorphologyGuideTableBody: document.getElementById("verb-morphology-guide-table-body"),
     referenceVoiceGuide: document.getElementById("reference-voice-guide"),
     referenceVoiceGuideCaption: document.getElementById("reference-voice-guide-caption"),
-    referenceVoiceGuideList: document.getElementById("reference-voice-guide-list"),
+    referenceVoiceGuideTableBody: document.getElementById("reference-voice-guide-table-body"),
     referenceTableBody: document.getElementById("reference-table-body"),
     reviewMistakes: document.getElementById("review-mistakes"),
     clearMistakes: document.getElementById("clear-mistakes"),
@@ -264,6 +463,39 @@
     adjGuideLink: document.getElementById("adj-guide-link")
   };
 
+  const ANSWER_STATS_CONTROLS = {
+    verb: {
+      correct: elements.correctAnswerCount,
+      incorrect: elements.incorrectAnswerCount,
+      total: elements.totalAnswerCount,
+      accuracy: elements.answerAccuracy,
+      distribution: elements.answerDistribution,
+      correctSegment: elements.correctAnswerSegment,
+      incorrectSegment: elements.incorrectAnswerSegment,
+      reset: elements.resetStats
+    },
+    adjective: {
+      correct: elements.adjCorrectCount,
+      incorrect: elements.adjIncorrectCount,
+      total: elements.adjTotalCount,
+      accuracy: elements.adjAccuracy,
+      distribution: elements.adjAnswerDistribution,
+      correctSegment: elements.adjCorrectSegment,
+      incorrectSegment: elements.adjIncorrectSegment,
+      reset: elements.adjResetStats
+    },
+    particle: {
+      correct: elements.particleCorrectCount,
+      incorrect: elements.particleIncorrectCount,
+      total: elements.particleTotalCount,
+      accuracy: elements.particleAccuracy,
+      distribution: elements.particleAnswerDistribution,
+      correctSegment: elements.particleCorrectSegment,
+      incorrectSegment: elements.particleIncorrectSegment,
+      reset: elements.particleResetStats
+    }
+  };
+
   let storageAvailable = true;
   let toastTimeout = null;
   let composing = false;
@@ -278,7 +510,7 @@
   let sessionAnswerCount = 0;
   let reviewedMistakeKeys = new Set();
   let mistakes = loadMistakes();
-  let practiceStats = loadPracticeStats();
+  let practiceStats = loadAnswerStats(STATS_STORAGE_KEY, "", "浏览器不允许访问本地存储；答题统计和错题仅保留在当前页面。");
 
   // —— 形容词模块状态 ——
   let adjCurrentQuestion = null;
@@ -286,9 +518,27 @@
   let adjRecentWordIds = [];
   let adjQuestionDeck = [];
   let adjQuestionDeckFilterKey = "";
-  let adjPracticeStats = loadAdjectiveStats();
+  let adjPracticeStats = loadAnswerStats(ADJ_STATS_STORAGE_KEY, "形容词");
   let reviewingAdjectiveMistakes = false;
   let dailyRecord = loadDailyRecord();
+  let particleMistakes = loadParticleMistakes();
+  let particlePracticeStats = loadAnswerStats(
+    PARTICLE_STATS_STORAGE_KEY,
+    "助词",
+    "浏览器不允许访问本地存储；助词答题统计仅保留在当前页面。"
+  );
+  let currentParticleSubview = "practice";
+  let currentParticleLevel = "beginner";
+  let currentParticlePracticeMode = "mixed";
+  let currentParticleQuestion = null;
+  let currentParticleQuestionId = "";
+  let particleTargetLessonId = "";
+  let particleQuestionQueue = [];
+  let particleQuestionIndex = 0;
+  let selectedParticleAnswer = "";
+  let particleAnswered = false;
+  let reviewingParticleMistakes = false;
+  let particleReviewQueue = [];
 
   function showToast(message, isError) {
     elements.toast.textContent = message;
@@ -315,7 +565,7 @@
       const vowelRow = /^[あいうえお]段$/.test(part);
       if (vowelRow || (quotedTerm && !RULE_FORM_LABELS.has(quotedTerm[1]))) {
         const emphasis = document.createElement("span");
-        emphasis.className = "rule-emphasis";
+        emphasis.className = "keyword-highlight rule-emphasis";
         emphasis.textContent = part;
         element.append(emphasis);
         return;
@@ -426,34 +676,96 @@
     }
   }
 
-  function createEmptyPracticeStats() {
-    return { correct: 0, incorrect: 0 };
-  }
-
-  function loadPracticeStats() {
-    if (!storageAvailable) {
-      return createEmptyPracticeStats();
-    }
-
+  function loadParticleMistakes() {
     let raw;
     try {
-      raw = window.localStorage.getItem(STATS_STORAGE_KEY);
+      raw = window.localStorage.getItem(PARTICLE_MISTAKES_STORAGE_KEY);
     } catch (error) {
       storageAvailable = false;
-      showToast("浏览器不允许访问本地存储；答题统计和错题仅保留在当前页面。", true);
-      return createEmptyPracticeStats();
+      showToast("浏览器不允许访问本地存储；助词错题仅保留在当前页面。", true);
+      return [];
     }
-
     if (!raw) {
-      return createEmptyPracticeStats();
+      return [];
     }
 
     let stored;
     try {
       stored = JSON.parse(raw);
     } catch (error) {
-      showToast("本地答题统计无法解析，本次从零开始。", true);
-      return createEmptyPracticeStats();
+      showToast("本地助词错题无法解析，本次先从空列表开始。", true);
+      return [];
+    }
+    if (!Array.isArray(stored)) {
+      showToast("本地助词错题格式无效，本次先从空列表开始。", true);
+      return [];
+    }
+
+    const validIds = new Set(particleEngine.QUESTIONS.map(function (question) {
+      return question.id;
+    }));
+    const seen = new Set();
+    const valid = [];
+    let discarded = false;
+    stored.forEach(function (questionId) {
+      if (typeof questionId !== "string" || !validIds.has(questionId) || seen.has(questionId)) {
+        discarded = true;
+        return;
+      }
+      seen.add(questionId);
+      valid.push(questionId);
+    });
+    if (discarded) {
+      showToast("部分助词错题记录无效或重复，已跳过。", true);
+    }
+    return valid;
+  }
+
+  function saveParticleMistakes() {
+    if (!storageAvailable) {
+      return false;
+    }
+    try {
+      window.localStorage.setItem(PARTICLE_MISTAKES_STORAGE_KEY, JSON.stringify(particleMistakes));
+      return true;
+    } catch (error) {
+      storageAvailable = false;
+      showToast("浏览器无法保存助词错题；错题仅保留在当前页面。", true);
+      return false;
+    }
+  }
+
+  function createEmptyAnswerStats() {
+    return { correct: 0, incorrect: 0 };
+  }
+
+  function loadAnswerStats(storageKey, moduleLabel, storageErrorMessage) {
+    if (!storageAvailable) {
+      return createEmptyAnswerStats();
+    }
+
+    let raw;
+    try {
+      raw = window.localStorage.getItem(storageKey);
+    } catch (error) {
+      storageAvailable = false;
+      showToast(
+        storageErrorMessage || "浏览器不允许访问本地存储；" + moduleLabel + "答题统计仅保留在当前页面。",
+        true
+      );
+      return createEmptyAnswerStats();
+    }
+
+    if (!raw) {
+      return createEmptyAnswerStats();
+    }
+
+    let stored;
+    try {
+      stored = JSON.parse(raw);
+    } catch (error) {
+      showToast("本地" + moduleLabel + "答题统计无法解析，本次从零开始。", true);
+      return createEmptyAnswerStats();
     }
 
     if (!isObject(stored)
@@ -461,68 +773,120 @@
       || stored.correct < 0
       || !Number.isSafeInteger(stored.incorrect)
       || stored.incorrect < 0) {
-      showToast("本地答题统计格式无效，本次从零开始。", true);
-      return createEmptyPracticeStats();
+      showToast("本地" + moduleLabel + "答题统计格式无效，本次从零开始。", true);
+      return createEmptyAnswerStats();
     }
 
     return { correct: stored.correct, incorrect: stored.incorrect };
   }
 
   function savePracticeStats() {
+    return saveAnswerStats(
+      practiceStats,
+      STATS_STORAGE_KEY,
+      "浏览器无法保存本地数据；答题统计和错题仅保留在当前页面。"
+    );
+  }
+
+  function saveAnswerStats(stats, storageKey, errorMessage) {
     if (!storageAvailable) {
       return false;
     }
     try {
-      window.localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(practiceStats));
+      window.localStorage.setItem(storageKey, JSON.stringify(stats));
       return true;
     } catch (error) {
       storageAvailable = false;
-      showToast("浏览器无法保存本地数据；答题统计和错题仅保留在当前页面。", true);
+      showToast(errorMessage, true);
       return false;
     }
   }
 
   function renderPracticeStats() {
-    elements.correctAnswerCount.textContent = String(practiceStats.correct);
-    elements.incorrectAnswerCount.textContent = String(practiceStats.incorrect);
-    const total = practiceStats.correct + practiceStats.incorrect;
-    const correctRatio = total === 0 ? 0 : practiceStats.correct / total;
-    const incorrectRatio = total === 0 ? 0 : practiceStats.incorrect / total;
+    renderAnswerStats(practiceStats, ANSWER_STATS_CONTROLS.verb);
+  }
+
+  function renderAnswerStats(stats, controls) {
+    controls.correct.textContent = String(stats.correct);
+    controls.incorrect.textContent = String(stats.incorrect);
+    const total = stats.correct + stats.incorrect;
+    const correctRatio = total === 0 ? 0 : stats.correct / total;
+    const incorrectRatio = total === 0 ? 0 : stats.incorrect / total;
     const correctPercent = Math.round(correctRatio * 100);
     const incorrectPercent = 100 - correctPercent;
-    elements.totalAnswerCount.textContent = String(total);
-    elements.answerAccuracy.textContent = total === 0 ? "—" : correctPercent + "%";
-    elements.correctAnswerSegment.style.width = correctRatio * 100 + "%";
-    elements.incorrectAnswerSegment.style.width = incorrectRatio * 100 + "%";
-    elements.answerDistribution.classList.toggle("is-empty", total === 0);
-    elements.answerDistribution.setAttribute(
+    controls.total.textContent = String(total);
+    controls.accuracy.textContent = total === 0 ? "—" : correctPercent + "%";
+    controls.correctSegment.style.width = correctRatio * 100 + "%";
+    controls.incorrectSegment.style.width = incorrectRatio * 100 + "%";
+    controls.distribution.classList.toggle("is-empty", total === 0);
+    controls.distribution.setAttribute(
       "aria-label",
       total === 0
         ? "尚未作答"
-        : "答题比例：答对 " + practiceStats.correct + " 题，占 " + correctPercent
-          + "%；答错 " + practiceStats.incorrect + " 题，占 " + incorrectPercent + "%。"
+        : "答题比例：答对 " + stats.correct + " 题，占 " + correctPercent
+          + "%；答错 " + stats.incorrect + " 题，占 " + incorrectPercent + "%。"
     );
-    elements.resetStats.disabled = practiceStats.correct === 0 && practiceStats.incorrect === 0;
+    controls.reset.disabled = stats.correct === 0 && stats.incorrect === 0;
   }
 
   function updatePracticeStats(correct) {
+    updateAnswerStats(
+      practiceStats,
+      correct,
+      ANSWER_STATS_CONTROLS.verb,
+      savePracticeStats,
+      elements.practiceCard
+    );
+  }
+
+  function updateAnswerStats(stats, correct, controls, save, practiceCard) {
     const key = correct ? "correct" : "incorrect";
-    practiceStats[key] = Math.min(Number.MAX_SAFE_INTEGER, practiceStats[key] + 1);
-    renderPracticeStats();
-    savePracticeStats();
-    elements.practiceCard.classList.remove("is-answer-correct");
-    elements.practiceCard.classList.remove("is-answer-incorrect");
-    void elements.practiceCard.offsetWidth;
-    elements.practiceCard.classList.add(
+    stats[key] = Math.min(Number.MAX_SAFE_INTEGER, stats[key] + 1);
+    renderAnswerStats(stats, controls);
+    save();
+    practiceCard.classList.remove("is-answer-correct");
+    practiceCard.classList.remove("is-answer-incorrect");
+    void practiceCard.offsetWidth;
+    practiceCard.classList.add(
       correct ? "is-answer-correct" : "is-answer-incorrect"
     );
   }
 
   function resetPracticeStats() {
-    practiceStats = createEmptyPracticeStats();
+    practiceStats = createEmptyAnswerStats();
     renderPracticeStats();
     if (savePracticeStats()) {
       showToast("答题统计已清零，错题集保持不变。", false);
+    }
+  }
+
+  function saveParticleStats() {
+    return saveAnswerStats(
+      particlePracticeStats,
+      PARTICLE_STATS_STORAGE_KEY,
+      "浏览器无法保存助词答题统计；统计仅保留在当前页面。"
+    );
+  }
+
+  function renderParticleStats() {
+    renderAnswerStats(particlePracticeStats, ANSWER_STATS_CONTROLS.particle);
+  }
+
+  function updateParticleStats(correct) {
+    updateAnswerStats(
+      particlePracticeStats,
+      correct,
+      ANSWER_STATS_CONTROLS.particle,
+      saveParticleStats,
+      elements.particleQuestionCard
+    );
+  }
+
+  function resetParticleStats() {
+    particlePracticeStats = createEmptyAnswerStats();
+    renderParticleStats();
+    if (saveParticleStats()) {
+      showToast("助词答题统计已清零，错题集保持不变。", false);
     }
   }
 
@@ -546,6 +910,13 @@
     INFLECTIONS.forEach(function (form) {
       addOption(elements.inflectionFilter, form.id, form.label);
     });
+    VERB_MORPHOLOGY_FORMS.forEach(function (form) {
+      addOption(
+        elements.inflectionFilter,
+        MORPHOLOGY_FILTER_PREFIX + form.id,
+        "六形 · " + form.targetLabel
+      );
+    });
 
     addOption(elements.levelFilter, "all", "全部难度");
     LEVELS.forEach(function (level) {
@@ -565,6 +936,21 @@
       elements.levelFilter.title = "按基础／进阶筛选活用形式";
       elements.levelFilter.removeAttribute("aria-disabled");
     }
+  }
+
+  function getSelectedVerbMorphologyForm() {
+    const selectedValue = elements.inflectionFilter.value;
+    if (selectedValue.indexOf(MORPHOLOGY_FILTER_PREFIX) !== 0) {
+      return null;
+    }
+    const morphologyFormId = selectedValue.slice(MORPHOLOGY_FILTER_PREFIX.length);
+    const morphologyForm = VERB_MORPHOLOGY_FORMS.filter(function (form) {
+      return form.id === morphologyFormId;
+    })[0];
+    if (!morphologyForm) {
+      throw new RangeError("Unknown verb morphology filter: " + morphologyFormId);
+    }
+    return morphologyForm;
   }
 
   function populateReferenceControls(query) {
@@ -658,8 +1044,13 @@
     const voices = elements.voiceFilter.value === "all"
       ? VOICES
       : VOICES.filter(function (voice) { return voice.id === elements.voiceFilter.value; });
+    const morphologyForm = getSelectedVerbMorphologyForm();
     // 具体活用形式优先于难度：两者同时指定时以具体形式为准，不会筛出空题库。
-    const inflections = elements.inflectionFilter.value !== "all"
+    const inflections = morphologyForm
+      ? INFLECTIONS.filter(function (form) {
+        return form.id === morphologyForm.practiceInflectionId;
+      })
+      : elements.inflectionFilter.value !== "all"
       ? INFLECTIONS.filter(function (form) { return form.id === elements.inflectionFilter.value; })
       : elements.levelFilter.value === "all"
         ? INFLECTIONS
@@ -668,7 +1059,11 @@
 
     voices.forEach(function (voice) {
       inflections.forEach(function (form) {
-        targets.push({ voiceId: voice.id, inflectionId: form.id });
+        const target = { voiceId: voice.id, inflectionId: form.id };
+        if (morphologyForm) {
+          target.morphologyFormId = morphologyForm.id;
+        }
+        targets.push(target);
       });
     });
     return targets;
@@ -702,6 +1097,10 @@
     const question = questionFromMistake(weightedItem(dueMistakes, mistakeWeight));
     if (question) {
       question.isScheduledReview = true;
+      const morphologyForm = getSelectedVerbMorphologyForm();
+      if (morphologyForm) {
+        question.morphologyFormId = morphologyForm.id;
+      }
     }
     return question;
   }
@@ -726,17 +1125,110 @@
     return buildQuestion(VERB_BY_ID.get(mistake.verbId), mistake.voiceId, mistake.inflectionId);
   }
 
+  function buildVerbMorphologyQuestion(verb, morphologyFormId) {
+    const morphologyForm = VERB_MORPHOLOGY_FORMS.filter(function (form) {
+      return form.id === morphologyFormId;
+    })[0];
+    if (!morphologyForm) {
+      throw new RangeError("Unknown verb morphology form: " + morphologyFormId);
+    }
+    const question = buildQuestion(verb, "base", morphologyForm.practiceInflectionId);
+    if (question) {
+      question.morphologyFormId = morphologyForm.id;
+    }
+    return question;
+  }
+
+  function practiceVerbMorphology(verb, morphologyFormId) {
+    const question = buildVerbMorphologyQuestion(verb, morphologyFormId);
+    if (!question) {
+      return;
+    }
+    elements.groupFilter.value = verb.group;
+    elements.voiceFilter.value = "base";
+    elements.inflectionFilter.value = MORPHOLOGY_FILTER_PREFIX + morphologyFormId;
+    syncLevelFilterState();
+    setReviewingMistakes(false);
+    showView("verb");
+    setVerbSubview("practice");
+    startQuestion(question);
+    elements.answerInput.focus();
+  }
+
   // 从速查表直接开练：不进入错题重练模式，但保留明确的题目来源。
   function practiceFromReference(verb, voiceId, inflectionId) {
     const question = buildQuestion(verb, voiceId, inflectionId);
     if (!question) {
       return;
     }
+    elements.groupFilter.value = verb.group;
+    elements.voiceFilter.value = voiceId;
+    elements.inflectionFilter.value = inflectionId;
+    syncLevelFilterState();
     setReviewingMistakes(false);
     showView("verb");
     setVerbSubview("practice");
     startQuestion(question);
     elements.answerInput.focus();
+  }
+
+  function buildVerbMorphologyGuideRow(verb, form) {
+    const row = document.createElement("tr");
+    row.setAttribute("data-morphology-form", form.id);
+
+    const labelCell = document.createElement("th");
+    labelCell.scope = "row";
+    labelCell.textContent = form.label;
+
+    const usageCell = document.createElement("td");
+    usageCell.textContent = form.usage;
+
+    const exampleCell = document.createElement("td");
+    exampleCell.className = "morphology-guide-examples";
+    form.examples.forEach(function (example) {
+      const result = engine.conjugate(verb, "base", example.inflectionId);
+      const line = document.createElement("div");
+      line.className = "morphology-guide-example-line";
+      const label = document.createElement("small");
+      label.textContent = example.label;
+      const written = document.createElement("strong");
+      written.textContent = result.written + (example.suffix || "");
+      const reading = document.createElement("small");
+      reading.className = "morphology-guide-reading";
+      reading.textContent = result.kana + (example.readingSuffix || "");
+      line.append(label, written, reading);
+      exampleCell.append(line);
+    });
+
+    const practiceCell = document.createElement("td");
+    practiceCell.className = "reference-practice morphology-guide-practice";
+    const practiceButton = document.createElement("button");
+    practiceButton.type = "button";
+    practiceButton.className = "inline-button practice-link";
+    practiceButton.textContent = form.practiceLabel;
+    practiceButton.setAttribute(
+      "aria-label",
+      "练习 " + verb.dictionary + " 的" + form.label + "语境题"
+    );
+    practiceButton.addEventListener("click", function () {
+      practiceVerbMorphology(verb, form.id);
+    });
+    practiceCell.append(practiceButton);
+
+    row.append(labelCell, usageCell, exampleCell, practiceCell);
+    return row;
+  }
+
+  function renderVerbMorphologyGuide(verb) {
+    elements.verbMorphologyGuideCaption.textContent = "以当前动词「" + verb.dictionary + "」（"
+      + verb.reading + "）的原形为例，不叠加上方选择的可能、受身或使役等变形。"
+      + "每行按钮会按具体接续启动六形专项练习。";
+    elements.verbMorphologyGuideTableBody.replaceChildren();
+    VERB_MORPHOLOGY_FORMS.forEach(function (form) {
+      elements.verbMorphologyGuideTableBody.append(
+        buildVerbMorphologyGuideRow(verb, form)
+      );
+    });
   }
 
   function chooseRandomQuestion() {
@@ -768,6 +1260,7 @@
             verb: verb,
             voiceId: target.voiceId,
             inflectionId: target.inflectionId,
+            morphologyFormId: target.morphologyFormId,
             key: getPairKey(verb, target.voiceId, target.inflectionId)
           });
         });
@@ -815,6 +1308,7 @@
       verb: pair.verb,
       voiceId: pair.voiceId,
       inflectionId: pair.inflectionId,
+      morphologyFormId: pair.morphologyFormId,
       result: engine.conjugate(pair.verb, pair.voiceId, pair.inflectionId),
       key: pair.key
     };
@@ -847,19 +1341,36 @@
       .concat(recentQuestionVerbIds.filter(function (verbId) { return verbId !== question.verb.id; }))
       .slice(0, 3);
     renderReviewBanner();
-    elements.questionIndex.textContent = reviewingMistakes
-      ? "错题重练"
-      : question.isScheduledReview ? "间隔复习" : "随机练习";
-    elements.targetPill.textContent = getTargetLabel(question.voiceId, question.inflectionId);
+    const morphologyForm = VERB_MORPHOLOGY_FORMS.filter(function (form) {
+      return form.id === question.morphologyFormId;
+    })[0];
+    elements.questionIndex.textContent = morphologyForm
+      ? "六形专项 · " + morphologyForm.label
+      : reviewingMistakes
+        ? "错题重练"
+        : question.isScheduledReview ? "间隔复习" : "随机练习";
+    elements.targetPill.textContent = morphologyForm
+      ? question.voiceId === "base"
+        ? morphologyForm.targetLabel
+        : getVoiceLabel(question.voiceId) + " · " + morphologyForm.targetLabel
+      : getTargetLabel(question.voiceId, question.inflectionId);
     elements.questionMeaning.textContent = question.verb.meaning;
     elements.questionWord.textContent = question.verb.dictionary;
     setVerbPromptDetailsVisible(false);
 
-    if (question.voiceId === "base") {
-      elements.questionInstruction.innerHTML = "请把 <strong>" + getInflectionLabel(question.inflectionId) + "</strong> 写出来。";
+    if (morphologyForm) {
+      elements.questionInstruction.innerHTML = question.voiceId === "base"
+        ? morphologyForm.instruction
+        : "请先变为<strong class=\"keyword-highlight\">"
+          + getVoiceLabel(question.voiceId) + "</strong>，再按接续写出目标形：<br>"
+          + morphologyForm.instruction;
+    } else if (question.voiceId === "base") {
+      elements.questionInstruction.innerHTML = "请把 <strong class=\"keyword-highlight\">"
+        + getInflectionLabel(question.inflectionId) + "</strong> 写出来。";
     } else {
-      elements.questionInstruction.innerHTML = "请将动词变为 <strong>" + getVoiceLabel(question.voiceId)
-        + "</strong>，再活用成 <strong>" + getInflectionLabel(question.inflectionId) + "</strong>。";
+      elements.questionInstruction.innerHTML = "请将动词变为 <strong class=\"keyword-highlight\">"
+        + getVoiceLabel(question.voiceId) + "</strong>，再活用成 <strong class=\"keyword-highlight\">"
+        + getInflectionLabel(question.inflectionId) + "</strong>。";
     }
 
     elements.answerInput.value = "";
@@ -1092,17 +1603,21 @@
     const isToday = dailyRecord.lastDate === localDateString(new Date());
     const verbCount = isToday ? dailyRecord.verbAnswers : 0;
     const adjectiveCount = isToday ? dailyRecord.adjectiveAnswers : 0;
-    const total = verbCount + adjectiveCount;
-    const activeModules = Number(verbCount > 0) + Number(adjectiveCount > 0);
+    const particleCount = isToday ? dailyRecord.particleAnswers : 0;
+    const total = verbCount + adjectiveCount + particleCount;
+    const activeModules = Number(verbCount > 0) + Number(adjectiveCount > 0) + Number(particleCount > 0);
 
     elements.homeTodayTotal.textContent = total + " 题";
-    elements.homeTodayBreakdown.textContent = "动词 " + verbCount + " 题 · 形容词 " + adjectiveCount + " 题";
+    elements.homeTodayBreakdown.textContent = "动词 " + verbCount + " 题 · 形容词 "
+      + adjectiveCount + " 题 · 助词 " + particleCount + " 题";
     elements.homeStreakCount.textContent = String(getCurrentStreak());
     elements.homeActiveModuleCount.textContent = String(activeModules);
     elements.homeVerbToday.textContent = verbCount + " 题";
     elements.homeVerbStatus.textContent = verbCount > 0 ? "今日已练" : "今日尚未练习";
     elements.homeAdjectiveToday.textContent = adjectiveCount + " 题";
     elements.homeAdjectiveStatus.textContent = adjectiveCount > 0 ? "今日已练" : "今日尚未练习";
+    elements.homeParticleToday.textContent = particleCount + " 题";
+    elements.homeParticleStatus.textContent = particleCount > 0 ? "今日已练" : "今日尚未练习";
   }
 
   function setMobileSidebarOpen(open, restoreFocus) {
@@ -1146,6 +1661,402 @@
     });
   }
 
+  function setParticleSubview(subview) {
+    if (subview !== "learn" && subview !== "practice" && subview !== "review") {
+      throw new RangeError("Unknown particle subview: " + subview);
+    }
+    currentParticleSubview = subview;
+    const headingKey = subview === "practice" && reviewingParticleMistakes ? "review" : subview;
+    const heading = PARTICLE_SUBVIEW_COPY[headingKey];
+    elements.particleViewEyebrow.textContent = heading.eyebrow;
+    elements.particleViewTitle.textContent = heading.title;
+    elements.particleViewDescription.textContent = heading.copy;
+    elements.particleSubviewLearn.hidden = subview !== "learn";
+    elements.particleSubviewPractice.hidden = subview !== "practice";
+    elements.particleSubviewReview.hidden = subview !== "review";
+    elements.particleLevelControls.hidden = subview === "review";
+    elements.particleControlsPanel.hidden = subview === "review"
+      || (subview === "practice" && reviewingParticleMistakes);
+    elements.particleControlsPanel.classList.toggle("is-single-column", subview === "learn");
+    elements.particlePracticeModes.hidden = subview !== "practice" || reviewingParticleMistakes;
+    elements.particleSubtabs.forEach(function (subtab) {
+      const active = subtab.dataset.particleSubview === subview;
+      subtab.classList.toggle("is-active", active);
+      subtab.setAttribute("aria-selected", String(active));
+    });
+    if (subview === "learn") {
+      renderParticleLessons();
+    } else if (subview === "review") {
+      renderParticleMistakes();
+    }
+    elements.appMain.scrollTop = 0;
+  }
+
+  function setParticleLevel(level) {
+    if (!particleEngine.LEVELS.some(function (item) { return item.id === level; })) {
+      throw new RangeError("Unknown particle learning level: " + level);
+    }
+    currentParticleLevel = level;
+    elements.particleLevelSelect.value = level;
+    renderParticleLessons();
+    if (currentParticleSubview === "practice" && !reviewingParticleMistakes) {
+      startParticlePractice(particleTargetLessonId);
+    }
+  }
+
+  function setParticlePracticeMode(mode) {
+    if (mode !== "mixed" && !particleEngine.QUESTION_TYPES.some(function (type) {
+      return type.id === mode;
+    })) {
+      throw new RangeError("Unknown particle practice mode: " + mode);
+    }
+    if (currentParticlePracticeMode === mode) {
+      return;
+    }
+    currentParticlePracticeMode = mode;
+    elements.particlePracticeModeSelect.value = mode;
+    elements.particlePracticeModeHint.textContent = mode === "mixed"
+      ? "两种题型交替出现"
+      : mode === "fill" ? "集中练习选择合适的助词" : "集中判断助词在句中的作用";
+    if (currentParticleSubview === "practice" && !reviewingParticleMistakes) {
+      startParticlePractice(particleTargetLessonId);
+    }
+  }
+
+  function createParticleTextElement(tagName, className, text) {
+    const element = document.createElement(tagName);
+    element.className = className;
+    element.textContent = text;
+    return element;
+  }
+
+  function renderParticleLessons() {
+    elements.particleLessonGrid.replaceChildren();
+    particleEngine.LESSONS.forEach(function (lesson) {
+      const card = document.createElement("article");
+      card.className = "particle-lesson-card";
+
+      const heading = document.createElement("div");
+      heading.className = "particle-lesson-heading";
+      const title = createParticleTextElement("h3", "", lesson.title);
+      const particles = createParticleTextElement("span", "particle-lesson-particles", lesson.particles.join("／"));
+      heading.append(title, particles);
+
+      const summary = createParticleTextElement(
+        "p",
+        "particle-lesson-summary",
+        currentParticleLevel === "beginner" ? lesson.beginnerSummary : lesson.advancedSummary
+      );
+      const examples = document.createElement("div");
+      examples.className = "particle-lesson-examples";
+      lesson.examples.forEach(function (example) {
+        const item = document.createElement("article");
+        item.className = "particle-lesson-example";
+        item.append(
+          createParticleTextElement("span", "particle-example-context", example.context),
+          createParticleTextElement("strong", "particle-example-japanese", example.sentence),
+          createParticleTextElement("small", "particle-example-reading", example.reading),
+          createParticleTextElement("span", "particle-example-translation", example.translation),
+          createParticleTextElement("span", "particle-example-note", example.note)
+        );
+        examples.append(item);
+      });
+
+      const action = document.createElement("button");
+      action.className = "outline-button particle-lesson-start";
+      action.type = "button";
+      action.textContent = "练习这一组";
+      action.addEventListener("click", function () {
+        startParticlePractice(lesson.id);
+      });
+      card.append(heading, summary, examples, action);
+      elements.particleLessonGrid.append(card);
+    });
+  }
+
+  function renderParticleQuestion() {
+    if (!currentParticleQuestion) {
+      throw new RangeError("No active particle question.");
+    }
+    const question = currentParticleQuestion;
+    const isFunctionQuestion = question.type === "function";
+    elements.particleQuestionCard.setAttribute("data-question-id", question.id);
+    elements.particleQuestionCard.setAttribute("data-question-type", question.type);
+    const level = particleEngine.LEVELS.filter(function (item) {
+      return item.id === question.level;
+    })[0];
+    if (!level) {
+      throw new RangeError("Unknown particle question level: " + question.level);
+    }
+
+    const practiceLabel = currentParticlePracticeMode === "mixed"
+      ? "综合练习"
+      : particleEngine.QUESTION_TYPES.filter(function (type) {
+        return type.id === currentParticlePracticeMode;
+      })[0].label + "练习";
+    elements.particleQuestionProgress.textContent = (reviewingParticleMistakes ? "错题复习" : practiceLabel)
+      + " · 第 " + (particleQuestionIndex + 1) + " / " + particleQuestionQueue.length + " 题";
+    elements.particleQuestionTitle.textContent = isFunctionQuestion ? "判断助词作用" : "选择合适的助词";
+    const lesson = particleEngine.getLesson(question.lessonId);
+    if (!lesson) {
+      throw new RangeError("Unknown particle lesson: " + question.lessonId);
+    }
+    elements.particleQuestionTarget.textContent = lesson.particles.join("／");
+    elements.particleQuestionContext.textContent = question.context;
+    elements.particleQuestionPrompt.textContent = isFunctionQuestion
+      ? "句中的「" + question.targetParticle + "」在这里起什么作用？"
+      : "根据语境，选择空格处最合适的助词。";
+    elements.particleSentenceBefore.textContent = question.before;
+    elements.particleSentenceAfter.textContent = question.after;
+    elements.particleAnswerSlot.textContent = isFunctionQuestion ? question.targetParticle : "＿";
+    elements.particleAnswerSlot.classList.toggle("is-target-particle", isFunctionQuestion);
+    elements.particleQuestionReading.textContent = question.readingBefore
+      + (isFunctionQuestion ? question.targetReading : "＿")
+      + question.readingAfter;
+    elements.particleQuestionTranslation.textContent = question.translation;
+    elements.particleQuestionTranslation.hidden = isFunctionQuestion;
+    elements.particleFeedback.hidden = true;
+    elements.particleFeedback.classList.remove("is-correct", "is-incorrect");
+    elements.particleNextQuestion.hidden = true;
+    elements.particleCheckAnswer.disabled = true;
+    selectedParticleAnswer = "";
+    particleAnswered = false;
+    elements.particleOptions.replaceChildren();
+    elements.particleOptions.classList.toggle("is-function-question", isFunctionQuestion);
+    elements.particleOptions.setAttribute(
+      "aria-label",
+      isFunctionQuestion ? "选择助词在句中的作用" : "选择合适的助词"
+    );
+    elements.particleCheckAnswer.textContent = isFunctionQuestion ? "查看解析" : "检查判断";
+
+    shuffleItems(question.options.slice()).forEach(function (option) {
+      const button = document.createElement("button");
+      button.className = "particle-option";
+      button.type = "button";
+      button.setAttribute("aria-pressed", "false");
+      button.textContent = option;
+      button.addEventListener("click", function () {
+        if (particleAnswered) {
+          return;
+        }
+        selectedParticleAnswer = option;
+        if (!isFunctionQuestion) {
+          elements.particleAnswerSlot.textContent = option;
+        }
+        elements.particleCheckAnswer.disabled = false;
+        elements.particleOptions.querySelectorAll("button").forEach(function (candidate) {
+          const selected = candidate.textContent === option;
+          candidate.classList.toggle("is-selected", selected);
+          candidate.setAttribute("aria-pressed", String(selected));
+        });
+      });
+      elements.particleOptions.append(button);
+    });
+  }
+
+  function renderParticleMistakes() {
+    elements.particleReviewList.replaceChildren();
+    elements.particleMistakeCount.textContent = String(particleMistakes.length);
+    elements.particleReviewCount.textContent = particleMistakes.length
+      ? "本地保存 " + particleMistakes.length + " 道助词错题"
+      : "还没有需要复习的助词错题";
+    elements.particleReviewEmpty.hidden = particleMistakes.length > 0;
+    elements.particleStartReview.disabled = particleMistakes.length === 0;
+    elements.particleStartReview.textContent = particleMistakes.length
+      ? "开始复习 " + particleMistakes.length + " 道"
+      : "开始复习";
+
+    particleMistakes.forEach(function (questionId) {
+      const question = particleEngine.getQuestion(questionId);
+      if (!question) {
+        throw new RangeError("Unknown stored particle question: " + questionId);
+      }
+      const lesson = particleEngine.getLesson(question.lessonId);
+      if (!lesson) {
+        throw new RangeError("Unknown particle lesson: " + question.lessonId);
+      }
+      const questionTypeLabel = question.type === "function" ? "判作用" : "选助词";
+      const item = document.createElement("article");
+      item.className = "particle-review-item";
+      const sentence = document.createElement("p");
+      if (question.type === "function") {
+        sentence.append(
+          createParticleTextElement("span", "", question.before),
+          createParticleTextElement("mark", "particle-review-target", question.targetParticle),
+          createParticleTextElement("span", "", question.after)
+        );
+      } else {
+        sentence.textContent = question.before + "＿" + question.after;
+      }
+      item.append(
+        createParticleTextElement("strong", "", lesson.title),
+        createParticleTextElement("span", "particle-review-type", questionTypeLabel),
+        createParticleTextElement("span", "", question.context),
+        sentence
+      );
+      elements.particleReviewList.append(item);
+    });
+  }
+
+  function saveParticleMistakes() {
+    if (!storageAvailable) {
+      return false;
+    }
+    try {
+      window.localStorage.setItem(PARTICLE_MISTAKES_STORAGE_KEY, JSON.stringify(particleMistakes));
+      return true;
+    } catch (error) {
+      storageAvailable = false;
+      showToast("浏览器无法保存助词错题；错题仅保留在当前页面。", true);
+      return false;
+    }
+  }
+
+  function addParticleMistake(questionId) {
+    if (!particleEngine.getQuestion(questionId)) {
+      throw new RangeError("Unknown particle question: " + questionId);
+    }
+    if (!particleMistakes.includes(questionId)) {
+      particleMistakes.push(questionId);
+      saveParticleMistakes();
+      renderParticleMistakes();
+    }
+  }
+
+  function removeParticleMistake(questionId) {
+    const remaining = particleMistakes.filter(function (storedId) {
+      return storedId !== questionId;
+    });
+    if (remaining.length !== particleMistakes.length) {
+      particleMistakes = remaining;
+      saveParticleMistakes();
+      renderParticleMistakes();
+    }
+  }
+
+  function startParticlePractice(lessonId) {
+    const questionType = currentParticlePracticeMode === "mixed" ? undefined : currentParticlePracticeMode;
+    const questions = particleEngine.getQuestions(currentParticleLevel, lessonId, questionType);
+    if (!questions.length) {
+      showToast("这一组暂时没有当前层级的对应题型。", true);
+      setParticleSubview("learn");
+      return;
+    }
+    particleTargetLessonId = lessonId || "";
+    reviewingParticleMistakes = false;
+    particleQuestionQueue = buildParticleQuestionQueue(questions);
+    particleQuestionIndex = 0;
+    currentParticleQuestion = particleEngine.getQuestion(particleQuestionQueue[0]);
+    setParticleSubview("practice");
+    renderParticleQuestion();
+  }
+
+  function buildParticleQuestionQueue(questions) {
+    if (currentParticlePracticeMode !== "mixed") {
+      return shuffleItems(questions.map(function (question) {
+        return question.id;
+      }));
+    }
+
+    const fillQuestions = shuffleItems(questions.filter(function (question) {
+      return question.type === "fill";
+    }).map(function (question) {
+      return question.id;
+    }));
+    const functionQuestions = shuffleItems(questions.filter(function (question) {
+      return question.type === "function";
+    }).map(function (question) {
+      return question.id;
+    }));
+    if (!fillQuestions.length || !functionQuestions.length) {
+      throw new RangeError("Mixed particle practice requires both question types.");
+    }
+
+    const queue = [];
+    const rounds = Math.max(fillQuestions.length, functionQuestions.length);
+    for (let index = 0; index < rounds; index += 1) {
+      queue.push(
+        fillQuestions[index % fillQuestions.length],
+        functionQuestions[index % functionQuestions.length]
+      );
+    }
+    return queue;
+  }
+
+  function startParticleReview() {
+    if (!particleMistakes.length) {
+      setParticleSubview("review");
+      return;
+    }
+    reviewingParticleMistakes = true;
+    particleTargetLessonId = "";
+    particleQuestionQueue = shuffleItems(particleMistakes.slice());
+    particleQuestionIndex = 0;
+    currentParticleQuestion = particleEngine.getQuestion(particleQuestionQueue[0]);
+    setParticleSubview("practice");
+    renderParticleQuestion();
+  }
+
+  function checkParticleAnswer() {
+    if (!currentParticleQuestion || particleAnswered || !selectedParticleAnswer) {
+      return;
+    }
+    particleAnswered = true;
+    const correct = particleEngine.checkAnswer(currentParticleQuestion, selectedParticleAnswer);
+    const accepted = currentParticleQuestion.acceptedAnswers.join("／");
+    elements.particleFeedback.hidden = false;
+    elements.particleQuestionTranslation.hidden = false;
+    elements.particleFeedback.classList.toggle("is-correct", correct);
+    elements.particleFeedback.classList.toggle("is-incorrect", !correct);
+    elements.particleFeedbackTitle.textContent = correct ? "判断正确" : "再看一眼语境";
+    elements.particleFeedbackAnswer.textContent = currentParticleQuestion.type === "function"
+      ? "这里的「" + currentParticleQuestion.targetParticle + "」：" + accepted
+      : "可接受答案：" + accepted;
+    elements.particleFeedbackExplanation.textContent = currentParticleQuestion[
+      currentParticleQuestion.level === "advanced" ? "advancedExplanation" : "beginnerExplanation"
+    ];
+    elements.particleCheckAnswer.disabled = true;
+    elements.particleOptions.querySelectorAll("button").forEach(function (button) {
+      button.disabled = true;
+    });
+    elements.particleNextQuestion.hidden = false;
+    if (!correct) {
+      addParticleMistake(currentParticleQuestion.id);
+    } else if (reviewingParticleMistakes) {
+      removeParticleMistake(currentParticleQuestion.id);
+    }
+    updateParticleStats(correct);
+    updateDailyStreak("particle");
+  }
+
+  function nextParticleQuestion() {
+    if (!particleAnswered || !particleQuestionQueue.length) {
+      return;
+    }
+    if (reviewingParticleMistakes) {
+      particleQuestionQueue.splice(particleQuestionIndex, 1);
+      if (!particleQuestionQueue.length) {
+        reviewingParticleMistakes = false;
+        currentParticleQuestion = null;
+        setParticleSubview("review");
+        showToast("本轮助词错题复习完成。", false);
+        return;
+      }
+      particleQuestionIndex %= particleQuestionQueue.length;
+    } else {
+      particleQuestionIndex += 1;
+      if (particleQuestionIndex >= particleQuestionQueue.length) {
+        const questionType = currentParticlePracticeMode === "mixed" ? undefined : currentParticlePracticeMode;
+        particleQuestionQueue = buildParticleQuestionQueue(
+          particleEngine.getQuestions(currentParticleLevel, particleTargetLessonId, questionType)
+        );
+        particleQuestionIndex = 0;
+      }
+    }
+    currentParticleQuestion = particleEngine.getQuestion(particleQuestionQueue[particleQuestionIndex]);
+    renderParticleQuestion();
+  }
+
   function showView(viewId) {
     if (!Object.prototype.hasOwnProperty.call(elements.views, viewId)) {
       throw new RangeError("Unknown view: " + viewId);
@@ -1156,6 +2067,7 @@
       elements.views[id].hidden = id !== viewId;
     });
     elements.verbSubviewNav.hidden = viewId !== "verb";
+    elements.particleSubviewNav.hidden = viewId !== "particle";
     setMobileSidebarOpen(false, false);
     elements.tabs.forEach(function (tab) {
       const active = tab.dataset.view === viewId;
@@ -1177,9 +2089,13 @@
     if (sidebarWasOpen) {
       elements.introTitle.focus();
     }
+    elements.appMain.scrollTop = 0;
 
     if (viewId === "verb") {
       setVerbSubview(currentVerbSubview);
+    }
+    if (viewId === "particle") {
+      setParticleSubview(currentParticleSubview);
     }
     if (viewId === "home") {
       renderHomeDashboard();
@@ -1515,93 +2431,30 @@
   // 与动词练习同构但相互独立：独立题池、独立统计（adj-stats-v1）。
   // 形容词错题暂不入错题本（recordMistake 与动词题库结构耦合），作为下一批接入。
 
-  function createEmptyAdjectiveStats() {
-    return { correct: 0, incorrect: 0 };
-  }
-
-  function loadAdjectiveStats() {
-    if (!storageAvailable) {
-      return createEmptyAdjectiveStats();
-    }
-    let raw;
-    try {
-      raw = window.localStorage.getItem(ADJ_STATS_STORAGE_KEY);
-    } catch (error) {
-      return createEmptyAdjectiveStats();
-    }
-    if (!raw) {
-      return createEmptyAdjectiveStats();
-    }
-    let stored;
-    try {
-      stored = JSON.parse(raw);
-    } catch (error) {
-      showToast("形容词答题统计无法解析，本次从零开始。", true);
-      return createEmptyAdjectiveStats();
-    }
-    if (!isObject(stored)
-      || !Number.isSafeInteger(stored.correct)
-      || stored.correct < 0
-      || !Number.isSafeInteger(stored.incorrect)
-      || stored.incorrect < 0) {
-      showToast("形容词答题统计格式无效，本次从零开始。", true);
-      return createEmptyAdjectiveStats();
-    }
-    return { correct: stored.correct, incorrect: stored.incorrect };
-  }
-
   function saveAdjectiveStats() {
-    if (!storageAvailable) {
-      return false;
-    }
-    try {
-      window.localStorage.setItem(ADJ_STATS_STORAGE_KEY, JSON.stringify(adjPracticeStats));
-      return true;
-    } catch (error) {
-      storageAvailable = false;
-      showToast("浏览器无法保存本地数据；答题统计仅保留在当前页面。", true);
-      return false;
-    }
+    return saveAnswerStats(
+      adjPracticeStats,
+      ADJ_STATS_STORAGE_KEY,
+      "浏览器无法保存形容词答题统计；统计仅保留在当前页面。"
+    );
   }
 
   function renderAdjectiveStats() {
-    elements.adjCorrectCount.textContent = String(adjPracticeStats.correct);
-    elements.adjIncorrectCount.textContent = String(adjPracticeStats.incorrect);
-    const total = adjPracticeStats.correct + adjPracticeStats.incorrect;
-    const correctRatio = total === 0 ? 0 : adjPracticeStats.correct / total;
-    const incorrectRatio = total === 0 ? 0 : adjPracticeStats.incorrect / total;
-    const correctPercent = Math.round(correctRatio * 100);
-    const incorrectPercent = 100 - correctPercent;
-    elements.adjTotalCount.textContent = String(total);
-    elements.adjAccuracy.textContent = total === 0 ? "—" : correctPercent + "%";
-    elements.adjCorrectSegment.style.width = correctRatio * 100 + "%";
-    elements.adjIncorrectSegment.style.width = incorrectRatio * 100 + "%";
-    elements.adjAnswerDistribution.classList.toggle("is-empty", total === 0);
-    elements.adjAnswerDistribution.setAttribute(
-      "aria-label",
-      total === 0
-        ? "尚未作答"
-        : "答题比例：答对 " + adjPracticeStats.correct + " 题，占 " + correctPercent
-          + "%；答错 " + adjPracticeStats.incorrect + " 题，占 " + incorrectPercent + "%。"
-    );
-    elements.adjResetStats.disabled = adjPracticeStats.correct === 0 && adjPracticeStats.incorrect === 0;
+    renderAnswerStats(adjPracticeStats, ANSWER_STATS_CONTROLS.adjective);
   }
 
   function updateAdjectiveStats(correct) {
-    const key = correct ? "correct" : "incorrect";
-    adjPracticeStats[key] = Math.min(Number.MAX_SAFE_INTEGER, adjPracticeStats[key] + 1);
-    renderAdjectiveStats();
-    saveAdjectiveStats();
-    elements.adjPracticeCard.classList.remove("is-answer-correct");
-    elements.adjPracticeCard.classList.remove("is-answer-incorrect");
-    void elements.adjPracticeCard.offsetWidth;
-    elements.adjPracticeCard.classList.add(
-      correct ? "is-answer-correct" : "is-answer-incorrect"
+    updateAnswerStats(
+      adjPracticeStats,
+      correct,
+      ANSWER_STATS_CONTROLS.adjective,
+      saveAdjectiveStats,
+      elements.adjPracticeCard
     );
   }
 
   function resetAdjectiveStats() {
-    adjPracticeStats = createEmptyAdjectiveStats();
+    adjPracticeStats = createEmptyAnswerStats();
     renderAdjectiveStats();
     if (saveAdjectiveStats()) {
       showToast("形容词答题统计已清零。", false);
@@ -1629,7 +2482,8 @@
       streak: 0,
       best: 0,
       verbAnswers: 0,
-      adjectiveAnswers: 0
+      adjectiveAnswers: 0,
+      particleAnswers: 0
     };
   }
 
@@ -1659,6 +2513,7 @@
     }
     const verbAnswers = stored.verbAnswers === undefined ? 0 : stored.verbAnswers;
     const adjectiveAnswers = stored.adjectiveAnswers === undefined ? 0 : stored.adjectiveAnswers;
+    const particleAnswers = stored.particleAnswers === undefined ? 0 : stored.particleAnswers;
     if (typeof stored.lastDate !== "string"
       || !Number.isSafeInteger(stored.streak)
       || stored.streak < 0
@@ -1667,7 +2522,9 @@
       || !Number.isSafeInteger(verbAnswers)
       || verbAnswers < 0
       || !Number.isSafeInteger(adjectiveAnswers)
-      || adjectiveAnswers < 0) {
+      || adjectiveAnswers < 0
+      || !Number.isSafeInteger(particleAnswers)
+      || particleAnswers < 0) {
       showToast("打卡记录格式无效，本次从零开始。", true);
       return createEmptyDailyRecord();
     }
@@ -1676,7 +2533,8 @@
       streak: stored.streak,
       best: stored.best,
       verbAnswers: verbAnswers,
-      adjectiveAnswers: adjectiveAnswers
+      adjectiveAnswers: adjectiveAnswers,
+      particleAnswers: particleAnswers
     };
   }
 
@@ -1705,7 +2563,8 @@
   function updateDailyStreak(moduleId) {
     const countKey = {
       verb: "verbAnswers",
-      adjective: "adjectiveAnswers"
+      adjective: "adjectiveAnswers",
+      particle: "particleAnswers"
     }[moduleId];
     if (!countKey) {
       throw new RangeError("Unknown daily activity module: " + moduleId);
@@ -1722,6 +2581,7 @@
       dailyRecord.lastDate = todayKey;
       dailyRecord.verbAnswers = 0;
       dailyRecord.adjectiveAnswers = 0;
+      dailyRecord.particleAnswers = 0;
       dailyRecord.best = Math.max(dailyRecord.best, dailyRecord.streak);
     }
     dailyRecord[countKey] = Math.min(Number.MAX_SAFE_INTEGER, dailyRecord[countKey] + 1);
@@ -1742,8 +2602,16 @@
 
   function populateAdjectiveFilters() {
     addOption(elements.adjInflectionFilter, "all", "全部活用");
-    ADJ_FORMS.forEach(function (form) {
+    ADJ_FORMS.filter(function (form) { return !form.morphologyPracticeOnly; })
+      .forEach(function (form) {
       addOption(elements.adjInflectionFilter, form.id, form.label);
+    });
+    ADJECTIVE_MORPHOLOGY_FORMS.forEach(function (form) {
+      addOption(
+        elements.adjInflectionFilter,
+        MORPHOLOGY_FILTER_PREFIX + form.id,
+        "六形 · " + form.targetLabel
+      );
     });
     addOption(elements.adjLevelFilter, "all", "全部难度");
     ADJ_LEVELS.forEach(function (level) {
@@ -1769,17 +2637,94 @@
     return form ? form.label : formId;
   }
 
-  function buildAdjectiveQuestionById(adjectiveId, formId) {
-    const adjective = ADJ_BY_ID.get(adjectiveId);
-    if (!adjective || !ADJ_FORMS.some(function (form) { return form.id === formId; })) {
+  function getSelectedAdjectiveMorphologyForm() {
+    const selectedValue = elements.adjInflectionFilter.value;
+    if (selectedValue.indexOf(MORPHOLOGY_FILTER_PREFIX) !== 0) {
       return null;
     }
-    return {
+    const morphologyFormId = selectedValue.slice(MORPHOLOGY_FILTER_PREFIX.length);
+    const morphologyForm = ADJECTIVE_MORPHOLOGY_FORMS.filter(function (form) {
+      return form.id === morphologyFormId;
+    })[0];
+    if (!morphologyForm) {
+      throw new RangeError("Unknown adjective morphology filter: " + morphologyFormId);
+    }
+    return morphologyForm;
+  }
+
+  function buildAdjectiveQuestionById(adjectiveId, formId) {
+    const adjective = ADJ_BY_ID.get(adjectiveId);
+    const form = ADJ_FORMS.filter(function (item) { return item.id === formId; })[0];
+    if (!adjective || !form) {
+      return null;
+    }
+    const question = {
       adjective: adjective,
       formId: formId,
       result: adjEngine.conjugate(adjective, formId),
       key: ADJ_MISTAKE_KEY_PREFIX + [adjectiveId, formId].join("::")
     };
+    if (form.morphologyPracticeOnly) {
+      const morphologyForm = ADJECTIVE_MORPHOLOGY_FORMS.filter(function (item) {
+        return item.formId === formId;
+      })[0];
+      if (!morphologyForm) {
+        throw new RangeError("A morphology-only adjective form must have a practice prompt: " + formId);
+      }
+      question.morphologyFormId = morphologyForm.id;
+    }
+    return question;
+  }
+
+  function buildAdjectiveMorphologyQuestion(adjectiveId, morphologyFormId) {
+    const morphologyForm = ADJECTIVE_MORPHOLOGY_FORMS.filter(function (form) {
+      return form.id === morphologyFormId;
+    })[0];
+    if (!morphologyForm) {
+      throw new RangeError("Unknown adjective morphology form: " + morphologyFormId);
+    }
+    const question = buildAdjectiveQuestionById(adjectiveId, morphologyForm.formId);
+    if (question) {
+      question.morphologyFormId = morphologyForm.id;
+    }
+    return question;
+  }
+
+  function chooseAdjectiveMorphologySample() {
+    const groupId = elements.adjGroupFilter.value;
+    const sampleIds = ["takai", "shizuka"];
+    const candidates = ADJECTIVES.filter(function (adjective) {
+      return sampleIds.includes(adjective.id)
+        && (groupId === "all" || adjective.kind === groupId);
+    });
+    if (!candidates.length) {
+      showToast("当前形容词类别没有六形专项例词。", true);
+      return null;
+    }
+    return randomItem(candidates);
+  }
+
+  function practiceFromAdjectiveMorphology(morphologyFormId) {
+    const morphologyForm = ADJECTIVE_MORPHOLOGY_FORMS.filter(function (form) {
+      return form.id === morphologyFormId;
+    })[0];
+    if (!morphologyForm) {
+      throw new RangeError("Unknown adjective morphology form: " + morphologyFormId);
+    }
+    const adjective = chooseAdjectiveMorphologySample();
+    if (!adjective) {
+      return;
+    }
+    elements.adjInflectionFilter.value = MORPHOLOGY_FILTER_PREFIX + morphologyForm.id;
+    syncAdjectiveLevelFilterState();
+    setReviewingAdjectiveMistakes(false);
+    setAdjectiveSubview("practice");
+    const question = buildAdjectiveMorphologyQuestion(adjective.id, morphologyForm.id);
+    if (!question) {
+      return;
+    }
+    startAdjectiveQuestion(question);
+    elements.adjAnswerInput.focus();
   }
 
   // 形容词到期错题优先插入：与动词 chooseDueReviewQuestion 同构，尊重当前筛选。
@@ -1803,6 +2748,10 @@
     const question = questionFromMistake(weightedItem(dueMistakes, mistakeWeight));
     if (question) {
       question.isScheduledReview = true;
+      const morphologyForm = getSelectedAdjectiveMorphologyForm();
+      if (morphologyForm) {
+        question.morphologyFormId = morphologyForm.id;
+      }
     }
     return question;
   }
@@ -1812,22 +2761,39 @@
     const adjectives = ADJECTIVES.filter(function (adjective) {
       return groupId === "all" || adjective.kind === groupId;
     });
-    // 具体活用形式优先于难度：与动词筛选同一规则，不会筛出空题库。
-    const forms = elements.adjInflectionFilter.value !== "all"
-      ? ADJ_FORMS.filter(function (form) { return form.id === elements.adjInflectionFilter.value; })
-      : elements.adjLevelFilter.value === "all"
-        ? ADJ_FORMS
-        : ADJ_FORMS.filter(function (form) { return form.level === elements.adjLevelFilter.value; });
+    const morphologyForm = getSelectedAdjectiveMorphologyForm();
+    let forms;
+    if (morphologyForm) {
+      forms = [{
+        id: morphologyForm.formId,
+        morphologyFormId: morphologyForm.id
+      }];
+    } else {
+      const availableForms = ADJ_FORMS.filter(function (form) {
+        return !form.morphologyPracticeOnly;
+      });
+      // 具体活用形式优先于难度：与动词筛选同一规则，不会筛出空题库。
+      forms = elements.adjInflectionFilter.value !== "all"
+        ? availableForms.filter(function (form) { return form.id === elements.adjInflectionFilter.value; })
+        : elements.adjLevelFilter.value === "all"
+          ? availableForms
+          : availableForms.filter(function (form) { return form.level === elements.adjLevelFilter.value; });
+    }
     const targets = [];
     adjectives.forEach(function (adjective) {
       forms.forEach(function (form) {
-        targets.push({ adjective: adjective, formId: form.id });
+        targets.push({
+          adjective: adjective,
+          formId: form.id,
+          morphologyFormId: form.morphologyFormId
+        });
       });
     });
     return targets;
   }
 
   function chooseAdjectiveQuestion() {
+    const morphologyForm = getSelectedAdjectiveMorphologyForm();
     const filterKey = JSON.stringify([
       elements.adjGroupFilter.value,
       elements.adjInflectionFilter.value,
@@ -1848,10 +2814,13 @@
           return {
             adjective: target.adjective,
             formId: target.formId,
+            morphologyFormId: target.morphologyFormId,
             key: ADJ_MISTAKE_KEY_PREFIX + [target.adjective.id, target.formId].join("::")
           };
         })
-        .filter(function (pair) { return !activeAdjectiveMistakeKeys.has(pair.key); });
+        .filter(function (pair) {
+          return morphologyForm || !activeAdjectiveMistakeKeys.has(pair.key);
+        });
       if (!pairs.length) {
         showToast("当前筛选范围没有可练习的形容词题目。", true);
         return null;
@@ -1892,6 +2861,7 @@
     return {
       adjective: pair.adjective,
       formId: pair.formId,
+      morphologyFormId: pair.morphologyFormId,
       result: adjEngine.conjugate(pair.adjective, pair.formId),
       key: pair.key
     };
@@ -1908,16 +2878,34 @@
       .concat(adjRecentWordIds.filter(function (id) { return id !== question.adjective.id; }))
       .slice(0, 3);
     renderAdjectiveReviewBanner();
-    elements.adjQuestionIndex.textContent = reviewingAdjectiveMistakes
-      ? "错题重练"
-      : question.isScheduledReview ? "间隔复习" : "随机练习";
-    elements.adjTargetPill.textContent = getAdjectiveFormLabel(question.formId);
+    const morphologyForm = ADJECTIVE_MORPHOLOGY_FORMS.filter(function (form) {
+      return form.id === question.morphologyFormId;
+    })[0];
+    elements.adjQuestionIndex.textContent = morphologyForm
+      ? "六形专项 · " + morphologyForm.label
+      : reviewingAdjectiveMistakes
+        ? "错题重练"
+        : question.isScheduledReview ? "间隔复习" : "随机练习";
+    elements.adjTargetPill.textContent = morphologyForm
+      ? morphologyForm.targetLabel
+      : getAdjectiveFormLabel(question.formId);
     elements.adjQuestionKind.textContent = ADJ_GROUP_LABELS[question.adjective.kind];
     elements.adjQuestionMeaning.textContent = question.adjective.meaning;
     elements.adjQuestionWord.textContent = question.adjective.word;
     elements.adjQuestionReading.textContent = question.adjective.kana;
-    elements.adjQuestionInstruction.innerHTML = "请写出 <strong>" + question.adjective.word
-      + "</strong> 的<strong>" + getAdjectiveFormLabel(question.formId) + "</strong>形式。";
+    if (morphologyForm && morphologyForm.id === "meirei") {
+      const requestPattern = question.adjective.kind === "i"
+        ? "～くしてください"
+        : "～にしてください";
+      elements.adjQuestionInstruction.innerHTML = "形容词本身没有独立命令形。请用礼貌请求「<strong class=\"keyword-highlight\">"
+        + requestPattern + "</strong>」表达。";
+    } else {
+      elements.adjQuestionInstruction.innerHTML = morphologyForm
+        ? morphologyForm.instruction
+        : "请写出 <strong class=\"keyword-highlight\">" + question.adjective.word
+          + "</strong> 的<strong class=\"keyword-highlight\">"
+          + getAdjectiveFormLabel(question.formId) + "</strong>形式。";
+    }
 
     elements.adjAnswerInput.value = "";
     elements.adjAnswerInput.disabled = false;
@@ -2097,38 +3085,70 @@
     return row;
   }
 
+  function buildReferenceVoiceRow(verb, voice, selectedVoiceId) {
+    const result = engine.conjugate(verb, voice.id, "dictionary");
+    const row = document.createElement("tr");
+    row.setAttribute("data-voice-id", voice.id);
+    if (voice.id === selectedVoiceId) {
+      row.classList.add("is-selected");
+      row.setAttribute("aria-current", "true");
+    }
+
+    const formCell = document.createElement("th");
+    formCell.scope = "row";
+    formCell.textContent = voice.label;
+
+    const answerCell = document.createElement("td");
+    const answer = document.createElement("div");
+    answer.className = "reference-result";
+    const written = document.createElement("strong");
+    written.textContent = voice.id === "base"
+      ? verb.dictionary + "（不变）"
+      : verb.dictionary + " → " + result.written;
+    answer.append(written);
+    if (result.kana !== result.written) {
+      const reading = document.createElement("small");
+      reading.textContent = result.kana;
+      answer.append(reading);
+    }
+    answerCell.append(answer);
+
+    const meaningCell = document.createElement("td");
+    meaningCell.className = "reference-form-meaning";
+    meaningCell.textContent = voice.meaning;
+
+    const ruleCell = document.createElement("td");
+    renderRuleExplanation(ruleCell, engine.explainVoice(verb, voice.id));
+
+    const actionCell = document.createElement("td");
+    actionCell.className = "reference-practice";
+    const practiceButton = document.createElement("button");
+    practiceButton.type = "button";
+    practiceButton.className = "inline-button practice-link";
+    practiceButton.textContent = "练这题";
+    practiceButton.setAttribute(
+      "aria-label",
+      "练习 " + verb.dictionary + " 的" + voice.label + "辞书形"
+    );
+    practiceButton.addEventListener("click", function () {
+      practiceFromReference(verb, voice.id, "dictionary");
+    });
+    actionCell.append(practiceButton);
+
+    row.append(formCell, answerCell, meaningCell, ruleCell, actionCell);
+    return row;
+  }
+
   function renderReferenceVoiceGuide(verb, selectedVoiceId) {
     elements.referenceVoiceGuideCaption.textContent = "以「" + verb.dictionary + "」（"
-      + GROUP_LABELS[verb.group] + "）为例；切换上方动词可查看其他类别的变化。"
-      + "各类型先生成对应的辞书形，再应用表格中的活用形式。";
-    elements.referenceVoiceGuideList.replaceChildren();
+      + GROUP_LABELS[verb.group] + "）为例。表中对照各类变形后的辞书形；下方活用表再展示"
+      + "当前所选变形的各种活用形式。";
+    elements.referenceVoiceGuideTableBody.replaceChildren();
 
     VOICES.forEach(function (voice) {
-      const result = engine.conjugate(verb, voice.id, "dictionary");
-      const item = document.createElement("li");
-      item.className = "reference-voice-guide-item";
-      item.setAttribute("data-voice-id", voice.id);
-      if (voice.id === selectedVoiceId) {
-        item.classList.add("is-selected");
-        item.setAttribute("aria-current", "true");
-      }
-
-      const heading = document.createElement("div");
-      heading.className = "reference-voice-guide-item-heading";
-      const label = document.createElement("strong");
-      label.textContent = voice.label;
-      const example = document.createElement("span");
-      example.className = "reference-voice-guide-example";
-      example.textContent = voice.id === "base"
-        ? verb.dictionary + "（不变）"
-        : verb.dictionary + " → " + result.written;
-      heading.append(label, example);
-
-      const rule = document.createElement("p");
-      rule.className = "reference-voice-guide-rule";
-      rule.textContent = engine.explainVoice(verb, voice.id);
-      item.append(heading, rule);
-      elements.referenceVoiceGuideList.append(item);
+      elements.referenceVoiceGuideTableBody.append(
+        buildReferenceVoiceRow(verb, voice, selectedVoiceId)
+      );
     });
   }
 
@@ -2161,16 +3181,20 @@
       elements.referenceMeaning.textContent = "请换一个搜索词。";
       elements.referenceVoiceMeaning.textContent = "";
       elements.referenceGroup.textContent = "";
+      elements.verbMorphologyGuide.hidden = true;
+      elements.verbMorphologyGuideTableBody.replaceChildren();
       elements.referenceVoiceGuide.hidden = true;
-      elements.referenceVoiceGuideList.replaceChildren();
+      elements.referenceVoiceGuideTableBody.replaceChildren();
       return;
     }
 
+    elements.verbMorphologyGuide.hidden = false;
     elements.referenceVoiceGuide.hidden = false;
     elements.referenceWord.textContent = verb.dictionary + "（" + verb.reading + "）";
     elements.referenceMeaning.textContent = verb.meaning + " · " + getVoiceLabel(voiceId);
     elements.referenceVoiceMeaning.textContent = "语态大意：" + VOICE_BY_ID.get(voiceId).meaning;
     elements.referenceGroup.textContent = GROUP_LABELS[verb.group];
+    renderVerbMorphologyGuide(verb);
     renderReferenceVoiceGuide(verb, voiceId);
 
     LEVELS.forEach(function (level) {
@@ -2192,7 +3216,6 @@
       }
       event.preventDefault();
       showView("home");
-      elements.appMain.scrollTop = 0;
     });
   });
   elements.tabs.forEach(function (tab) {
@@ -2207,6 +3230,13 @@
       }
       if (button.dataset.adjSubview) {
         setAdjectiveSubview(button.dataset.adjSubview);
+      }
+      if (button.dataset.particleSubview) {
+        if (button.dataset.particleSubview === "practice") {
+          startParticlePractice();
+        } else {
+          setParticleSubview(button.dataset.particleSubview);
+        }
       }
       showView(button.dataset.openView);
     });
@@ -2306,6 +3336,11 @@
       practiceFromAdjectiveReference(button.dataset.adjPractice);
     });
   });
+  document.querySelectorAll("[data-adj-morphology-practice]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      practiceFromAdjectiveMorphology(button.dataset.adjMorphologyPractice);
+    });
+  });
   [elements.adjGroupFilter, elements.adjInflectionFilter, elements.adjLevelFilter]
     .forEach(function (select) {
       select.addEventListener("change", function () {
@@ -2327,6 +3362,28 @@
       setAdjectiveSubview(subtab.dataset.adjSubview);
     });
   });
+  elements.particleGuideLink.addEventListener("click", function () {
+    setParticleSubview("learn");
+  });
+  elements.particleSubtabs.forEach(function (subtab) {
+    subtab.addEventListener("click", function () {
+      if (subtab.dataset.particleSubview === "practice") {
+        startParticlePractice();
+      } else {
+        setParticleSubview(subtab.dataset.particleSubview);
+      }
+    });
+  });
+  elements.particlePracticeModeSelect.addEventListener("change", function () {
+    setParticlePracticeMode(elements.particlePracticeModeSelect.value);
+  });
+  elements.particleLevelSelect.addEventListener("change", function () {
+    setParticleLevel(elements.particleLevelSelect.value);
+  });
+  elements.particleCheckAnswer.addEventListener("click", checkParticleAnswer);
+  elements.particleNextQuestion.addEventListener("click", nextParticleQuestion);
+  elements.particleStartReview.addEventListener("click", startParticleReview);
+  elements.particleResetStats.addEventListener("click", resetParticleStats);
 
   populatePracticeFilters();
   populateReferenceVoices();
@@ -2335,10 +3392,13 @@
   updateMistakeCount();
   renderPracticeStats();
   renderAdjectiveStats();
+  renderParticleStats();
   renderStreakNote();
   renderMistakes();
   setVerbSubview("practice");
   setAdjectiveSubview("practice");
+  setParticleLevel("beginner");
+  renderParticleMistakes();
   newRandomQuestion();
   newAdjectiveQuestion();
   showView("home");

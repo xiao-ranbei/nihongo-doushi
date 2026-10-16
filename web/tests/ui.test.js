@@ -5,14 +5,20 @@
 // id、任何一次状态迁移没刷新对应节点，都会在这里失败。
 
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const test = require("node:test");
 
 const engine = require("../verb-engine.js");
 const adjEngine = require("../adjective-engine.js");
+const particleEngine = require("../particle-engine.js");
 const { createApp } = require("./helpers/dom-stub.js");
 
 const MISTAKES_KEY = "japanese-verb-practice-mistakes-v1";
 const STATS_KEY = "japanese-verb-practice-stats-v1";
+const PARTICLE_MISTAKES_KEY = "japanese-particle-practice-mistakes-v1";
+const PARTICLE_STATS_KEY = "japanese-particle-practice-stats-v1";
+const DAILY_KEY = "japanese-verb-practice-daily-v1";
 
 // 从页面当前展示反推正确答案：动词辞书形 + 目标 pill（「语态 · 活用」）。
 function currentAnswer(app) {
@@ -90,6 +96,17 @@ function tab(app, viewId) {
   return found;
 }
 
+test("网页 favicon 使用左上角的日字品牌标识", function () {
+  const indexHtml = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  const iconLink = /<link rel="icon" type="image\/svg\+xml" href="([^"]+)">/.exec(indexHtml);
+  assert.ok(iconLink, "页面应声明 SVG favicon");
+  assert.equal(iconLink[1], "./icon/favicon.svg");
+
+  const iconSvg = fs.readFileSync(path.join(__dirname, "..", "icon", "favicon.svg"), "utf8");
+  assert.match(iconSvg, /<text[\s\S]*?>日<\/text>/);
+  assert.match(iconSvg, /fill="#326151"/);
+});
+
 test("初始化：注入字体、渲染首题并默认显示学习主页", function () {
   const app = createApp();
   const injected = app.document.head.querySelectorAll("style").filter(function (node) {
@@ -103,7 +120,28 @@ test("初始化：注入字体、渲染首题并默认显示学习主页", funct
   assert.equal(app.$("view-practice").hidden, false, "动词模块默认子视图为练习");
   assert.equal(app.$("view-reference").hidden, true);
   assert.equal(app.$("view-adjective").hidden, true);
+  assert.equal(app.$("view-particle").hidden, true);
   assert.equal(app.$("view-mistakes").hidden, true);
+  assert.equal(app.document.querySelectorAll(".module-subnav").length, 3, "三个模块应共用页签导航");
+  assert.equal(app.document.querySelectorAll(".module-subtab").length, 7);
+  assert.equal(app.document.querySelectorAll(".subtabs").length, 0, "不应保留形容词专属页签样式");
+  assert.equal(app.$("particle-view-practice").hidden, false);
+  assert.equal(app.$("particle-view-learn").hidden, true);
+  assert.equal(app.$("particle-controls-panel").classList.contains("filter-bar"), true);
+  assert.equal(app.$("particle-question-card").classList.contains("practice-card"), true);
+  assert.equal(
+    app.$("particle-practice-stats").parentNode.classList.contains("practice-card-head"),
+    true
+  );
+  assert.equal(app.$("particle-correct-count").textContent, "0");
+  assert.equal(app.$("particle-incorrect-count").textContent, "0");
+  assert.equal(app.$("particle-reset-stats").disabled, true);
+  assert.equal(
+    particleEngine.getQuestion(app.$("particle-question-card").getAttribute("data-question-id")).type,
+    "fill",
+    "助词模块应预备综合练习的第一道选助词题"
+  );
+  assert.equal(app.document.querySelectorAll(".particle-lesson-card").length, particleEngine.LESSONS.length);
   assert.equal(app.$("home-today-total").textContent, "0 题");
   assert.equal(app.$("home-active-module-count").textContent, "0");
   assert.equal(app.$("review-banner").hidden, true);
@@ -128,6 +166,13 @@ test("导航：侧栏可折叠，窄屏抽屉可打开并关闭", function () {
   assert.equal(homeLinks[0].getAttribute("href"), "./index.html");
   assert.equal(homeLinks[1].getAttribute("href"), "./index.html");
   assert.equal(
+    app.document.querySelectorAll("[data-view]").filter(function (node) {
+      return node.dataset.view === "particle";
+    }).length,
+    1,
+    "侧栏应仅展示一个助词模块入口"
+  );
+  assert.equal(
     app.document.querySelectorAll("[data-view]").some(function (node) {
       return node.dataset.view === "home";
     }),
@@ -138,6 +183,9 @@ test("导航：侧栏可折叠，窄屏抽屉可打开并关闭", function () {
   assert.equal(app.$("sidebar-collapse").querySelector(".nav-label"), null);
   assert.equal(app.$("sidebar-collapse").getAttribute("aria-label"), "折叠侧栏");
 
+  app.$("app-main").scrollTop = 120;
+  tab(app, "verb");
+  assert.equal(app.$("app-main").scrollTop, 0, "切换模块应滚回内容顶部");
   app.click(app.$("sidebar-collapse"));
   assert.equal(app.$("app-shell").classList.contains("is-sidebar-collapsed"), true);
   assert.equal(app.$("sidebar-collapse").getAttribute("aria-pressed"), "true");
@@ -164,13 +212,179 @@ test("导航：侧栏可折叠，窄屏抽屉可打开并关闭", function () {
   assert.equal(homeLinks[1].getAttribute("aria-current"), "page");
 });
 
+test("助词综合练习默认交替两种题型并支持专项切换", function () {
+  const app = createApp();
+  tab(app, "particle");
+  assert.equal(app.$("particle-view-practice").hidden, false);
+  assert.equal(app.$("particle-view-learn").hidden, true);
+  assert.equal(app.$("particle-level-select").tagName, "SELECT");
+  assert.equal(app.$("particle-practice-mode-select").tagName, "SELECT");
+  assert.equal(app.$("particle-view-title").textContent, "在句子中练习");
+  const learnSubview = app.document.querySelectorAll("[data-particle-subview]").filter(function (node) {
+    return node.dataset.particleSubview === "learn";
+  })[0];
+  app.click(learnSubview);
+  assert.equal(app.$("particle-view-title").textContent, "先看语境，再选助词");
+  assert.equal(app.$("particle-controls-panel").classList.contains("is-single-column"), true);
+  assert.equal(app.$("particle-practice-modes").hidden, true);
+  const practiceSubview = app.document.querySelectorAll("[data-particle-subview]").filter(function (node) {
+    return node.dataset.particleSubview === "practice";
+  })[0];
+  app.click(practiceSubview);
+  assert.equal(app.$("particle-view-title").textContent, "在句子中练习");
+  assert.equal(app.$("particle-controls-panel").classList.contains("is-single-column"), false);
+
+  const firstQuestion = particleEngine.getQuestion(
+    app.$("particle-question-card").getAttribute("data-question-id")
+  );
+  assert.equal(firstQuestion.type, "fill", "综合练习从选助词题开始");
+  const fillOption = app.$("particle-options").querySelectorAll("button").filter(function (button) {
+    return firstQuestion.acceptedAnswers.includes(button.textContent);
+  })[0];
+  assert.ok(fillOption);
+  app.click(fillOption);
+  app.click(app.$("particle-check-answer"));
+  app.click(app.$("particle-next-question"));
+
+  const functionQuestion = particleEngine.getQuestion(
+    app.$("particle-question-card").getAttribute("data-question-id")
+  );
+  const originalFunctionOptions = functionQuestion.options.slice();
+  assert.equal(functionQuestion.type, "function", "第二题应判断目标助词的作用");
+  assert.match(app.$("particle-question-progress").textContent, /综合练习/);
+  assert.equal(app.$("particle-answer-slot").textContent, functionQuestion.targetParticle);
+  assert.equal(app.$("particle-answer-slot").classList.contains("is-target-particle"), true);
+  assert.equal(app.$("particle-question-translation").hidden, true, "作答前不显示句子译文");
+  assert.match(app.$("particle-question-prompt").textContent, new RegExp(functionQuestion.targetParticle));
+  assert.equal(app.$("particle-options").querySelectorAll("button").length, 4);
+
+  const wrongOption = app.$("particle-options").querySelectorAll("button").filter(function (button) {
+    return !functionQuestion.acceptedAnswers.includes(button.textContent);
+  })[0];
+  app.click(wrongOption);
+  assert.equal(app.$("particle-answer-slot").textContent, functionQuestion.targetParticle, "选择解释时保留高亮助词");
+  app.click(app.$("particle-check-answer"));
+  assert.equal(app.$("particle-feedback").classList.contains("is-incorrect"), true);
+  assert.equal(app.$("particle-question-translation").hidden, false, "判题后显示句子译文");
+  assert.equal(app.$("particle-correct-count").textContent, "1");
+  assert.equal(app.$("particle-incorrect-count").textContent, "1");
+  assert.equal(app.$("particle-total-count").textContent, "2");
+  assert.equal(app.$("particle-accuracy").textContent, "50%");
+
+  const reviewTab = app.document.querySelectorAll("[data-particle-subview]").filter(function (node) {
+    return node.dataset.particleSubview === "review";
+  })[0];
+  app.click(reviewTab);
+  const interpretedSentence = functionQuestion.before
+    + functionQuestion.targetParticle
+    + functionQuestion.after;
+  assert.ok(
+    app.$("particle-review-list").textContent.includes(interpretedSentence),
+    "作用判断错题应以完整句子进入复习列表"
+  );
+  assert.equal(
+    app.$("particle-review-list").querySelector(".particle-review-target").textContent,
+    functionQuestion.targetParticle,
+    "作用判断错题应继续标亮目标助词"
+  );
+  const practiceTab = app.document.querySelectorAll("[data-particle-subview]").filter(function (node) {
+    return node.dataset.particleSubview === "practice";
+  })[0];
+  app.click(practiceTab);
+
+  const functionModeSelect = app.$("particle-practice-mode-select");
+  functionModeSelect.value = "function";
+  functionModeSelect.dispatch("change");
+  const functionOnlyQuestion = particleEngine.getQuestion(
+    app.$("particle-question-card").getAttribute("data-question-id")
+  );
+  assert.equal(functionOnlyQuestion.type, "function");
+  assert.equal(functionModeSelect.value, "function");
+  assert.equal(app.$("particle-practice-mode-hint").textContent, "集中判断助词在句中的作用");
+
+  const fillModeSelect = app.$("particle-practice-mode-select");
+  fillModeSelect.value = "fill";
+  fillModeSelect.dispatch("change");
+  const fillOnlyQuestion = particleEngine.getQuestion(
+    app.$("particle-question-card").getAttribute("data-question-id")
+  );
+  assert.equal(fillOnlyQuestion.type, "fill");
+  assert.deepEqual(functionQuestion.options, originalFunctionOptions, "随机化选项不能改写题库顺序");
+});
+
+test("助词语境练习可复习错题并计入每日练习", function () {
+  const app = createApp();
+  tab(app, "particle");
+  assert.equal(app.$("view-particle").hidden, false);
+  assert.equal(app.$("particle-view-practice").hidden, false);
+  app.$("app-main").scrollTop = 120;
+  const advancedLevelSelect = app.$("particle-level-select");
+
+  const practiceTab = app.document.querySelectorAll("[data-particle-subview]").filter(function (node) {
+    return node.dataset.particleSubview === "practice";
+  })[0];
+  app.click(practiceTab);
+  assert.equal(app.$("app-main").scrollTop, 0, "切换助词子视图应回到内容顶部");
+  const questionId = app.$("particle-question-card").getAttribute("data-question-id");
+  const question = particleEngine.getQuestion(questionId);
+  assert.ok(question, "当前助词题应能在题库中找到");
+  assert.equal(app.$("particle-question-context").textContent, question.context);
+
+  const wrongOption = app.$("particle-options").querySelectorAll("button").filter(function (button) {
+    return !question.acceptedAnswers.includes(button.textContent);
+  })[0];
+  assert.ok(wrongOption, "题目应有可用于判错的选项");
+  app.click(wrongOption);
+  app.click(app.$("particle-check-answer"));
+  assert.equal(app.$("particle-feedback").classList.contains("is-incorrect"), true);
+  assert.deepEqual(JSON.parse(app.window.localStorage.getItem(PARTICLE_MISTAKES_KEY)), [questionId]);
+  assert.equal(JSON.parse(app.window.localStorage.getItem(DAILY_KEY)).particleAnswers, 1);
+
+  const reviewTab = app.document.querySelectorAll("[data-particle-subview]").filter(function (node) {
+    return node.dataset.particleSubview === "review";
+  })[0];
+  app.click(reviewTab);
+  assert.equal(app.$("particle-review-count").textContent, "本地保存 1 道助词错题");
+  app.click(app.$("particle-start-review"));
+  assert.equal(app.$("particle-question-card").getAttribute("data-question-id"), questionId);
+  assert.equal(app.$("particle-practice-modes").hidden, true, "错题复习不显示专项模式切换");
+
+  const correctOption = app.$("particle-options").querySelectorAll("button").filter(function (button) {
+    return question.acceptedAnswers.includes(button.textContent);
+  })[0];
+  assert.ok(correctOption, "错题复习应提供参考答案选项");
+  app.click(correctOption);
+  app.click(app.$("particle-check-answer"));
+  assert.equal(app.$("particle-feedback").classList.contains("is-correct"), true);
+  app.click(app.$("particle-next-question"));
+
+  assert.equal(app.$("particle-view-review").hidden, false);
+  assert.equal(app.$("particle-review-count").textContent, "还没有需要复习的助词错题");
+  assert.equal(app.$("particle-review-empty").hidden, false);
+  assert.deepEqual(JSON.parse(app.window.localStorage.getItem(PARTICLE_MISTAKES_KEY)), []);
+  assert.equal(JSON.parse(app.window.localStorage.getItem(DAILY_KEY)).particleAnswers, 2);
+
+  const learnTab = app.document.querySelectorAll("[data-particle-subview]").filter(function (node) {
+    return node.dataset.particleSubview === "learn";
+  })[0];
+  app.click(learnTab);
+  advancedLevelSelect.value = "advanced";
+  advancedLevelSelect.dispatch("change");
+  app.click(practiceTab);
+  const advancedQuestion = particleEngine.getQuestion(app.$("particle-question-card").getAttribute("data-question-id"));
+  assert.equal(advancedQuestion.level, "advanced");
+});
+
 test("练习统计位于各自随机练习卡片的标题区", function () {
   const app = createApp();
   const verbStats = app.document.querySelector(".practice-stats");
   const adjectiveStats = app.$("adj-practice-stats");
+  const particleStats = app.$("particle-practice-stats");
 
   assert.equal(verbStats.parentNode.classList.contains("practice-card-head"), true);
   assert.equal(adjectiveStats.parentNode.classList.contains("practice-card-head"), true);
+  assert.equal(particleStats.parentNode.classList.contains("practice-card-head"), true);
+  assert.equal(particleStats.classList.contains("practice-stats-inline"), true);
   assert.equal(app.document.querySelectorAll(".practice-stats-title").length, 0);
 });
 
@@ -426,39 +640,88 @@ test("速查表按基础／进阶分组展示活用形式", function () {
   });
 });
 
-test("速查页展示当前动词的全部变形类型规则与示例", function () {
+test("速查页以五列表格展示各变形类型的语义、结果与规则", function () {
   const app = createApp();
   tab(app, "reference");
 
-  const list = app.$("reference-voice-guide-list");
-  let items = list.querySelectorAll("[data-voice-id]");
+  const table = app.$("reference-voice-guide-table");
+  assert.equal(table.querySelector("thead").querySelectorAll("th").length, 5);
+  const indexHtml = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  const tableMarkup = /<table class="reference-table reference-voice-table"[\s\S]*?<\/table>/.exec(indexHtml);
+  assert.ok(tableMarkup, "变形类型表格应存在于速查页");
+  const headers = Array.from(tableMarkup[0].matchAll(/<th\b[^>]*>([^<]*)<\/th>/g), function (match) {
+    return match[1].trim();
+  });
+  assert.deepEqual(headers, ["活用形式", "变形结果", "常见表达大意", "变化提示", "练一练"]);
+
+  const body = app.$("reference-voice-guide-table-body");
+  let items = body.querySelectorAll("[data-voice-id]");
   assert.equal(items.length, engine.VOICES.length);
 
-  const potentialItem = items.filter(function (item) {
+  const potentialRow = items.filter(function (item) {
     return item.dataset.voiceId === "potential";
   })[0];
-  assert.match(potentialItem.textContent, /行く → 行ける/);
-  assert.match(potentialItem.textContent, /五段动词词尾改为对应え段/);
+  assert.equal(potentialRow.childNodes.length, 5);
+  assert.match(potentialRow.textContent, /行く → 行ける/);
+  assert.match(potentialRow.textContent, /能力、条件或许可/);
+  assert.match(potentialRow.textContent, /五段动词词尾改为对应え段/);
+
+  const passiveRow = items.filter(function (item) {
+    return item.dataset.voiceId === "passive";
+  })[0];
+  assert.match(passiveRow.textContent, /主语承受他人的动作/);
+  assert.match(passiveRow.textContent, /雨に降られた/);
+
+  const causativeRow = items.filter(function (item) {
+    return item.dataset.voiceId === "causative";
+  })[0];
+  assert.match(causativeRow.textContent, /先生が学生に本を読ませる/);
+  assert.match(causativeRow.textContent, /强制还是许可由语境判断/);
 
   const voiceSelect = app.$("reference-voice");
   voiceSelect.value = "causative";
   voiceSelect.dispatch("change");
-  items = list.querySelectorAll("[data-voice-id]");
-  const selectedItem = items.filter(function (item) {
+  items = body.querySelectorAll("[data-voice-id]");
+  const selectedRow = items.filter(function (item) {
     return item.dataset.voiceId === "causative";
   })[0];
-  assert.equal(selectedItem.classList.contains("is-selected"), true);
+  assert.equal(selectedRow.classList.contains("is-selected"), true);
+  assert.equal(selectedRow.getAttribute("aria-current"), "true");
 
   const verbSelect = app.$("reference-verb");
   verbSelect.value = "taberu";
   verbSelect.dispatch("change");
   assert.match(app.$("reference-voice-guide-caption").textContent, /一段动词/);
-  items = list.querySelectorAll("[data-voice-id]");
-  const ichidanPotentialItem = items.filter(function (item) {
+  items = body.querySelectorAll("[data-voice-id]");
+  const ichidanPotentialRow = items.filter(function (item) {
     return item.dataset.voiceId === "potential";
   })[0];
-  assert.match(ichidanPotentialItem.textContent, /食べる → 食べられる/);
-  assert.match(ichidanPotentialItem.textContent, /一段动词去掉「る」/);
+  assert.match(ichidanPotentialRow.textContent, /食べる → 食べられる/);
+  assert.match(ichidanPotentialRow.textContent, /一段动词去掉「る」/);
+});
+
+test("变形类型速查表「练这题」按所点语态开始辞书形练习", function () {
+  const app = createApp();
+  tab(app, "reference");
+
+  const voiceRow = app.$("reference-voice-guide-table-body")
+    .querySelectorAll("[data-voice-id]")
+    .filter(function (row) {
+      return row.dataset.voiceId === "causative";
+    })[0];
+  const verb = engine.VERBS.filter(function (item) {
+    return item.id === app.$("reference-verb").value;
+  })[0];
+  app.click(voiceRow.querySelector(".practice-link"));
+
+  assert.equal(app.$("view-practice").hidden, false);
+  assert.equal(app.$("view-reference").hidden, true);
+  assert.equal(app.$("target-pill").textContent, "使役形 · 辞书形");
+  assert.equal(
+    currentAnswer(app),
+    engine.conjugate(verb, "causative", "dictionary").written
+  );
+  assert.equal(app.$("answer-input").focused, true);
 });
 
 test("速查表「练这题」切到练习并载入对应题目", function () {
@@ -793,6 +1056,209 @@ test("形容词：错题卡「练这题」切到形容词视图重练", function
   assert.equal(app.$("adj-question-word").textContent, "静か");
 });
 
+test("动词速查页动态展示六种活用形并连接现有练习", function () {
+  const app = createApp();
+  tab(app, "reference");
+
+  const indexHtml = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  const tableMarkup = /<table[^>]*id="verb-morphology-guide-table"[\s\S]*?<\/table>/.exec(indexHtml);
+  assert.ok(tableMarkup, "动词速查页应有六种活用形表");
+  const headers = Array.from(tableMarkup[0].matchAll(/<th\b[^>]*>([^<]*)<\/th>/g), function (match) {
+    return match[1].trim();
+  });
+  assert.deepEqual(headers, ["活用形", "后面接什么／句中作用", "当前动词例子", "练一练"]);
+
+  const verbSelect = app.$("reference-verb");
+  verbSelect.value = "kaku";
+  verbSelect.dispatch("change");
+  const rows = app.$("verb-morphology-guide-table-body")
+    .querySelectorAll("[data-morphology-form]");
+  assert.equal(rows.length, 6);
+  const rowFor = function (formId) {
+    return rows.filter(function (row) {
+      return row.dataset.morphologyForm === formId;
+    })[0];
+  };
+  assert.match(rowFor("mizen").textContent, /書かない/);
+  assert.match(rowFor("mizen").textContent, /書こう/);
+  assert.match(rowFor("renyou").textContent, /書きます/);
+  assert.match(rowFor("renyou").textContent, /書いて/);
+  assert.match(rowFor("shushi").textContent, /書く。/);
+  assert.match(rowFor("rentai").textContent, /書く人/);
+  assert.match(rowFor("katei").textContent, /書けば/);
+  assert.match(rowFor("meirei").textContent, /書け/);
+
+  const verb = engine.VERBS.filter(function (item) {
+    return item.id === "kaku";
+  })[0];
+  app.click(rowFor("katei").querySelector(".practice-link"));
+  assert.equal(app.$("view-practice").hidden, false);
+  assert.equal(app.$("question-index").textContent, "六形专项 · 仮定形");
+  assert.equal(app.$("target-pill").textContent, "仮定形（接ば）");
+  app.$("answer-input").value = engine.conjugate(verb, "base", "conditionalBa").written;
+  app.$("answer-form").dispatch("submit");
+  assert.equal(app.$("feedback-mark").textContent, "✓");
+});
+
+test("动词六形作为活用形式筛选项并持续出题", function () {
+  const app = createApp();
+  tab(app, "verb");
+  const filter = app.$("inflection-filter");
+  const options = filter.querySelectorAll("option").map(function (option) {
+    return option.value;
+  });
+  ["mizen", "renyou", "shushi", "rentai", "katei", "meirei"].forEach(function (id) {
+    assert.ok(options.includes("morphology:" + id), id + " 应在现有活用形式筛选中");
+  });
+  assert.equal(app.document.getElementById("six-form-practice"), null, "不应保留独立六形按钮");
+
+  filter.value = "morphology:katei";
+  filter.dispatch("change");
+  assert.equal(app.$("question-index").textContent, "六形专项 · 仮定形");
+  assert.equal(app.$("target-pill").textContent, "仮定形（接ば）");
+  assert.equal(app.$("level-filter").disabled, true, "指定六形时难度筛选应停用");
+  assert.equal(app.$("voice-filter").disabled, false, "语态筛选仍可与六形组合");
+  app.click(app.$("new-question"));
+  assert.equal(app.$("question-index").textContent, "六形专项 · 仮定形");
+
+  filter.value = "all";
+  filter.dispatch("change");
+  assert.equal(app.$("level-filter").disabled, false);
+  assert.equal(app.$("question-index").textContent, "随机练习");
+});
+
+test("动词六形导览每一行都能启动对应的语境书写题", function () {
+  const cases = [
+    { formId: "mizen", label: "未然形", inflectionId: "negative", target: "未然形（接ない）" },
+    { formId: "renyou", label: "連用形", inflectionId: "masuStem", target: "連用形（ます词干）" },
+    { formId: "shushi", label: "終止形", inflectionId: "dictionary", target: "終止形（句尾）" },
+    { formId: "rentai", label: "連体形", inflectionId: "dictionary", target: "連体形（名词前）" },
+    { formId: "katei", label: "仮定形", inflectionId: "conditionalBa", target: "仮定形（接ば）" },
+    { formId: "meirei", label: "命令形", inflectionId: "imperative", target: "命令形" }
+  ];
+
+  cases.forEach(function (item) {
+    const app = createApp();
+    tab(app, "reference");
+    app.$("reference-verb").value = "kaku";
+    app.$("reference-verb").dispatch("change");
+    const row = app.$("verb-morphology-guide-table-body")
+      .querySelectorAll("[data-morphology-form]")
+      .filter(function (candidate) {
+        return candidate.dataset.morphologyForm === item.formId;
+      })[0];
+    app.click(row.querySelector(".practice-link"));
+
+    assert.equal(app.$("target-pill").textContent, item.target);
+    assert.equal(app.$("question-index").textContent, "六形专项 · " + item.label);
+    app.$("answer-input").value = engine.conjugate(
+      engine.VERBS.filter(function (verb) { return verb.id === "kaku"; })[0],
+      "base",
+      item.inflectionId
+    ).written;
+    app.$("answer-form").dispatch("submit");
+    assert.equal(app.$("feedback-mark").textContent, "✓", item.formId);
+  });
+});
+
+test("题干与变化提示使用统一关键词高亮类", function () {
+  const app = createApp();
+  assert.match(app.$("question-instruction").innerHTML, /class="keyword-highlight"/);
+
+  app.$("group-filter").value = "godan";
+  app.$("voice-filter").value = "base";
+  app.$("inflection-filter").value = "conditionalBa";
+  app.$("inflection-filter").dispatch("change");
+  const emphasis = app.$("rule-hint").querySelector(".rule-emphasis");
+  assert.ok(emphasis, "变化提示中的段位关键词应被强调");
+  assert.equal(emphasis.classList.contains("keyword-highlight"), true);
+});
+
+test("形容词速查对照六形，条件形可练且命令形明确标为无独立形式", function () {
+  const app = createApp();
+  tab(app, "adjective");
+  app.click(app.document.querySelectorAll("[data-adj-subview]").filter(function (subtab) {
+    return subtab.dataset.adjSubview === "reference";
+  })[0]);
+
+  const rows = app.$("adjective-morphology-guide-table-body")
+    .querySelectorAll("[data-morphology-form]");
+  assert.equal(rows.length, 6);
+  assert.ok(rows.every(function (row) {
+    return row.childNodes.length === 5;
+  }));
+  assert.ok(rows.some(function (row) {
+    return row.dataset.morphologyForm === "meirei";
+  }));
+
+  const indexHtml = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  assert.match(indexHtml, /高かろう/);
+  assert.match(indexHtml, /高ければ/);
+  assert.match(indexHtml, /静かなら（ば）/);
+  assert.match(indexHtml, /形容词本身没有独立命令形/);
+
+  const conditionalButton = app.$("adjective-morphology-guide-table-body")
+    .querySelectorAll("[data-adj-morphology-practice]")
+    .filter(function (button) {
+      return button.dataset.adjMorphologyPractice === "katei";
+    })[0];
+  app.click(conditionalButton);
+  assert.equal(app.$("adj-question-index").textContent, "六形专项 · 仮定形");
+  assert.equal(app.$("adj-target-pill").textContent, "仮定形（接ば）");
+
+  const adjective = adjEngine.ADJECTIVES.filter(function (item) {
+    return item.word === app.$("adj-question-word").textContent;
+  })[0];
+  app.$("adj-answer-input").value = adjEngine.conjugate(adjective, "conditional").written;
+  app.$("adj-answer-form").dispatch("submit");
+  assert.equal(app.$("adj-feedback-mark").textContent, "✓");
+
+  const imperativeButton = app.$("adjective-morphology-guide-table-body")
+    .querySelectorAll("[data-adj-morphology-practice]")
+    .filter(function (button) {
+      return button.dataset.adjMorphologyPractice === "meirei";
+    })[0];
+  app.click(imperativeButton);
+  assert.equal(app.$("adj-target-pill").textContent, "命令表达（无独立形）");
+  assert.match(app.$("adj-question-instruction").innerHTML, /没有独立命令形/);
+  const imperativeAdjective = adjEngine.ADJECTIVES.filter(function (item) {
+    return item.word === app.$("adj-question-word").textContent;
+  })[0];
+  app.$("adj-answer-input").value = adjEngine.conjugate(imperativeAdjective, "imperativeRequest").written;
+  app.$("adj-answer-form").dispatch("submit");
+  assert.equal(app.$("adj-feedback-mark").textContent, "✓");
+});
+
+test("形容词六形也在现有活用形式筛选中并可写出对应形式", function () {
+  const app = createApp();
+  tab(app, "adjective");
+  const filter = app.$("adj-inflection-filter");
+  const options = filter
+    .querySelectorAll("option")
+    .map(function (option) { return option.value; });
+  ["mizen", "renyou", "shushi", "rentai", "katei", "meirei"].forEach(function (id) {
+    assert.ok(options.includes("morphology:" + id), id + " 应在形容词活用形式筛选中");
+  });
+  assert.equal(app.document.getElementById("adj-six-form-practice"), null, "不应保留独立六形按钮");
+
+  filter.value = "morphology:meirei";
+  filter.dispatch("change");
+  assert.equal(app.$("adj-question-index").textContent, "六形专项 · 命令形（形容词无独立形）");
+  assert.equal(app.$("adj-target-pill").textContent, "命令表达（无独立形）");
+  assert.equal(app.$("adj-level-filter").disabled, true);
+  const adjective = adjEngine.ADJECTIVES.filter(function (item) {
+    return item.word === app.$("adj-question-word").textContent;
+  })[0];
+  app.$("adj-answer-input").value = adjEngine.conjugate(adjective, "imperativeRequest").written;
+  app.$("adj-answer-form").dispatch("submit");
+  assert.equal(app.$("adj-feedback-mark").textContent, "✓");
+
+  filter.value = "all";
+  filter.dispatch("change");
+  assert.equal(app.$("adj-level-filter").disabled, false);
+  assert.equal(app.$("adj-question-index").textContent, "随机练习");
+});
+
 test("形容词：速查总表「练这题」载入对应形式", function () {
   const app = createApp();
   tab(app, "adjective");
@@ -890,8 +1356,6 @@ test("错题加权：形容词到期题按错次加权出现", function () {
   assert.ok((counts["静か"] || 0) > 0, "低频错题仍应有机会出现");
 });
 
-const DAILY_KEY = "japanese-verb-practice-daily-v1";
-
 test("主页：昨日活动不冒充今日答题量，连续天数保留到当天", function () {
   const app = createApp({ storage: {
     [DAILY_KEY]: JSON.stringify({
@@ -904,13 +1368,32 @@ test("主页：昨日活动不冒充今日答题量，连续天数保留到当�
   } });
 
   assert.equal(app.$("home-today-total").textContent, "0 题");
-  assert.equal(app.$("home-today-breakdown").textContent, "动词 0 题 · 形容词 0 题");
+  assert.equal(app.$("home-today-breakdown").textContent, "动词 0 题 · 形容词 0 题 · 助词 0 题");
   assert.equal(app.$("home-active-module-count").textContent, "0");
   assert.equal(app.$("home-streak-count").textContent, "4");
 });
 
 test("主页：汇总今日答题并提供独立模块入口", function () {
   const app = createApp();
+  assert.equal(
+    app.document.querySelectorAll("[data-open-view]").filter(function (node) {
+      return node.dataset.openView === "particle";
+    }).length,
+    1,
+    "主页应仅展示一个助词模块入口"
+  );
+  const particleCard = app.document.querySelectorAll("[data-open-view]").filter(function (node) {
+    return node.dataset.openView === "particle";
+  })[0];
+  const particleLearnTab = app.document.querySelectorAll("[data-particle-subview]").filter(function (node) {
+    return node.dataset.particleSubview === "learn";
+  })[0];
+  app.click(particleLearnTab);
+  app.$("app-main").scrollTop = 180;
+  app.click(particleCard);
+  assert.equal(app.$("view-particle").hidden, false, "主页助词卡片应打开助词模块");
+  assert.equal(app.$("particle-view-practice").hidden, false, "主页入口应直接开始练习");
+  assert.equal(app.$("app-main").scrollTop, 0, "主页模块入口应从内容顶部打开");
   tab(app, "verb");
   app.answer(currentAnswer(app));
 
@@ -931,9 +1414,31 @@ test("主页：汇总今日答题并提供独立模块入口", function () {
   assert.equal(stored.verbAnswers, 1);
   assert.equal(stored.adjectiveAnswers, 1);
   assert.equal(app.$("home-today-total").textContent, "2 题");
-  assert.equal(app.$("home-today-breakdown").textContent, "动词 1 题 · 形容词 1 题");
+  assert.equal(app.$("home-today-breakdown").textContent, "动词 1 题 · 形容词 1 题 · 助词 0 题");
   assert.equal(app.$("home-active-module-count").textContent, "2");
   assert.equal(app.$("home-adjective-status").textContent, "今日已练");
+});
+
+test("助词答题统计从独立存档恢复并单独清零", function () {
+  const app = createApp({ storage: {
+    [PARTICLE_STATS_KEY]: JSON.stringify({ correct: 4, incorrect: 2 }),
+    [PARTICLE_MISTAKES_KEY]: JSON.stringify(["function-weather-ga"])
+  } });
+
+  assert.equal(app.$("particle-correct-count").textContent, "4");
+  assert.equal(app.$("particle-incorrect-count").textContent, "2");
+  assert.equal(app.$("particle-total-count").textContent, "6");
+  assert.equal(app.$("particle-accuracy").textContent, "67%");
+  app.click(app.$("particle-reset-stats"));
+
+  assert.deepEqual(
+    JSON.parse(app.window.localStorage.getItem(PARTICLE_STATS_KEY)),
+    { correct: 0, incorrect: 0 }
+  );
+  assert.deepEqual(
+    JSON.parse(app.window.localStorage.getItem(PARTICLE_MISTAKES_KEY)),
+    ["function-weather-ga"]
+  );
 });
 
 test("打卡：首次作答记连续 1 天并写入存档", function () {

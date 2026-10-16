@@ -115,7 +115,8 @@ test("完整活用集合包含指定变形并可生成说明", function () {
   assert.equal(
     engine.explain(VERB_BY_ID.get("suru"), "causativeShort", "masuNegative"),
     "先变「短使役形」：「する」变为较简短的「さす」。\n"
-      + "再变「ます否定形」：把词尾换成对应的い段，再接「ません」。"
+      + "再变「ます否定形」：把词尾换成对应的い段，再接「ません」。\n"
+      + "六形对应：連用形接礼貌否定「ません」。"
   );
 });
 
@@ -148,6 +149,18 @@ test("所有语态与活用形式都提供常见表达大意", function () {
   assert.ok(engine.INFLECTIONS.every(function (form) {
     return typeof form.meaning === "string" && form.meaning.trim().length > 0;
   }));
+});
+
+test("现有动词形式提示标出六种传统活用形的对应关系", function () {
+  const kaku = engine.VERBS.filter(function (verb) {
+    return verb.id === "kaku";
+  })[0];
+  assert.match(engine.explain(kaku, "base", "negative"), /未然形接「ない」/);
+  assert.match(engine.explain(kaku, "base", "masu"), /連用形接「ます」/);
+  assert.match(engine.explain(kaku, "base", "dictionary"), /終止形.*連体形/);
+  assert.match(engine.explain(kaku, "base", "conditionalBa"), /仮定形接「ば」/);
+  assert.match(engine.explain(kaku, "base", "conditionalTara"), /不是仮定形接「ば」/);
+  assert.match(engine.explain(kaku, "base", "imperative"), /命令形/);
 });
 
 test("所有内置动词都能生成全部变形组合", function () {
