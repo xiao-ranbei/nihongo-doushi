@@ -234,6 +234,10 @@
   const api = {
     ADJECTIVES: ADJECTIVES,
     FORMS: FORMS,
+    I_SUFFIXES: I_SUFFIXES,
+    II_RESULTS: II_RESULTS,
+    I_RULE_TEXT: I_RULE_TEXT,
+    NA_RULE_TEXT: NA_RULE_TEXT,
     conjugate: conjugate,
     answerVariants: answerVariants,
     explain: explain

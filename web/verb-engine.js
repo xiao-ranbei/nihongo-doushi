@@ -669,26 +669,44 @@
     });
   }
 
-  function normalizeAnswer(value) {
+  function normalizeAnswerDetailed(value) {
     const stripped = normalizeText(value)
       .replace(LEADING_PUNCTUATION, "")
       .replace(TRAILING_PUNCTUATION, "");
     const normalized = expandMacrons(katakanaToHiragana(stripped));
-    return /^[a-z']+$/i.test(normalized)
-      ? toHiraganaFromRomaji(normalized)
-      : normalized;
+    if (!/^[a-z']+$/i.test(normalized)) {
+      return { answer: normalized, romajiFailed: false };
+    }
+    const converted = toHiraganaFromRomaji(normalized);
+    // 纯罗马字输入但转换结果与原串相同（表外序列整体回退）且原串非空 → 识别失败。
+    // 例："hello" 含表外字母 l，整体回退为原串；空串不算失败。
+    const romajiFailed = normalized.length > 0 && converted === normalized;
+    return { answer: converted, romajiFailed: romajiFailed };
+  }
+
+  function normalizeAnswer(value) {
+    return normalizeAnswerDetailed(value).answer;
   }
 
   const api = {
     VOICES: VOICES,
     INFLECTIONS: INFLECTIONS,
     VERBS: VERBS,
+    TRADITIONAL_FORM_HINTS: TRADITIONAL_FORM_HINTS,
+    ROMAJI: ROMAJI,
+    I_ROW: I_ROW,
+    A_ROW: A_ROW,
+    E_ROW: E_ROW,
+    O_ROW: O_ROW,
+    GODAN_TE: GODAN_TE,
+    GODAN_PAST: GODAN_PAST,
     conjugate: conjugate,
     explainVoice: explainVoice,
     explain: explain,
     toHiraganaFromRomaji: toHiraganaFromRomaji,
     normalizeText: normalizeText,
-    normalizeAnswer: normalizeAnswer
+    normalizeAnswer: normalizeAnswer,
+    normalizeAnswerDetailed: normalizeAnswerDetailed
   };
 
   if (typeof module !== "undefined" && module.exports) {

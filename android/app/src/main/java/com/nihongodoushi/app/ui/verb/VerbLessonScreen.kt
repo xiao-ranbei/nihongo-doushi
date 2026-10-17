@@ -152,8 +152,8 @@ fun VerbLessonScreen(
             ) {
                 Text(
                     text = when (theme) {
-                        is VerbTheme.Form -> "练这个形式（44 个词条）"
-                        is VerbTheme.Voice -> "练这个语态（44 个词条）"
+                        is VerbTheme.Form -> "练这个形式（${VerbData.VERBS.size} 个词条）"
+                        is VerbTheme.Voice -> "练这个语态（${VerbData.VERBS.size} 个词条）"
                     },
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,

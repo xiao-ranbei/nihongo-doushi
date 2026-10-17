@@ -484,6 +484,19 @@ test("答错：记入错题、渲染卡片、写入本地存储", function () {
   assert.equal(stored[0].wrongAnswer, "ぜったいにまちがい");
 });
 
+test("罗马字无法识别时明示按原样比对（IK-10）", function () {
+  const app = createApp();
+  // "hello" 含罗马字表之外的字母 l，归一化整体回退原串
+  app.answer("hello");
+
+  assert.equal(app.$("feedback-mark").textContent, "!");
+  assert.match(app.$("feedback-user-answer").textContent, /罗马字未能识别，按原样比对/);
+  assert.match(app.$("toast").textContent, /无法识别该罗马字拼写/);
+  assert.equal(app.$("toast").classList.contains("is-error"), true);
+  // 仍按既有语义记入错题
+  assert.equal(app.$("mistake-count").textContent, "1");
+});
+
 test("答错后隔四道题重现，答题序号标为间隔复习", function () {
   const app = createApp();
   const firstQuestionKey = currentQuestionKey(app);

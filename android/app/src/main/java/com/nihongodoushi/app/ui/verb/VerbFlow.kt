@@ -34,6 +34,7 @@ private object VerbRoute {
     const val HOME = "verb-home"
     const val LESSON = "verb-lesson"
     const val PRACTICE = "verb-practice"
+    const val REFERENCE = "verb-reference"
 }
 
 /**
@@ -48,6 +49,7 @@ fun VerbFlow(
 ) {
     var route by rememberSaveable { mutableStateOf(VerbRoute.HOME) }
     var theme by rememberSaveable { mutableStateOf<String?>(null) } // "form:te" / "voice:potential"
+    var practiceOrigin by rememberSaveable { mutableStateOf(VerbRoute.HOME) }
     var confirmExit by remember { mutableStateOf(false) }
     var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
@@ -58,12 +60,18 @@ fun VerbFlow(
         else -> null
     }
 
+    /** 从练习屏返回：优先回来源页（讲解页/速查页），无来源则退出模块。 */
     fun backTarget() {
-        if (theme != null) {
-            route = VerbRoute.LESSON
-        } else {
-            onExit()
+        when {
+            theme != null -> route = VerbRoute.LESSON
+            practiceOrigin == VerbRoute.REFERENCE -> route = VerbRoute.REFERENCE
+            else -> onExit()
         }
+    }
+
+    fun openPractice() {
+        practiceOrigin = route
+        route = VerbRoute.PRACTICE
     }
 
     fun goBack() {
@@ -106,7 +114,7 @@ fun VerbFlow(
                                     label = verbThemeLabel(parsed),
                                 )
                             }
-                            route = VerbRoute.PRACTICE
+                            openPractice()
                         },
                     )
                 }
@@ -117,9 +125,22 @@ fun VerbFlow(
                 onBack = { goBack() },
             )
 
+            VerbRoute.REFERENCE -> VerbReferenceScreen(
+                onBack = { route = VerbRoute.HOME },
+                onPractice = { voiceId, inflectionId, label ->
+                    verbState.startScope(
+                        voiceId = voiceId,
+                        inflectionId = inflectionId,
+                        label = label,
+                    )
+                    openPractice()
+                },
+            )
+
             else -> VerbHomeScreen(
                 app = app,
                 onBack = onExit,
+                onOpenReference = { route = VerbRoute.REFERENCE },
                 onOpenTheme = {
                     theme = when (it) {
                         is VerbTheme.Form -> "form:${it.formId}"
@@ -139,16 +160,16 @@ fun VerbFlow(
                         },
                         label = verbThemeLabel(it),
                     )
-                    route = VerbRoute.PRACTICE
+                    openPractice()
                 },
                 onStartAll = {
                     verbState.startAll("综合练习")
-                    route = VerbRoute.PRACTICE
+                    openPractice()
                 },
                 onStartReview = {
                     verbState.startMistakeReview()
                     if (verbState.reviewingMistakes) {
-                        route = VerbRoute.PRACTICE
+                        openPractice()
                     }
                 },
             )

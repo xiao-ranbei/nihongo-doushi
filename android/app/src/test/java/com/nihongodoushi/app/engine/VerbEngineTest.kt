@@ -72,7 +72,8 @@ class VerbEngineTest {
         assertContains(VerbEngine.explain(VerbData.VERB_BY_ID.getValue("iku"), "base", "te"), "行って")
         assertEquals(
             "先变「短使役形」：「する」变为较简短的「さす」。\n" +
-                "再变「ます否定形」：把词尾换成对应的い段，再接「ません」。",
+                "再变「ます否定形」：把词尾换成对应的い段，再接「ません」。\n" +
+                "六形对应：連用形接礼貌否定「ません」。",
             VerbEngine.explain(VerbData.VERB_BY_ID.getValue("suru"), "causativeShort", "masuNegative"),
         )
     }

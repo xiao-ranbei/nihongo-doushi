@@ -78,7 +78,13 @@ object AdjectiveEngine {
                 ),
             )
             "te" -> pair(word + "で", kana + "で")
+            "conditional" -> pair(
+                word + "なら", kana + "なら",
+                listOf(AdjectiveAlt(word + "ならば", kana + "ならば")),
+            )
             "adverbial" -> pair(word + "に", kana + "に")
+            "mizen" -> pair(word + "だろう", kana + "だろう")
+            "imperativeRequest" -> pair(word + "にしてください", kana + "にしてください")
             else -> throw IllegalArgumentException("Unknown adjective form: $formId")
         }
     }
@@ -127,6 +133,16 @@ object AdjectiveEngine {
         }
         val label = AdjectiveData.FORM_BY_ID.getValue(formId).label
         if (adjective.kind == "i" && adjective.special) {
+            // 与 JS 版一致：「いい」对条件形/未然形/命令请求有专门文案，不走通用「よく」系列描述。
+            if (formId == "conditional") {
+                return "变「" + label + "」：「いい」的条件形是「よければ」，不能按普通规则写成「いければ」。"
+            }
+            if (formId == "mizen") {
+                return "变「" + label + "」：「いい」可用「よかろう」表达推量；日常也常说「いいだろう」。"
+            }
+            if (formId == "imperativeRequest") {
+                return "变「" + label + "」：「いい」本身没有命令形；礼貌请求可说「よくしてください」。"
+            }
             return "变「" + label + "」：「いい」不参与变形，先换成「よく」再接词尾，得到「" +
                 AdjectiveData.II_RESULTS.getValue(formId) + "」。"
         }

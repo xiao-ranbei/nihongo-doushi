@@ -199,3 +199,19 @@ test("答案归一化容忍中英标点、片假名与长音符号", function ()
   assert.equal(normalize(""), "");
   assert.equal(normalize("。。。"), "");
 });
+
+test("归一化明细标识罗马字识别失败", function () {
+  const detailed = engine.normalizeAnswerDetailed;
+  // 可识别的纯罗马字：正常转换，不标记失败
+  assert.deepEqual(detailed("kakimasu"), { answer: "かきます", romajiFailed: false });
+  assert.deepEqual(detailed("sinbun"), { answer: "しんぶん", romajiFailed: false });
+  // 非罗马字输入（汉字/假名/标点）：不经过罗马字管线
+  assert.deepEqual(detailed("かきます。"), { answer: "かきます", romajiFailed: false });
+  assert.deepEqual(detailed(""), { answer: "", romajiFailed: false });
+  // 表外序列（含无法映射的字符）：整体回退原串并标记失败
+  assert.deepEqual(detailed("hello"), { answer: "hello", romajiFailed: true });
+  assert.deepEqual(detailed("xyz"), { answer: "xyz", romajiFailed: true });
+  // 部分可映射仍算失败：结果与原串不同但包含回退段时不出现——
+  // toHiraganaFromRomaji 一旦遇表外字符即整体返回原串，故 converted === normalized 即失败
+  assert.equal(detailed("kakimasu").answer, engine.normalizeAnswer("kakimasu"));
+});

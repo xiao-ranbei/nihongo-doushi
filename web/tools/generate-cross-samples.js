@@ -141,8 +141,18 @@ function main() {
     throw new Error("样例总量 " + total + " 超出预算 " + TARGET_MAX);
   }
 
+  // meta 由生成器按当前引擎数据计算，测试据此做自一致断言：
+  // 数据扩容后条数自动随源变化，不存在硬编码条数漂移（IK-03）。
   const payload = {
     generatedAt: new Date().toISOString(),
+    meta: {
+      verbSampleCount: verb.length,
+      adjectiveSampleCount: adjective.length,
+      normalizationSampleCount: normalization.length,
+      sampledVerbIds: verb
+        .map(function (sample) { return sample.verbId; })
+        .filter(function (id, index, all) { return all.indexOf(id) === index; }),
+    },
     verb: verb,
     adjective: adjective,
     normalization: normalization,

@@ -46,7 +46,7 @@ class AdjectiveEngineTest {
     }
 
     @Test
-    fun `い形容词高い的七种形式`() {
+    fun `い形容词高い的十种形式`() {
         val takai = byWord("高い")
         val expected = mapOf(
             "attributive" to "高い",
@@ -55,7 +55,10 @@ class AdjectiveEngineTest {
             "past" to "高かった",
             "pastNegative" to "高くなかった",
             "te" to "高くて",
+            "conditional" to "高ければ",
             "adverbial" to "高く",
+            "mizen" to "高かろう",
+            "imperativeRequest" to "高くしてください",
         )
         formIds.forEach { formId ->
             val result = AdjectiveEngine.conjugate(takai, formId)
@@ -66,7 +69,7 @@ class AdjectiveEngineTest {
     }
 
     @Test
-    fun `な形容词静か的七种形式与礼貌变体`() {
+    fun `な形容词静か十种形式与礼貌变体`() {
         val shizuka = byWord("静か")
         val main = mapOf(
             "attributive" to "静かな",
@@ -75,7 +78,10 @@ class AdjectiveEngineTest {
             "past" to "静かだった",
             "pastNegative" to "静かではなかった",
             "te" to "静かで",
+            "conditional" to "静かなら",
             "adverbial" to "静かに",
+            "mizen" to "静かだろう",
+            "imperativeRequest" to "静かにしてください",
         )
         formIds.forEach { formId ->
             val result = AdjectiveEngine.conjugate(shizuka, formId)
@@ -97,6 +103,10 @@ class AdjectiveEngineTest {
         val pastNegative = AdjectiveEngine.conjugate(shizuka, "pastNegative")
         assertTrue(pastNegative.alts.any { it.written == "静かじゃなかった" })
         assertTrue(pastNegative.alts.any { it.written == "静かではありませんでした" })
+
+        // 条件形带「ならば」礼貌变体（与 JS 版一致）
+        val conditional = AdjectiveEngine.conjugate(shizuka, "conditional")
+        assertEquals(listOf("静かならば"), conditional.alts.map { it.written })
     }
 
     @Test
@@ -109,7 +119,10 @@ class AdjectiveEngineTest {
             "past" to "よかった",
             "pastNegative" to "よくなかった",
             "te" to "よくて",
+            "conditional" to "よければ",
             "adverbial" to "よく",
+            "mizen" to "よかろう",
+            "imperativeRequest" to "よくしてください",
         )
         formIds.forEach { formId ->
             val result = AdjectiveEngine.conjugate(ii, formId)
@@ -150,6 +163,10 @@ class AdjectiveEngineTest {
         val ii = byWord("いい")
         assertContains(AdjectiveEngine.explain(ii, "past"), "不参与变形")
         assertContains(AdjectiveEngine.explain(ii, "past"), "「よかった」")
+        // 条件形/未然形/命令请求有专门文案，不走通用「よく」系列描述（与 JS 版一致）
+        assertContains(AdjectiveEngine.explain(ii, "conditional"), "「よければ」")
+        assertContains(AdjectiveEngine.explain(ii, "mizen"), "「よかろう」")
+        assertContains(AdjectiveEngine.explain(ii, "imperativeRequest"), "「よくしてください」")
 
         val shizuka = byWord("静か")
         assertContains(AdjectiveEngine.explain(shizuka, "attributive"), "「な」")

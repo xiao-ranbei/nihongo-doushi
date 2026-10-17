@@ -411,6 +411,7 @@ object VerbEngine {
     /**
      * 完整说明：语态 + 活用两步的组合文案。
      * base 语态为一步，其余语态为「先变语态，再变形」两行。
+     * 每步规则后附「六形对应」提示（对应 JS 的 TRADITIONAL_FORM_HINTS）。
      */
     fun explain(verb: VerbEntry, voiceId: String, inflectionId: String): String {
         if (voiceId !in VerbData.VOICE_IDS || inflectionId !in VerbData.INFLECTION_IDS) {
@@ -418,13 +419,14 @@ object VerbEngine {
         }
         val derived = deriveVoice(verb.dictionary, verb.kind, voiceId, "written")
         val baseRule = inflectionRule(derived.kind, inflectionId, verb, voiceId)
+        val formRule = baseRule + "\n六形对应：" + VerbData.TRADITIONAL_FORM_HINTS.getValue(inflectionId)
         val voice = VerbData.VOICES.first { it.id == voiceId }
         val inflection = VerbData.INFLECTIONS.first { it.id == inflectionId }
         return if (voiceId == "base") {
-            "变「" + inflection.label + "」：" + baseRule
+            "变「" + inflection.label + "」：" + formRule
         } else {
             "先变「" + voice.label + "」：" + explainVoice(verb, voiceId) +
-                "\n再变「" + inflection.label + "」：" + baseRule
+                "\n再变「" + inflection.label + "」：" + formRule
         }
     }
 

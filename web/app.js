@@ -1501,6 +1501,12 @@
     return engine.normalizeAnswer(value);
   }
 
+  // 归一化明细：{ answer, romajiFailed }。romajiFailed = 纯罗马字输入但拼写无法识别
+  // （IK-10：避免用户把「无法识别的输入」误当成「变形错误」）。
+  function normalizeAnswerDetailed(value) {
+    return engine.normalizeAnswerDetailed(value);
+  }
+
   function addDays(date, days) {
     return new Date(date.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
   }
@@ -1604,7 +1610,8 @@
     }
 
     setVerbPromptDetailsVisible(true);
-    const normalizedAnswer = normalizeAnswer(rawAnswer);
+    const normalized = normalizeAnswerDetailed(rawAnswer);
+    const normalizedAnswer = normalized.answer;
     const expected = new Set([
       normalizeAnswer(currentQuestion.result.written),
       normalizeAnswer(currentQuestion.result.kana)
@@ -1643,7 +1650,14 @@
       showToast("正确。留意上面的变化规则。", false);
     } else {
       recordMistake(currentQuestion, rawAnswer);
-      showToast("已加入错题，稍后可以重练。", false);
+      if (normalized.romajiFailed) {
+        // 罗马字拼写无法识别（IK-10）：明示按原样比对，避免用户误以为是变形错误
+        elements.feedbackUserAnswer.textContent =
+          "你的答案：" + rawAnswer + "（罗马字未能识别，按原样比对）";
+        showToast("无法识别该罗马字拼写，已按原样比对；可改用假名输入。", true);
+      } else {
+        showToast("已加入错题，稍后可以重练。", false);
+      }
     }
 
     updateMistakeCount();
@@ -3150,7 +3164,8 @@
       return;
     }
 
-    const normalizedAnswer = normalizeAnswer(rawAnswer);
+    const normalized = normalizeAnswerDetailed(rawAnswer);
+    const normalizedAnswer = normalized.answer;
     const expected = new Set(adjEngine.answerVariants(adjCurrentQuestion.result).map(function (text) {
       return normalizeAnswer(text);
     }));
@@ -3184,7 +3199,14 @@
       showToast("正确。留意上面的接续规则。", false);
     } else {
       recordMistake(adjCurrentQuestion, rawAnswer);
-      showToast("已加入错题，稍后可以重练。", false);
+      if (normalized.romajiFailed) {
+        // 罗马字拼写无法识别（IK-10）：明示按原样比对，避免用户误以为是接续错误
+        elements.adjFeedbackUserAnswer.textContent =
+          "你的答案：" + rawAnswer + "（罗马字未能识别，按原样比对）";
+        showToast("无法识别该罗马字拼写，已按原样比对；可改用假名输入。", true);
+      } else {
+        showToast("已加入错题，稍后可以重练。", false);
+      }
     }
 
     updateMistakeCount();

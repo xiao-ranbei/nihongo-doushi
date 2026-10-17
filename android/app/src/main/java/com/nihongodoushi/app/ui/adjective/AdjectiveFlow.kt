@@ -26,6 +26,7 @@ private object AdjectiveRoute {
     const val HOME = "adj-home"
     const val LESSON = "adj-lesson"
     const val PRACTICE = "adj-practice"
+    const val REFERENCE = "adj-reference"
 }
 
 /** 形容词模块三级导航，与动词/助词同构。 */
@@ -37,15 +38,22 @@ fun AdjectiveFlow(
 ) {
     var route by rememberSaveable { mutableStateOf(AdjectiveRoute.HOME) }
     var formId by rememberSaveable { mutableStateOf<String?>(null) }
+    var practiceOrigin by rememberSaveable { mutableStateOf(AdjectiveRoute.HOME) }
     var confirmExit by remember { mutableStateOf(false) }
     var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
+    /** 从练习屏返回：优先回来源页（讲解页/速查页），无来源则退出模块。 */
     fun backTarget() {
-        if (formId != null) {
-            route = AdjectiveRoute.LESSON
-        } else {
-            onExit()
+        when {
+            formId != null -> route = AdjectiveRoute.LESSON
+            practiceOrigin == AdjectiveRoute.REFERENCE -> route = AdjectiveRoute.REFERENCE
+            else -> onExit()
         }
+    }
+
+    fun openPractice() {
+        practiceOrigin = route
+        route = AdjectiveRoute.PRACTICE
     }
 
     fun goBack() {
@@ -77,7 +85,7 @@ fun AdjectiveFlow(
                         onBack = { route = AdjectiveRoute.HOME },
                         onStart = {
                             adjectiveState.startScope(current, null)
-                            route = AdjectiveRoute.PRACTICE
+                            openPractice()
                         },
                     )
                 }
@@ -88,25 +96,34 @@ fun AdjectiveFlow(
                 onBack = { goBack() },
             )
 
+            AdjectiveRoute.REFERENCE -> AdjectiveReferenceScreen(
+                onBack = { route = AdjectiveRoute.HOME },
+                onPractice = { formId, label ->
+                    adjectiveState.startScope(formId, label)
+                    openPractice()
+                },
+            )
+
             else -> AdjectiveHomeScreen(
                 app = app,
                 onBack = onExit,
+                onOpenReference = { route = AdjectiveRoute.REFERENCE },
                 onOpenTheme = {
                     formId = it
                     route = AdjectiveRoute.LESSON
                 },
                 onStartTheme = {
                     adjectiveState.startScope(it, null)
-                    route = AdjectiveRoute.PRACTICE
+                    openPractice()
                 },
                 onStartAll = {
                     adjectiveState.startAll("综合练习")
-                    route = AdjectiveRoute.PRACTICE
+                    openPractice()
                 },
                 onStartReview = {
                     adjectiveState.startMistakeReview()
                     if (adjectiveState.reviewingMistakes) {
-                        route = AdjectiveRoute.PRACTICE
+                        openPractice()
                     }
                 },
             )

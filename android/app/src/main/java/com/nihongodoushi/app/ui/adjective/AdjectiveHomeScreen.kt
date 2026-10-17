@@ -38,7 +38,7 @@ import com.nihongodoushi.app.ui.practice.ProgressRing
 import com.nihongodoushi.app.ui.theme.paperColors
 import kotlin.math.roundToInt
 
-/** 形容词模块首页：7 张形式卡 + 今日卡 + 固定「综合练习」。 */
+/** 形容词模块首页：形式卡 + 今日卡 + 速查入口 + 固定「综合练习」。 */
 @Composable
 fun AdjectiveHomeScreen(
     app: AppState,
@@ -47,6 +47,7 @@ fun AdjectiveHomeScreen(
     onStartTheme: (String) -> Unit,
     onStartAll: () -> Unit,
     onStartReview: () -> Unit,
+    onOpenReference: () -> Unit,
 ) {
     val paper = paperColors()
     val total = AdjectiveData.ADJECTIVES.size
@@ -119,7 +120,7 @@ fun AdjectiveHomeScreen(
                     )
                     Text(
                         text = if (mistakes == 0) {
-                            "错题 0 道 · 15 个词条 · ${AdjectiveData.FORMS.size} 种形式"
+                            "错题 0 道 · $total 个词条 · ${AdjectiveData.FORMS.size} 种形式"
                         } else {
                             "错题 $mistakes 道 · 到期 $due 道"
                         },
@@ -151,6 +152,17 @@ fun AdjectiveHomeScreen(
                         }
                     }
                 }
+            }
+
+            OutlinedButton(
+                onClick = onOpenReference,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text(
+                    text = "变形速查：按词条查全部形式",
+                    style = MaterialTheme.typography.labelLarge,
+                )
             }
 
             ModuleSectionLabel(
