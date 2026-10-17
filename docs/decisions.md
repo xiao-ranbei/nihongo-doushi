@@ -20,11 +20,12 @@
 | D-014 | Android 保留品牌纸感配色，同时遵循原生系统交互；Android 导航样式留待原型决定 | 已确认原则；部分细节待定 |
 | D-015 | Android MVP 工程选型：minSdk 26（Android 8.0+）、UI 用 Jetpack Compose（Material 3）、本地存储用 kotlinx-serialization 版本化 JSON 文件（结构对齐 Web localStorage 键）、applicationId `com.nihongodoushi.app`；工具链 AGP 8.13.2 + Gradle 8.14.3 + Kotlin 2.2.21 + Compose BOM 2025.08.01（与本机 SDK platform 35 同代） | 已确认 |
 | D-016 | Android 助词模块接入形态：主页第三张入口卡 → 助词二级模块（专题地图首页 → 专题讲解 → 练习屏）；不新增底栏标签 | 已确认；首页形态选定 A「专题地图」（2026-10-17）；待实现 |
-| D-017 | 助词错题沿用 Web 键 `japanese-particle-practice-mistakes-v1`（纯题目 ID 数组，去重、append 顺序即加入顺序），并入全局错题本作为独立分组；复习模式答对即移出，**不做跨会话间隔排期**（无 `dueAt`），排期职能由「每轮首题插错题」承担 | 已确认；待实现 |
+| D-017 | ~~助词错题沿用纯题目 ID 数组、不做排期~~ → 被 D-022 修订 | 已被 D-022 取代 |
 | D-018 | 助词练习不做难度分层：48 题同池，取消入门／进阶选择器；题目 `level` 只决定解析深度（答对给入门解析，答错补进阶） | 已确认；待实现 |
-| D-019 | 助词内容补字段：`contrastGroup` / `contrastNote`（最小对立对，9 组 18 条）与 `optionNotes`（逐项干扰说明）；先在 `web/particle-engine.js` 补数据与测试，再由生成器产 Kotlin 数据 | 已确认；内容待补 |
+| D-019 | 助词内容补字段：`contrastGroup` / `contrastNote`（最小对立对，9 组 18 条）与 `optionNotes`（逐项干扰说明）；先在 `web/particle-engine.js` 补数据与测试，再由生成器产 Kotlin 数据 | 已实现（2026-10-17） |
 | D-020 | 助词模块掌握度显示为环形图 + 百分比（`x/48`）；掌握度只统计「未用提示答对过」的题目并去重 | 已确认；待实现 |
 | D-021 | 助词专题卡支持长按直接开练，同时保留显式「练」按钮；长按不得作为唯一路径 | 已确认；待实现 |
+| D-022 | 助词错题升级为带排期的记录（修订 D-017）：Web 与 Android 同步改用新键 `japanese-particle-practice-mistakes-v2`（对象数组：`questionId / count / wrongAnswer / updatedAt / correctStreak / intervalDays / dueAt / sessionDueAtAnswerCount`），v1 纯 ID 数组仅作迁移来源原样保留；复习答对按 1/3/7/14/30 天推进、连续 6 次毕业；首页与错题本显示「下次复习」，不再使用「每轮首题插错题」补偿 | 已实现（2026-10-17） |
 
 ## 明确延后的决定
 

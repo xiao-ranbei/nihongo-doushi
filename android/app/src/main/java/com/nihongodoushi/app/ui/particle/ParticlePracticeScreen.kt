@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -133,7 +134,7 @@ fun ParticlePracticeScreen(
                     shape = RoundedCornerShape(10.dp),
                 ) {
                     Text(
-                        text = "错题复习中：本轮待复习 ${state.total} 题，答对即移出错题本",
+                        text = "错题复习中：本轮待复习 ${state.total} 题，答对推进间隔，连续 6 次移出",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
@@ -330,30 +331,19 @@ private fun ParticleDock(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 8.dp,
+        shadowElevation = 2.dp,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .animateContentSize()
-                .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 12.dp),
+                // 抽屉背景铺到屏幕底，内容再抬到手势条上方：既不露出 Scaffold 底色缝，也不压住导航条
+                .navigationBarsPadding()
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth(0.18f)
-                        .height(4.dp),
-                    shape = RoundedCornerShape(999.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                ) {}
-            }
-
             when {
                 state.roundComplete -> {
                     Text(
@@ -387,7 +377,7 @@ private fun ParticleDock(
                     }
                     Text(
                         text = if (state.reviewing) {
-                            "答对的错题已移出错题本；再答错会重新加入。"
+                            "答对的错题已推进复习间隔；连续答对 6 次才移出，再答错会从头计算。"
                         } else {
                             "本轮 ${state.total} 题已完成；答错已加入错题本。"
                         },
@@ -491,9 +481,10 @@ private fun ParticleDock(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
-                    if (state.lastCorrect && ParticleEngine.otherAccepted(question, state.selectedIndex).isNotEmpty()) {
+                    val pickedText = item?.options?.getOrNull(state.selectedIndex)
+                    if (state.lastCorrect && ParticleEngine.otherAccepted(question, pickedText).isNotEmpty()) {
                         Text(
-                            text = "「" + ParticleEngine.otherAccepted(question, state.selectedIndex).joinToString("」「") +
+                            text = "「" + ParticleEngine.otherAccepted(question, pickedText).joinToString("」「") +
                                 "」也成立，两种说法都自然。",
                             style = MaterialTheme.typography.labelMedium,
                             color = paper.textStrong,
@@ -509,9 +500,9 @@ private fun ParticleDock(
                         color = paper.textStrong,
                     )
                     if (!state.lastCorrect) {
-                        val note = ParticleEngine.optionNote(question, state.selectedIndex)
+                        val note = ParticleEngine.optionNote(question, pickedText)
                         Text(
-                            text = "你的选择「" + (item?.options?.getOrNull(state.selectedIndex) ?: "") + "」：" +
+                            text = "你的选择「" + (pickedText ?: "") + "」：" +
                                 (note ?: "在本句语境下不成立。"),
                             style = MaterialTheme.typography.labelMedium,
                             color = paper.statIncorrectText,

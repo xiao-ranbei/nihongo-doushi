@@ -16,6 +16,8 @@ import com.nihongodoushi.app.storage.DayActivity
 import com.nihongodoushi.app.storage.LocalStore
 import com.nihongodoushi.app.storage.MistakeRecord
 import com.nihongodoushi.app.storage.ModuleStats
+import com.nihongodoushi.app.storage.ParticleMistakeRecord
+import com.nihongodoushi.app.storage.ParticleReview
 import com.nihongodoushi.app.storage.PracticeProgress
 import com.nihongodoushi.app.storage.ReviewPolicy
 import java.time.Instant
@@ -34,9 +36,9 @@ class AppState(private val store: LocalStore) {
     var adjectiveStats by mutableStateOf(store.loadAdjectiveStats())
         private set
 
-    /** 助词错题：题目 ID 数组（与 Web 端同构，见 D-017） */
+    /** 助词错题：带复习字段的记录（v2，D-022；v1 纯 ID 数组由 LocalStore 迁移） */
     var particleMistakes by mutableStateOf(
-        store.loadParticleMistakes().filter { ParticleData.QUESTION_BY_ID.containsKey(it) },
+        store.loadParticleMistakes().filter { ParticleData.QUESTION_BY_ID.containsKey(it.questionId) },
     )
         private set
 
@@ -187,24 +189,50 @@ class AppState(private val store: LocalStore) {
 
     // ---------- 助词 ----------
 
-    /** 助词错题：加入（去重，append 顺序即加入顺序） */
-    fun recordParticleMistake(questionId: String) {
-        if (questionId.isBlank() || questionId in particleMistakes) {
+    fun findParticleMistake(questionId: String): ParticleMistakeRecord? =
+        particleMistakes.firstOrNull { it.questionId == questionId }
+
+    /** 答错：新建或加重记录，并重置复习进度（D-022） */
+    fun recordParticleMistake(questionId: String, wrongAnswer: String = "") {
+        if (questionId.isBlank() || !ParticleData.QUESTION_BY_ID.containsKey(questionId)) {
             return
         }
-        if (!ParticleData.QUESTION_BY_ID.containsKey(questionId)) {
-            return
+        val now = Instant.now()
+        val existing = findParticleMistake(questionId)
+        val updated = if (existing == null) {
+            ParticleReview.newRecord(questionId, wrongAnswer, now, sessionAnswerCount)
+        } else {
+            ParticleReview.afterWrong(existing, wrongAnswer, now, sessionAnswerCount)
         }
-        particleMistakes = particleMistakes + questionId
+        particleMistakes = if (existing == null) {
+            particleMistakes + updated
+        } else {
+            particleMistakes.map { if (it.questionId == questionId) updated else it }
+        }
         store.saveParticleMistakes(particleMistakes)
     }
 
-    /** 助词错题：复习模式下答对即移出（对齐 web/app.js 的 removeParticleMistake，D-017） */
+    /**
+     * 复习答对：推进一档间隔，连续答对达到毕业次数则移出。
+     * 返回 true 表示本题已毕业（供 UI 提示）。
+     */
+    fun recordParticleReviewSuccess(questionId: String): Boolean {
+        val existing = findParticleMistake(questionId) ?: return false
+        val next = ParticleReview.afterCorrect(existing, Instant.now())
+        if (next == null) {
+            removeParticleMistake(questionId)
+            return true
+        }
+        particleMistakes = particleMistakes.map { if (it.questionId == questionId) next else it }
+        store.saveParticleMistakes(particleMistakes)
+        return false
+    }
+
     fun removeParticleMistake(questionId: String) {
-        if (questionId !in particleMistakes) {
+        if (particleMistakes.none { it.questionId == questionId }) {
             return
         }
-        particleMistakes = particleMistakes.filter { it != questionId }
+        particleMistakes = particleMistakes.filter { it.questionId != questionId }
         store.saveParticleMistakes(particleMistakes)
     }
 
@@ -215,6 +243,22 @@ class AppState(private val store: LocalStore) {
         particleMistakes = emptyList()
         store.saveParticleMistakes(particleMistakes)
     }
+
+    /** 今天到期（含会话内重试到期）的助词错题数 */
+    fun particleDueCount(): Int {
+        val now = Instant.now()
+        return particleMistakes.count { ParticleReview.isDue(it, now, sessionAnswerCount) }
+    }
+
+    /** 到期的错题 ID，供练习「首题插队」使用 */
+    fun dueParticleMistakeIds(): List<String> {
+        val now = Instant.now()
+        return particleMistakes
+            .filter { ParticleReview.isDue(it, now, sessionAnswerCount) }
+            .map { it.questionId }
+    }
+
+    fun particleMistakeWeight(record: ParticleMistakeRecord): Int = ParticleReview.weight(record)
 
     fun updateParticleStats(correct: Boolean) {
         particleStats = bumpStats(particleStats, correct)

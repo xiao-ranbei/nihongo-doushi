@@ -6,6 +6,8 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -25,6 +27,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.storage.LocalStore
 import com.nihongodoushi.app.ui.AppState
 import com.nihongodoushi.app.ui.home.HomeDestination
@@ -95,10 +99,23 @@ private fun AppRoot(
             }
         },
     ) { innerPadding ->
+        // 带底部抽屉/操作条的二级页自己处理底部内边距：白条要一直铺到导航栏下方，
+        // 不能留出 Scaffold 的底色缝；错题本没有底部条，仍用 Scaffold 的内边距
+        val layoutDirection = LocalLayoutDirection.current
+        val bottomInset = if (sub == SubPage.MISTAKES || sub == null) {
+            innerPadding.calculateBottomPadding()
+        } else {
+            0.dp
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(
+                    start = innerPadding.calculateStartPadding(layoutDirection),
+                    top = innerPadding.calculateTopPadding(),
+                    end = innerPadding.calculateEndPadding(layoutDirection),
+                    bottom = bottomInset,
+                ),
         ) {
             when (sub) {
                 SubPage.VERB -> VerbPracticeScreen(verbState, onBack = { sub = null })

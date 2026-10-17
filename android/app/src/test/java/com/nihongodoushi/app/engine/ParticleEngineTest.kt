@@ -9,6 +9,7 @@ import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -91,10 +92,9 @@ class ParticleEngineTest {
     @Test
     fun `选中另一个可接受答案时给出补充说明`() {
         val question = q("he-destination")
-        val pickedNi = indexOf(question, "に")
-        assertEquals(listOf("へ"), ParticleEngine.otherAccepted(question, pickedNi))
-        assertEquals(listOf("に"), ParticleEngine.otherAccepted(question, indexOf(question, "へ")))
-        assertTrue(ParticleEngine.otherAccepted(question, indexOf(question, "で")).isEmpty())
+        assertEquals(listOf("へ"), ParticleEngine.otherAccepted(question, "に"))
+        assertEquals(listOf("に"), ParticleEngine.otherAccepted(question, "へ"))
+        assertTrue(ParticleEngine.otherAccepted(question, "で").isEmpty())
     }
 
     @Test
@@ -111,10 +111,30 @@ class ParticleEngineTest {
         assertEquals("话题与焦点：は／が", ParticleEngine.lesson("topic-focus")?.title)
         assertTrue(ParticleEngine.hint(q("wa-topic")).contains("主题"))
         val question = q("wa-topic")
-        val distractor = question.options.indexOf("が")
-        val accepted = question.options.indexOf("は")
-        assertTrue(ParticleEngine.optionNote(question, distractor)!!.contains("焦点"))
-        assertNull(ParticleEngine.optionNote(question, accepted))
+        assertTrue(ParticleEngine.optionNote(question, "が")!!.contains("焦点"))
+        assertNull(ParticleEngine.optionNote(question, "は"))
+    }
+
+    @Test
+    fun `洗牌后按展示文本取说明与补充答案仍正确`() {
+        val question = q("ga-focus")
+        val notedDistractor = question.optionNotes.keys.first()
+        repeat(20) { seed ->
+            val shuffled = ParticleEngine.shuffledOptions(question, Random(seed))
+            assertTrue(notedDistractor in shuffled.options, "带说明的干扰项洗牌后应仍在选项内")
+            assertNotNull(
+                ParticleEngine.optionNote(question, notedDistractor),
+                "洗牌后按展示文本应能取到说明",
+            )
+            shuffled.options
+                .filter { it in question.acceptedAnswers }
+                .forEach { picked ->
+                    assertEquals(
+                        question.acceptedAnswers.filter { it != picked },
+                        ParticleEngine.otherAccepted(question, picked),
+                    )
+                }
+        }
     }
 
     @Test
@@ -129,10 +149,8 @@ class ParticleEngineTest {
     }
 
     @Test
-    fun `选助词题的逐项说明只覆盖干扰项`() {
-        val fill = ParticleEngine.questions(type = ParticleQuestionTypes.FILL)
-        assertTrue(fill.isNotEmpty())
-        fill.forEach { question ->
+    fun `每道题的逐项说明只覆盖干扰项`() {
+        ParticleData.QUESTIONS.forEach { question ->
             assertTrue(question.optionNotes.isNotEmpty(), "${question.id} 缺 optionNotes")
             question.optionNotes.forEach { (option, note) ->
                 assertTrue(option in question.options, "${question.id} 的说明键不在选项内：$option")

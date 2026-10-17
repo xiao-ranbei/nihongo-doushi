@@ -103,10 +103,8 @@ test("每个例句都有最小对立字段，且与所属专题一致", function
   });
 });
 
-test("选助词题的逐项说明覆盖干扰项且不指向正确答案", function () {
-  engine.QUESTIONS.filter(function (question) {
-    return question.type === "fill";
-  }).forEach(function (question) {
+test("每道题都有逐项说明，且只指向干扰项", function () {
+  engine.QUESTIONS.forEach(function (question) {
     const notes = question.optionNotes;
     assert.ok(notes && Object.keys(notes).length > 0, question.id + " 缺 optionNotes");
     Object.keys(notes).forEach(function (option) {

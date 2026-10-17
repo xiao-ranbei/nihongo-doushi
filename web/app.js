@@ -201,6 +201,8 @@
   const PARTICLE_STATS_STORAGE_KEY = "japanese-particle-practice-stats-v1";
   const DAILY_STORAGE_KEY = "japanese-verb-practice-daily-v1";
   const PARTICLE_MISTAKES_STORAGE_KEY = "japanese-particle-practice-mistakes-v1";
+  // D-022：助词错题升级为带复习字段的记录（v2）。v1 的纯 ID 数组只作为迁移来源读取。
+  const PARTICLE_MISTAKES_V2_STORAGE_KEY = "japanese-particle-practice-mistakes-v2";
   // 形容词错题与动词错题共用一本错题集：记录带 module 字段区分，
   // 旧存档没有 module 字段（即动词错题），缺失即视为 verb 的兼容迁移。
   const ADJ_MISTAKE_KEY_PREFIX = "adj::";
@@ -677,44 +679,62 @@
     }
   }
 
-  function loadParticleMistakes() {
-    let raw;
-    try {
-      raw = window.localStorage.getItem(PARTICLE_MISTAKES_STORAGE_KEY);
-    } catch (error) {
-      storageAvailable = false;
-      showToast("浏览器不允许访问本地存储；助词错题仅保留在当前页面。", true);
-      return [];
-    }
-    if (!raw) {
-      return [];
-    }
+  /** 新建一条助词错题记录（字段与动词/形容词错题对齐，见 D-022）。 */
+  function createParticleMistakeRecord(questionId, wrongAnswer, now) {
+    const stamp = (now || new Date()).toISOString();
+    return {
+      questionId: questionId,
+      count: 1,
+      wrongAnswer: wrongAnswer || "",
+      updatedAt: stamp,
+      correctStreak: 0,
+      intervalDays: 1,
+      dueAt: addDays(new Date(stamp), 1),
+      sessionDueAtAnswerCount: sessionAnswerCount + SESSION_RETRY_AFTER_ANSWERS
+    };
+  }
 
-    let stored;
-    try {
-      stored = JSON.parse(raw);
-    } catch (error) {
-      showToast("本地助词错题无法解析，本次先从空列表开始。", true);
-      return [];
+  /** 逐字段校验并补默认值；题目已不在题库时返回 null（由调用方丢弃）。 */
+  function normalizeParticleMistake(raw, now) {
+    if (!raw || typeof raw !== "object") {
+      return null;
     }
-    if (!Array.isArray(stored)) {
-      showToast("本地助词错题格式无效，本次先从空列表开始。", true);
-      return [];
+    const questionId = raw.questionId;
+    if (typeof questionId !== "string" || !particleEngine.getQuestion(questionId)) {
+      return null;
     }
+    const countValue = Number(raw.count);
+    const streakValue = Number(raw.correctStreak);
+    const intervalValue = Number(raw.intervalDays);
+    const sessionValue = Number(raw.sessionDueAtAnswerCount);
+    const dueTimestamp = typeof raw.dueAt === "string" ? Date.parse(raw.dueAt) : NaN;
+    return {
+      questionId: questionId,
+      count: Number.isFinite(countValue) && countValue >= 1 ? Math.floor(countValue) : 1,
+      wrongAnswer: typeof raw.wrongAnswer === "string" ? raw.wrongAnswer : "",
+      updatedAt: typeof raw.updatedAt === "string" ? raw.updatedAt : now.toISOString(),
+      correctStreak: Number.isFinite(streakValue) && streakValue >= 0
+        ? Math.min(Math.floor(streakValue), MASTERY_CORRECT_STREAK)
+        : 0,
+      intervalDays: Number.isFinite(intervalValue) && intervalValue >= 1 ? Math.floor(intervalValue) : 1,
+      dueAt: Number.isFinite(dueTimestamp) ? new Date(dueTimestamp).toISOString() : now.toISOString(),
+      sessionDueAtAnswerCount: Number.isFinite(sessionValue) && sessionValue >= 0
+        ? Math.floor(sessionValue)
+        : null
+    };
+  }
 
-    const validIds = new Set(particleEngine.QUESTIONS.map(function (question) {
-      return question.id;
-    }));
+  function dedupeParticleMistakes(records) {
     const seen = new Set();
     const valid = [];
     let discarded = false;
-    stored.forEach(function (questionId) {
-      if (typeof questionId !== "string" || !validIds.has(questionId) || seen.has(questionId)) {
+    records.forEach(function (record) {
+      if (!record || seen.has(record.questionId)) {
         discarded = true;
         return;
       }
-      seen.add(questionId);
-      valid.push(questionId);
+      seen.add(record.questionId);
+      valid.push(record);
     });
     if (discarded) {
       showToast("部分助词错题记录无效或重复，已跳过。", true);
@@ -722,12 +742,76 @@
     return valid;
   }
 
+  function loadParticleMistakes() {
+    const now = new Date();
+
+    let rawV2;
+    try {
+      rawV2 = window.localStorage.getItem(PARTICLE_MISTAKES_V2_STORAGE_KEY);
+    } catch (error) {
+      storageAvailable = false;
+      showToast("浏览器不允许访问本地存储；助词错题仅保留在当前页面。", true);
+      return [];
+    }
+
+    if (rawV2) {
+      let stored;
+      try {
+        stored = JSON.parse(rawV2);
+      } catch (error) {
+        showToast("本地助词错题无法解析，本次先从空列表开始。", true);
+        return [];
+      }
+      if (!Array.isArray(stored)) {
+        showToast("本地助词错题格式无效，本次先从空列表开始。", true);
+        return [];
+      }
+      return dedupeParticleMistakes(stored.map(function (raw) {
+        return normalizeParticleMistake(raw, now);
+      }));
+    }
+
+    // 迁移：v1 是纯题目 ID 数组，没有排期信息 → 视为「现在就到期」
+    let rawV1;
+    try {
+      rawV1 = window.localStorage.getItem(PARTICLE_MISTAKES_STORAGE_KEY);
+    } catch (error) {
+      return [];
+    }
+    if (!rawV1) {
+      return [];
+    }
+    let legacy;
+    try {
+      legacy = JSON.parse(rawV1);
+    } catch (error) {
+      showToast("本地助词错题无法解析，本次先从空列表开始。", true);
+      return [];
+    }
+    if (!Array.isArray(legacy)) {
+      showToast("本地助词错题格式无效，本次先从空列表开始。", true);
+      return [];
+    }
+    const migrated = dedupeParticleMistakes(legacy.map(function (questionId) {
+      return normalizeParticleMistake({ questionId: questionId }, now);
+    }));
+    if (migrated.length) {
+      try {
+        window.localStorage.setItem(PARTICLE_MISTAKES_V2_STORAGE_KEY, JSON.stringify(migrated));
+        showToast("已把 " + migrated.length + " 道旧助词错题并入复习计划。", true);
+      } catch (error) {
+        // 迁移写入失败不阻塞使用：本轮仍按迁移结果工作
+      }
+    }
+    return migrated;
+  }
+
   function saveParticleMistakes() {
     if (!storageAvailable) {
       return false;
     }
     try {
-      window.localStorage.setItem(PARTICLE_MISTAKES_STORAGE_KEY, JSON.stringify(particleMistakes));
+      window.localStorage.setItem(PARTICLE_MISTAKES_V2_STORAGE_KEY, JSON.stringify(particleMistakes));
       return true;
     } catch (error) {
       storageAvailable = false;
@@ -1868,9 +1952,10 @@
 
   function renderParticleMistakes() {
     elements.particleReviewList.replaceChildren();
+    const dueCount = countDueParticleMistakes();
     elements.particleMistakeCount.textContent = String(particleMistakes.length);
     elements.particleReviewCount.textContent = particleMistakes.length
-      ? "本地保存 " + particleMistakes.length + " 道助词错题"
+      ? "本地保存 " + particleMistakes.length + " 道助词错题 · " + dueCount + " 道今天到期"
       : "还没有需要复习的助词错题";
     elements.particleReviewEmpty.hidden = particleMistakes.length > 0;
     elements.particleStartReview.disabled = particleMistakes.length === 0;
@@ -1878,10 +1963,10 @@
       ? "开始复习 " + particleMistakes.length + " 道"
       : "开始复习";
 
-    particleMistakes.forEach(function (questionId) {
-      const question = particleEngine.getQuestion(questionId);
+    particleMistakes.forEach(function (record) {
+      const question = particleEngine.getQuestion(record.questionId);
       if (!question) {
-        throw new RangeError("Unknown stored particle question: " + questionId);
+        throw new RangeError("Unknown stored particle question: " + record.questionId);
       }
       const lesson = particleEngine.getLesson(question.lessonId);
       if (!lesson) {
@@ -1900,44 +1985,114 @@
       } else {
         sentence.textContent = question.before + "＿" + question.after;
       }
+      const streakLabel = record.correctStreak > 0
+        ? " · 已连对 " + record.correctStreak + "/" + MASTERY_CORRECT_STREAK
+        : "";
       item.append(
         createParticleTextElement("strong", "", lesson.title),
         createParticleTextElement("span", "particle-review-type", questionTypeLabel),
         createParticleTextElement("span", "", question.context),
-        sentence
+        sentence,
+        createParticleTextElement(
+          "span",
+          "particle-review-meta",
+          "错 " + record.count + " 次" + streakLabel + " · 下次复习：" + formatReviewDate(record.dueAt)
+        )
       );
       elements.particleReviewList.append(item);
     });
   }
 
-  function saveParticleMistakes() {
-    if (!storageAvailable) {
-      return false;
-    }
-    try {
-      window.localStorage.setItem(PARTICLE_MISTAKES_STORAGE_KEY, JSON.stringify(particleMistakes));
-      return true;
-    } catch (error) {
-      storageAvailable = false;
-      showToast("浏览器无法保存助词错题；错题仅保留在当前页面。", true);
-      return false;
-    }
+  function findParticleMistake(questionId) {
+    return particleMistakes.filter(function (record) {
+      return record.questionId === questionId;
+    })[0] || null;
   }
 
-  function addParticleMistake(questionId) {
+  /** 到期判定：会话内重试到期，或跨会话计划到期（与动词/形容词同一套语义）。 */
+  function isParticleMistakeDue(record, now) {
+    if (!record) {
+      return false;
+    }
+    if (record.sessionDueAtAnswerCount !== null
+      && record.sessionDueAtAnswerCount <= sessionAnswerCount) {
+      return true;
+    }
+    const dueTimestamp = Date.parse(record.dueAt);
+    return Number.isFinite(dueTimestamp) ? dueTimestamp <= (now || new Date()).getTime() : true;
+  }
+
+  function countDueParticleMistakes() {
+    const now = new Date();
+    return particleMistakes.filter(function (record) {
+      return isParticleMistakeDue(record, now);
+    }).length;
+  }
+
+  /** 答错：新建或加重记错次数，并重置复习进度（D-022）。 */
+  function recordParticleMistake(questionId, wrongAnswer) {
     if (!particleEngine.getQuestion(questionId)) {
       throw new RangeError("Unknown particle question: " + questionId);
     }
-    if (!particleMistakes.includes(questionId)) {
-      particleMistakes.push(questionId);
-      saveParticleMistakes();
-      renderParticleMistakes();
+    const now = new Date();
+    const existing = findParticleMistake(questionId);
+    if (!existing) {
+      particleMistakes = particleMistakes.concat([
+        createParticleMistakeRecord(questionId, wrongAnswer, now)
+      ]);
+    } else {
+      particleMistakes = particleMistakes.map(function (record) {
+        if (record.questionId !== questionId) {
+          return record;
+        }
+        return Object.assign({}, record, {
+          count: record.count + 1,
+          wrongAnswer: wrongAnswer || record.wrongAnswer,
+          updatedAt: now.toISOString(),
+          correctStreak: 0,
+          intervalDays: 1,
+          dueAt: addDays(now, 1),
+          sessionDueAtAnswerCount: sessionAnswerCount + SESSION_RETRY_AFTER_ANSWERS
+        });
+      });
     }
+    saveParticleMistakes();
+    renderParticleMistakes();
+  }
+
+  /** 复习答对：推进一档间隔；连续答对达到毕业次数则移出（D-022）。 */
+  function recordParticleReviewSuccess(questionId) {
+    const existing = findParticleMistake(questionId);
+    if (!existing) {
+      return;
+    }
+    const nextStreak = existing.correctStreak + 1;
+    if (nextStreak >= MASTERY_CORRECT_STREAK) {
+      removeParticleMistake(questionId);
+      showToast("连续答对 " + MASTERY_CORRECT_STREAK + " 次，这道助词错题已移出。");
+      return;
+    }
+    const now = new Date();
+    const interval = REVIEW_INTERVALS_DAYS[nextStreak - 1];
+    particleMistakes = particleMistakes.map(function (record) {
+      if (record.questionId !== questionId) {
+        return record;
+      }
+      return Object.assign({}, record, {
+        correctStreak: nextStreak,
+        intervalDays: interval,
+        dueAt: addDays(now, interval),
+        updatedAt: now.toISOString(),
+        sessionDueAtAnswerCount: null
+      });
+    });
+    saveParticleMistakes();
+    renderParticleMistakes();
   }
 
   function removeParticleMistake(questionId) {
-    const remaining = particleMistakes.filter(function (storedId) {
-      return storedId !== questionId;
+    const remaining = particleMistakes.filter(function (record) {
+      return record.questionId !== questionId;
     });
     if (remaining.length !== particleMistakes.length) {
       particleMistakes = remaining;
@@ -2002,7 +2157,9 @@
     }
     reviewingParticleMistakes = true;
     particleTargetLessonId = "";
-    particleQuestionQueue = shuffleItems(particleMistakes.slice());
+    particleQuestionQueue = shuffleItems(particleMistakes.map(function (record) {
+      return record.questionId;
+    }));
     particleQuestionIndex = 0;
     currentParticleQuestion = particleEngine.getQuestion(particleQuestionQueue[0]);
     setParticleSubview("practice");
@@ -2043,10 +2200,11 @@
       button.disabled = true;
     });
     elements.particleNextQuestion.hidden = false;
+    sessionAnswerCount += 1;
     if (!correct) {
-      addParticleMistake(currentParticleQuestion.id);
+      recordParticleMistake(currentParticleQuestion.id, selectedParticleAnswer);
     } else if (reviewingParticleMistakes) {
-      removeParticleMistake(currentParticleQuestion.id);
+      recordParticleReviewSuccess(currentParticleQuestion.id);
     }
     updateParticleStats(correct);
     updateDailyStreak("particle");

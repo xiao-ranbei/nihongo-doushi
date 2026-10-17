@@ -30,7 +30,7 @@ data class ParticleRoundItem(
  * 口径（与 spec 对齐）：
  * - 判题用 `correctIndexes` 集合，多答案题选任一正确项都算对；
  * - 掌握度只认「本题未用提示且答对」（D-020）；
- * - 答错写入错题目 ID 数组；复习模式答对即移出（D-017）；
+ * - 答错写入记录并重置进度；复习答对推进 1/3/7/14/30 天间隔，连续 6 次毕业（D-022）；
  * - 一轮题量由引擎按题池决定（§3.4），不重复出题；
  * - 同一题在本轮内再次出现且上次用过提示时，隐藏提示按钮（§4.6）。
  */
@@ -133,23 +133,26 @@ class ParticlePracticeState(
     val lessonTitle: String
         get() = current?.question?.let { ParticleEngine.lesson(it.lessonId)?.title } ?: modeLabel
 
-    /** 开始一轮。复习模式按加入顺序取全部错题（先错先练），练习模式交给引擎调度。 */
+    /** 开始一轮。复习模式按加入顺序取全部错题，练习模式交给引擎调度。 */
     fun start(scope: ParticleScope = this.scope, size: Int = ROUND_SIZE) {
         this.scope = scope
-        val mistakes = app.particleMistakes
+        // 练习（专题/综合）首题只插「已到期」的错题；复习模式取全部错题
+        val dueIds = app.dueParticleMistakeIds()
         val questions: List<ParticleQuestion> = when (scope) {
             is ParticleScope.Lesson -> ParticleEngine.planRound(
                 lessonId = scope.lessonId,
-                mistakeIds = mistakes,
+                mistakeIds = dueIds,
                 size = size,
                 random = random,
             )
             ParticleScope.All -> ParticleEngine.planRound(
-                mistakeIds = mistakes,
+                mistakeIds = dueIds,
                 size = size,
                 random = random,
             )
-            ParticleScope.Review -> mistakes.mapNotNull { ParticleData.QUESTION_BY_ID[it] }
+            ParticleScope.Review -> app.particleMistakes.mapNotNull { record ->
+                ParticleData.QUESTION_BY_ID[record.questionId]
+            }
         }
 
         round = questions.map { question ->
@@ -220,10 +223,16 @@ class ParticlePracticeState(
         app.updateDaily("particle")
 
         val question = item.question
+        val pickedText = item.options.getOrNull(selectedIndex).orEmpty()
         if (!lastCorrect) {
-            app.recordParticleMistake(question.id)
+            app.recordParticleMistake(question.id, pickedText)
         } else if (reviewing) {
-            app.removeParticleMistake(question.id)
+            val graduated = app.recordParticleReviewSuccess(question.id)
+            toast = if (graduated) {
+                "连续答对 6 次，这道助词错题已移出。"
+            } else {
+                null
+            }
         }
         if (lastCorrect && !hintUsedThisQuestion) {
             app.markParticleMastered(question.id)

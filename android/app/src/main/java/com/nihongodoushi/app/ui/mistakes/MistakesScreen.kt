@@ -177,16 +177,20 @@ private fun MistakeRow(record: MistakeRecord) {
 }
 
 /** 对齐 web formatReviewDate：已到期或无效显示「现在」，否则显示本地 M/d。 */
-private fun formatDue(record: MistakeRecord): String {
-    val dueAt = runCatching { Instant.parse(record.dueAt) }.getOrNull() ?: return "现在"
-    if (!dueAt.isAfter(Instant.now())) return "现在"
-    val date = dueAt.atZone(ZoneId.systemDefault())
+private fun formatDue(record: MistakeRecord): String = formatDueAt(record.dueAt)
+
+private fun formatDueAt(dueAt: String): String {
+    val parsed = runCatching { Instant.parse(dueAt) }.getOrNull() ?: return "现在"
+    if (!parsed.isAfter(Instant.now())) return "现在"
+    val date = parsed.atZone(ZoneId.systemDefault())
     return date.monthValue.toString() + "/" + date.dayOfMonth
 }
 
+private fun particleDueLabel(dueAt: String): String = formatDueAt(dueAt)
+
 /**
- * 助词组：与动词/形容词组并列，但**不显示到期时间**——助词错题是纯 ID 数组，没有排期字段（D-017）。
- * 组头按钮进入模块内复习模式，复习答对即移出。
+ * 助词组：与动词/形容词组并列，同样显示「下次复习」与错误次数（D-022 起助词也有排期）。
+ * 组头按钮进入模块内复习模式，答对推进间隔，连续 6 次移出。
  */
 @Composable
 private fun ParticleMistakeGroup(
@@ -240,7 +244,7 @@ private fun ParticleMistakeGroup(
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 Text(
-                                    text = "待复习",
+                                    text = "下次 " + particleDueLabel(item.dueAt),
                                     modifier = Modifier.padding(start = 10.dp),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = paper.textRed,
@@ -253,11 +257,18 @@ private fun ParticleMistakeGroup(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = paper.textStrong,
                             )
+                            Text(
+                                text = "错 ${item.count} 次" +
+                                    (if (item.correctStreak > 0) " · 已连对 ${item.correctStreak}/6" else "") +
+                                    " · 间隔 ${item.intervalDays} 天",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = paper.muted,
+                            )
                         }
                     }
                 }
                 Text(
-                    text = "助词错题不做时间排期：进入复习后答对即移出。",
+                    text = "答对推进 1/3/7/14/30 天间隔，连续答对 6 次移出。",
                     style = MaterialTheme.typography.labelSmall,
                     color = paper.muted,
                 )

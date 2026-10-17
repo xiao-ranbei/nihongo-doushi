@@ -77,6 +77,22 @@ data class ActivityHistory(
     fun answersOn(date: String): Int = dayOf(date)?.answers ?: 0
 }
 
+/**
+ * 助词错题记录（D-022）：字段与 [MistakeRecord] 对齐，只是把动词/形容词的
+ * 「词条 + 形式」换成单一 `questionId`。旧版（v1）存的是纯题目 ID 数组，读取时迁移。
+ */
+@Serializable
+data class ParticleMistakeRecord(
+    val questionId: String,
+    val count: Int = 1,
+    val wrongAnswer: String = "",
+    val updatedAt: String = "",
+    val correctStreak: Int = 0,
+    val intervalDays: Int = 1,
+    val dueAt: String = "",
+    val sessionDueAtAnswerCount: Int? = null,
+)
+
 /** 学习进度（practice-v1）：已练词条集合 + 错题毕业数（用于「词库覆盖」与「错题掌握」） */
 @Serializable
 data class PracticeProgress(

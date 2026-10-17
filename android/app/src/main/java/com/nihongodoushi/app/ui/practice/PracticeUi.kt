@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -422,23 +423,19 @@ fun JudgementDock(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = scheme.surface,
-        shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
-        shadowElevation = 10.dp,
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        border = BorderStroke(1.dp, scheme.outlineVariant),
+        shadowElevation = 2.dp,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .animateContentSize()
-                .padding(start = 18.dp, end = 18.dp, top = 10.dp, bottom = 12.dp),
+                // 抽屉背景铺到屏幕底，内容抬到手势条上方（与助词模块一致）
+                .navigationBarsPadding()
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .size(width = 38.dp, height = 4.dp)
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(scheme.outline),
-            )
             if (roundComplete) {
                 Text(
                     text = "本轮完成",

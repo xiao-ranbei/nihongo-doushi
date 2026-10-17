@@ -2810,6 +2810,12 @@ select:disabled {
   font-size: 10px;
 }
 
+/* D-022：错题行末的复习计划（错几次 / 连对进度 / 下次复习） */
+.particle-review-meta {
+  color: var(--text-strong);
+  font-size: 10px;
+}
+
 .particle-review-item p {
   margin: 0;
   color: var(--ink);

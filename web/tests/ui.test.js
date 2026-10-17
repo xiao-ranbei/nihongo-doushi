@@ -17,6 +17,7 @@ const { createApp } = require("./helpers/dom-stub.js");
 const MISTAKES_KEY = "japanese-verb-practice-mistakes-v1";
 const STATS_KEY = "japanese-verb-practice-stats-v1";
 const PARTICLE_MISTAKES_KEY = "japanese-particle-practice-mistakes-v1";
+const PARTICLE_MISTAKES_V2_KEY = "japanese-particle-practice-mistakes-v2";
 const PARTICLE_STATS_KEY = "japanese-particle-practice-stats-v1";
 const DAILY_KEY = "japanese-verb-practice-daily-v1";
 
@@ -337,14 +338,19 @@ test("助词语境练习可复习错题并计入每日练习", function () {
   app.click(wrongOption);
   app.click(app.$("particle-check-answer"));
   assert.equal(app.$("particle-feedback").classList.contains("is-incorrect"), true);
-  assert.deepEqual(JSON.parse(app.window.localStorage.getItem(PARTICLE_MISTAKES_KEY)), [questionId]);
+  const loggedRecord = JSON.parse(app.window.localStorage.getItem(PARTICLE_MISTAKES_V2_KEY))[0];
+  assert.equal(loggedRecord.questionId, questionId, "答错应写入 v2 错题记录");
+  assert.equal(loggedRecord.count, 1);
+  assert.equal(loggedRecord.correctStreak, 0);
+  assert.ok(Date.parse(loggedRecord.dueAt) > Date.now(), "新错题应排到一天后");
   assert.equal(JSON.parse(app.window.localStorage.getItem(DAILY_KEY)).particleAnswers, 1);
 
   const reviewTab = app.document.querySelectorAll("[data-particle-subview]").filter(function (node) {
     return node.dataset.particleSubview === "review";
   })[0];
   app.click(reviewTab);
-  assert.equal(app.$("particle-review-count").textContent, "本地保存 1 道助词错题");
+  assert.equal(app.$("particle-review-count").textContent, "本地保存 1 道助词错题 · 0 道今天到期");
+  assert.match(app.document.querySelector(".particle-review-meta").textContent, /错 1 次 · 下次复习/);
   app.click(app.$("particle-start-review"));
   assert.equal(app.$("particle-question-card").getAttribute("data-question-id"), questionId);
   assert.equal(app.$("particle-practice-modes").hidden, true, "错题复习不显示专项模式切换");
@@ -359,9 +365,16 @@ test("助词语境练习可复习错题并计入每日练习", function () {
   app.click(app.$("particle-next-question"));
 
   assert.equal(app.$("particle-view-review").hidden, false);
-  assert.equal(app.$("particle-review-count").textContent, "还没有需要复习的助词错题");
-  assert.equal(app.$("particle-review-empty").hidden, false);
-  assert.deepEqual(JSON.parse(app.window.localStorage.getItem(PARTICLE_MISTAKES_KEY)), []);
+  assert.equal(
+    app.$("particle-review-count").textContent,
+    "本地保存 1 道助词错题 · 0 道今天到期",
+    "答对一次只推进间隔，不立刻移出（D-022）"
+  );
+  assert.equal(app.$("particle-review-empty").hidden, true);
+  const advancedRecord = JSON.parse(app.window.localStorage.getItem(PARTICLE_MISTAKES_V2_KEY))[0];
+  assert.equal(advancedRecord.correctStreak, 1);
+  assert.equal(advancedRecord.intervalDays, 1);
+  assert.ok(Date.parse(advancedRecord.dueAt) > Date.now(), "下一次复习应排到一天后");
   assert.equal(JSON.parse(app.window.localStorage.getItem(DAILY_KEY)).particleAnswers, 2);
 
   const learnTab = app.document.querySelectorAll("[data-particle-subview]").filter(function (node) {
@@ -1734,4 +1747,67 @@ test("助词错答给出所选助词的专属说明，学习地图补最小对�
   const blocks = app.document.querySelectorAll(".particle-example-contrast");
   assert.equal(blocks.length, expected, "每条带对比说明的例句都应渲染对比提示");
   assert.match(blocks[0].textContent, /换个助词会怎样/);
+});
+
+test("v1 纯 ID 数组迁移成带排期的 v2 记录", function () {
+  const app = createApp({
+    storage: { [PARTICLE_MISTAKES_KEY]: JSON.stringify(["function-weather-ga", "wa-topic"]) }
+  });
+  tab(app, "particle");
+
+  const migrated = JSON.parse(app.window.localStorage.getItem(PARTICLE_MISTAKES_V2_KEY));
+  assert.equal(migrated.length, 2, "旧错题应全部迁移到 v2");
+  assert.deepEqual(
+    migrated.map(function (record) { return record.questionId; }),
+    ["function-weather-ga", "wa-topic"]
+  );
+  migrated.forEach(function (record) {
+    assert.equal(record.count, 1);
+    assert.equal(record.correctStreak, 0);
+    assert.equal(record.intervalDays, 1);
+    assert.ok(Date.parse(record.dueAt) <= Date.now() + 1000, "迁移的错题应立即可复习");
+  });
+  assert.equal(
+    app.$("particle-review-count").textContent,
+    "本地保存 2 道助词错题 · 2 道今天到期"
+  );
+  assert.equal(JSON.parse(app.window.localStorage.getItem(PARTICLE_MISTAKES_KEY)).length, 2, "v1 原样保留作为备份");
+});
+
+test("复习连续答对达到毕业次数后移出助词错题本", function () {
+  const app = createApp({
+    storage: {
+      [PARTICLE_MISTAKES_V2_KEY]: JSON.stringify([
+        {
+          questionId: "function-weather-ga",
+          count: 3,
+          wrongAnswer: "连接前后分句表示转折",
+          updatedAt: new Date().toISOString(),
+          correctStreak: 5,
+          intervalDays: 30,
+          dueAt: new Date(Date.now() - 60 * 1000).toISOString(),
+          sessionDueAtAnswerCount: null
+        }
+      ])
+    }
+  });
+  tab(app, "particle");
+  const reviewTab = app.document.querySelectorAll("[data-particle-subview]").filter(function (node) {
+    return node.dataset.particleSubview === "review";
+  })[0];
+  app.click(reviewTab);
+  app.click(app.$("particle-start-review"));
+
+  const question = particleEngine.getQuestion("function-weather-ga");
+  const correctOption = app.$("particle-options").querySelectorAll("button").filter(function (button) {
+    return question.acceptedAnswers.includes(button.textContent);
+  })[0];
+  app.click(correctOption);
+  app.click(app.$("particle-check-answer"));
+
+  assert.deepEqual(
+    JSON.parse(app.window.localStorage.getItem(PARTICLE_MISTAKES_V2_KEY)),
+    [],
+    "连对 6 次后应移出错题本"
+  );
 });

@@ -8,19 +8,23 @@ import com.nihongodoushi.app.ui.AppState
 /**
  * 全局错题本里「助词」组的展示模型。
  *
- * 助词错题存的是纯题目 ID 数组（D-017），没有 `dueAt` / `count` 这类字段，
- * 所以这里只把 ID 还原成可读的语境与句子，不伪装出「到期时间」。
+ * 助词错题自 v2 起与动词/形容词同一套复习字段（D-022），这里把记录还原成
+ * 可读的语境、句子与复习进度（错几次 / 连对几次 / 下次复习）。
  */
 data class ParticleMistakeItem(
     val questionId: String,
     val lessonParticles: String,
     val context: String,
     val sentence: String,
+    val count: Int,
+    val correctStreak: Int,
+    val intervalDays: Int,
+    val dueAt: String,
 )
 
-/** 把 stored 的题目 ID 还原成展示项；未知 ID 直接跳过（题库变动后的容错）。 */
-fun AppState.particleMistakeItems(): List<ParticleMistakeItem> = particleMistakes.mapNotNull { id ->
-    val question = ParticleData.QUESTION_BY_ID[id] ?: return@mapNotNull null
+/** 把 stored 的记录还原成展示项；未知 ID 直接跳过（题库变动后的容错）。 */
+fun AppState.particleMistakeItems(): List<ParticleMistakeItem> = particleMistakes.mapNotNull { record ->
+    val question = ParticleData.QUESTION_BY_ID[record.questionId] ?: return@mapNotNull null
     val lesson = ParticleEngine.lesson(question.lessonId)
     val sentence = if (question.type == ParticleQuestionTypes.FILL) {
         (question.before ?: "") + "（　）" + (question.after ?: "")
@@ -28,9 +32,13 @@ fun AppState.particleMistakeItems(): List<ParticleMistakeItem> = particleMistake
         (question.before ?: "") + (question.targetParticle ?: "") + (question.after ?: "")
     }
     ParticleMistakeItem(
-        questionId = id,
+        questionId = record.questionId,
         lessonParticles = lesson?.particles?.joinToString(" / ") ?: "",
         context = question.context,
         sentence = sentence,
+        count = record.count,
+        correctStreak = record.correctStreak,
+        intervalDays = record.intervalDays,
+        dueAt = record.dueAt,
     )
 }

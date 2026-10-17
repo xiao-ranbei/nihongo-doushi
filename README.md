@@ -131,7 +131,7 @@ node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/parti
 ./gradlew :app:testDebugUnitTest
 ```
 
-当前基线（2026-10-17 实测）：网页端 111/111 通过；Android 59 项、0 失败（VerbEngine 10、AdjectiveEngine 9、QuizBuilder 9、ActivityAggregation 5、CrossSampleConsistency 3、ParticleEngine 18、ParticleCrossSample 5）。改动后不得低于该基线。
+当前基线（2026-10-17 实测）：网页端 111/111 通过；Android 60 项、0 失败（VerbEngine 10、AdjectiveEngine 9、QuizBuilder 9、ActivityAggregation 5、CrossSampleConsistency 3、ParticleEngine 19、ParticleCrossSample 5）。改动后不得低于该基线。
 
 ## 5. 关键配置说明
 

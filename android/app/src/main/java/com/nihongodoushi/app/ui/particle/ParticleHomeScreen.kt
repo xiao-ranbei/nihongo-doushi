@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -62,6 +63,7 @@ fun ParticleHomeScreen(
     val mastered = app.particleMasteredCount()
     val percent = if (total == 0) 0 else (mastered * 100.0 / total).roundToInt()
     val mistakes = app.particleMistakes.size
+    val due = app.particleDueCount()
 
     Column(modifier = Modifier.fillMaxSize()) {
         ParticleTopBar(
@@ -117,7 +119,8 @@ fun ParticleHomeScreen(
                     )
                     Text(
                         text = when {
-                            mistakes > 0 -> "先还一道错题，再练四道新的"
+                            due > 0 -> "今天有 $due 道错题到期"
+                            mistakes > 0 -> "错题都在计划里，今天无到期"
                             app.todayActivity().particleAnswers > 0 ->
                                 "今天已练 ${app.todayActivity().particleAnswers} 题，继续"
                             else -> "今天还没有练习"
@@ -130,7 +133,7 @@ fun ParticleHomeScreen(
                         text = if (mistakes == 0) {
                             "已掌握 $mastered / $total 题 · 9 个专题"
                         } else {
-                            "错题 $mistakes 道 · 已掌握 $mastered / $total 题"
+                            "错题 $mistakes 道 · 到期 $due 道 · 已掌握 $mastered / $total 题"
                         },
                         style = MaterialTheme.typography.labelMedium,
                         color = paper.textStrong,
@@ -204,12 +207,15 @@ fun ParticleHomeScreen(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            shadowElevation = 2.dp,
         ) {
             Button(
                 onClick = onStartAll,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 shape = RoundedCornerShape(12.dp),
             ) {

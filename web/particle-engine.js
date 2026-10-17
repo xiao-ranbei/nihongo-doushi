@@ -714,7 +714,10 @@
       ],
       acceptedAnswers: ["标出「いい」所描述的主体（天气）"],
       beginnerExplanation: "这里是在说“什么是好的”：天気是「いい」描述的主体。整句的原因关系由「から」表达，不是「が」。",
-      advancedExplanation: "格助词「が」标记评价谓语「いい」的主体；「天気がいい」整体作为「から」所接的理由。"
+      advancedExplanation: "格助词「が」标记评价谓语「いい」的主体；「天気がいい」整体作为「から」所接的理由。",
+      optionNotes: {
+        "把天气设为整段谈话的话题": "「话题」是 は 的职责；这里「天気がいい」是被「から」接的原因从句，が 标评价谓语的主体。"
+      }
     },
     {
       id: "function-mother-wa",
@@ -737,7 +740,10 @@
       ],
       acceptedAnswers: ["把“妈妈”设为本句话题，后面说明她的习惯"],
       beginnerExplanation: "「は」把妈妈设为谈论对象，后面的内容是在说明妈妈的习惯。",
-      advancedExplanation: "这里的「は」是中性话题标记；只有在合适的上下文中，它才会进一步带出对比语气。"
+      advancedExplanation: "这里的「は」是中性话题标记；只有在合适的上下文中，它才会进一步带出对比语气。",
+      optionNotes: {
+        "指出“妈妈”是回答“谁”的新信息焦点": "标焦点是 が 的职责；本句先把妈妈设为话题，再说明她的习惯。"
+      }
     },
     {
       id: "function-key-ni",
@@ -760,7 +766,10 @@
       ],
       acceptedAnswers: ["标记存在物所在的位置"],
       beginnerExplanation: "「あります」表示存在；「机の上」是钥匙存在的位置，所以用「に」。",
-      advancedExplanation: "这里的「に」标记存在主体的静态位置；若是在某处进行动作，通常用「で」。"
+      advancedExplanation: "这里的「に」标记存在主体的静态位置；若是在某处进行动作，通常用「で」。",
+      optionNotes: {
+        "标记某个动作发生的地点": "动作发生地用 で；あります 表存在，存在物所在位置用 に。"
+      }
     },
     {
       id: "function-kids-de",
@@ -783,7 +792,10 @@
       ],
       acceptedAnswers: ["标记游玩这个动作发生的地点"],
       beginnerExplanation: "「遊んでいます」描述正在进行的动作；动作发生的地点用「で」标记。",
-      advancedExplanation: "「で」标记事件发生场所；若只说明“孩子在公园”，存在位置通常用「公園にいる」。"
+      advancedExplanation: "「で」标记事件发生场所；若只说明“孩子在公园”，存在位置通常用「公園にいる」。",
+      optionNotes: {
+        "标记人或物静止存在的位置": "静止存在用 に（いる／ある）；遊んでいる 是动作，动作场所用 で。"
+      }
     },
     {
       id: "function-kyoto-e",
@@ -806,7 +818,10 @@
       ],
       acceptedAnswers: ["突出移动朝向的方向"],
       beginnerExplanation: "「へ」突出朝京都这个方向前进；它强调方向，不是在说动作发生在那里。",
-      advancedExplanation: "移动句中的「へ」偏重方向性；与「に」相比，它不把到达点作为主要焦点。"
+      advancedExplanation: "移动句中的「へ」偏重方向性；与「に」相比，它不把到达点作为主要焦点。",
+      optionNotes: {
+        "标记动作发生的地点": "动作发生地是 で；向かう 是移动动词，へ 标朝哪个方向。"
+      }
     },
     {
       id: "function-book-wo",
@@ -829,7 +844,10 @@
       ],
       acceptedAnswers: ["标记阅读动作直接作用的对象（书）"],
       beginnerExplanation: "问“读什么？”答案是书；「を」标记阅读动作直接作用的对象。",
-      advancedExplanation: "这里的「を」是典型的直接宾语标记；移动动词还可能用「を」表示经过路线。"
+      advancedExplanation: "这里的「を」是典型的直接宾语标记；移动动词还可能用「を」表示经过路线。",
+      optionNotes: {
+        "标记阅读动作发生的地点": "动作发生地是 で；「本」是 読む 直接作用的对象，用 を。"
+      }
     },
     {
       id: "function-mother-no",
@@ -852,7 +870,10 @@
       ],
       acceptedAnswers: ["连接“妈妈”和“和服”，表示所属关系"],
       beginnerExplanation: "「の」连接两个名词；这里说明和服属于妈妈。",
-      advancedExplanation: "这里的「の」表达所属关系；它也可以用于类别或属性修饰，不总是表示所有权。"
+      advancedExplanation: "这里的「の」表达所属关系；它也可以用于类别或属性修饰，不总是表示所有权。",
+      optionNotes: {
+        "标记妈妈是动作发生的地点": "で 才标动作场所；两个名词之间表示所属要用 の。"
+      }
     },
     {
       id: "function-fruit-to",
@@ -875,7 +896,10 @@
       ],
       acceptedAnswers: ["把列出的水果作为完整清单"],
       beginnerExplanation: "上下文说明水果只有这两种；「と」把它们作为完整清单列出来。",
-      advancedExplanation: "这里的「と」是穷举列举；清单是否完整需要结合上下文，而不能只看助词本身。"
+      advancedExplanation: "这里的「と」是穷举列举；清单是否完整需要结合上下文，而不能只看助词本身。",
+      optionNotes: {
+        "举出部分水果，暗示还有其他种类": "举例、暗示还有别的用 や；本句列举完整，用 と。"
+      }
     },
     {
       id: "function-fruit-ya",
@@ -898,7 +922,10 @@
       ],
       acceptedAnswers: ["举出部分项目，暗示还有其他内容"],
       beginnerExplanation: "「や」用于举例，表示书和笔记本只是其中一部分。",
-      advancedExplanation: "「や」表达非穷举列举；若要明确提示还有其他项目，可以再接「など」。"
+      advancedExplanation: "「や」表达非穷举列举；若要明确提示还有其他项目，可以再接「など」。",
+      optionNotes: {
+        "把列出的项目说成完整清单": "说成完整清单用 と；句尾「など」也在提示清单不完整，所以用 や。"
+      }
     },
     {
       id: "function-brother-mo",
@@ -921,7 +948,10 @@
       ],
       acceptedAnswers: ["把弟弟追加到前面提到的人里，表示“也”"],
       beginnerExplanation: "前面已经提到朋友会到；「も」把弟弟追加进来，表示弟弟也会来。",
-      advancedExplanation: "这里的「も」表达追加；它替代了该名词位置上常见的主题标记「は」。"
+      advancedExplanation: "这里的「も」表达追加；它替代了该名词位置上常见的主题标记「は」。",
+      optionNotes: {
+        "把弟弟设为与朋友对比的话题": "对比话题是 は 的用法；「也来了」是把弟弟追加到前面提到的人里，用 も。"
+      }
     },
     {
       id: "function-home-kara",
@@ -944,7 +974,10 @@
       ],
       acceptedAnswers: ["标记步行范围的起点"],
       beginnerExplanation: "「から」标记从哪里开始；这里的起点是家。",
-      advancedExplanation: "「から」指出空间范围的起始端；与「まで」搭配时，两者分别标记起点和终点。"
+      advancedExplanation: "「から」指出空间范围的起始端；与「まで」搭配时，两者分别标记起点和终点。",
+      optionNotes: {
+        "标记步行范围的终点": "终点用 まで；「家」是出发点，用 から。"
+      }
     },
     {
       id: "function-station-made",
@@ -967,7 +1000,10 @@
       ],
       acceptedAnswers: ["标记步行路线的终点"],
       beginnerExplanation: "「まで」表示范围到哪里结束；这里的终点是车站。",
-      advancedExplanation: "「まで」标记空间范围的终止端，表示到达该边界，不强调之后是否立刻停止其他活动。"
+      advancedExplanation: "「まで」标记空间范围的终止端，表示到达该边界，不强调之后是否立刻停止其他活动。",
+      optionNotes: {
+        "标记步行路线的起点": "起点用 から；「駅」是终点，用 まで。"
+      }
     },
     {
       id: "function-water-dake",
@@ -990,7 +1026,10 @@
       ],
       acceptedAnswers: ["限定喝的内容为水，后面可以接肯定谓语"],
       beginnerExplanation: "「だけ」表示范围限制；这里后面是肯定的「飲みました」，句子仍然自然。",
-      advancedExplanation: "「だけ」可以直接与肯定谓语搭配；与「しか」不同，它不要求后续否定。"
+      advancedExplanation: "「だけ」可以直接与肯定谓语搭配；与「しか」不同，它不要求后续否定。",
+      optionNotes: {
+        "表示除了水以外什么都没有，必须接否定": "必须接否定的是 しか；本句「飲みました」是肯定形，用 だけ。"
+      }
     },
     {
       id: "function-money-shika",
@@ -1013,7 +1052,10 @@
       ],
       acceptedAnswers: ["限定范围只有一千日元，并与否定谓语搭配"],
       beginnerExplanation: "「しか」和否定形式「ありません」一起表达“只有一千日元”。",
-      advancedExplanation: "「しか～ない」整体构成排他限制；否定是这个句型的一部分，不能把しか单独替换成だけ。"
+      advancedExplanation: "「しか～ない」整体构成排他限制；否定是这个句型的一部分，不能把しか单独替换成だけ。",
+      optionNotes: {
+        "中性地表示“只有”，可以直接接肯定谓语": "接肯定谓语的是 だけ；「ありません」是否定形，用 しか。"
+      }
     },
     {
       id: "function-focus-ga",
@@ -1036,7 +1078,10 @@
       ],
       acceptedAnswers: ["直接回答“谁”的新信息焦点"],
       beginnerExplanation: "问题问“谁”，回答中的「田中さん」就是新信息；「が」把焦点落在这个答案上。",
-      advancedExplanation: "这里「が」标记主语并承载疑问焦点；这种焦点作用需要结合前面的疑问语境判断，不能概括成“が总是强调”。"
+      advancedExplanation: "这里「が」标记主语并承载疑问焦点；这种焦点作用需要结合前面的疑问语境判断，不能概括成“が总是强调”。",
+      optionNotes: {
+        "把田中设为整段对话的话题": "设为话题是 は；回答「誰が」这类问句时，が 标出新信息焦点。"
+      }
     },
     {
       id: "function-meeting-ni",
@@ -1059,7 +1104,10 @@
       ],
       acceptedAnswers: ["标记会议开始的具体时间点"],
       beginnerExplanation: "「午後三時」是明确的时间点；具体时间点常用「に」标记。",
-      advancedExplanation: "这里的「に」标记事件发生时间；表达一段持续期间时，通常不一定需要「に」。"
+      advancedExplanation: "这里的「に」标记事件发生时间；表达一段持续期间时，通常不一定需要「に」。",
+      optionNotes: {
+        "标记会议发生的场所": "场所用 で；「三時」是具体时间点，用 に。"
+      }
     },
     {
       id: "function-recipient-ni",
@@ -1082,7 +1130,10 @@
       ],
       acceptedAnswers: ["标记发送邮件的接收对象"],
       beginnerExplanation: "邮件送到老师那里；「に」标记动作的到达对象。",
-      advancedExplanation: "授受方向指向「先生」，因此用「に」标记接受者；邮件本身由「を」标记。"
+      advancedExplanation: "授受方向指向「先生」，因此用「に」标记接受者；邮件本身由「を」标记。",
+      optionNotes: {
+        "标记发送邮件动作发生的地点": "地点用 で；「先生」是邮件接收者，用 に。"
+      }
     },
     {
       id: "function-venue-e",
@@ -1105,7 +1156,10 @@
       ],
       acceptedAnswers: ["突出朝会场前进的方向"],
       beginnerExplanation: "句子说的是“前往途中”；「へ」突出朝会场的方向移动。",
-      advancedExplanation: "「へ」把注意力放在行进方向上；这里的「途中」也说明句子没有把抵达作为重点。"
+      advancedExplanation: "「へ」把注意力放在行进方向上；这里的「途中」也说明句子没有把抵达作为重点。",
+      optionNotes: {
+        "标记已经抵达的终点": "已抵达的到达点用 に（着く）；「向かう途中」表示还在路上，へ 突出方向。"
+      }
     },
     {
       id: "function-road-wo",
@@ -1128,7 +1182,10 @@
       ],
       acceptedAnswers: ["标出跑步经过的路线"],
       beginnerExplanation: "「道」不是被跑的对象，而是跑步经过的路线；移动动词也可以用「を」标路线。",
-      advancedExplanation: "移动动词「走る」前的「を」表示经过空间；它与他动词宾语标记是不同的用法。"
+      advancedExplanation: "移动动词「走る」前的「を」表示经过空间；它与他动词宾语标记是不同的用法。",
+      optionNotes: {
+        "标记跑步动作直接作用的对象": "を 也能标宾语，但「道を走る」里「道」是经过的路线，本句没有受事对象。"
+      }
     },
     {
       id: "function-wood-no",
@@ -1151,7 +1208,10 @@
       ],
       acceptedAnswers: ["连接名词，说明桌子的材料或属性"],
       beginnerExplanation: "「木の机」里的「の」说明桌子的材料；它不一定表示所有权。",
-      advancedExplanation: "「の」连接两个名词并建立修饰关系，具体是材料、类别还是所属，需要结合名词语义判断。"
+      advancedExplanation: "「の」连接两个名词并建立修饰关系，具体是材料、类别还是所属，需要结合名词语义判断。",
+      optionNotes: {
+        "表示桌子属于某个人": "所属用法是「人の」，要求所有者是人；「木の」说明的是材料或属性。"
+      }
     },
     {
       id: "function-bag-ya",
@@ -1174,7 +1234,10 @@
       ],
       acceptedAnswers: ["举例列出部分物品，暗示清单不完整"],
       beginnerExplanation: "「や」列出部分例子，「など」进一步提醒还有其他物品。",
-      advancedExplanation: "「や～など」构成典型的非穷举列举；它与完整列举的「と」不同。"
+      advancedExplanation: "「や～など」构成典型的非穷举列举；它与完整列举的「と」不同。",
+      optionNotes: {
+        "把列出的物品说成完整清单": "完整清单用 と；句尾「など」表示还有别的，用 や。"
+      }
     },
     {
       id: "function-three-hours-mo",
@@ -1197,7 +1260,10 @@
       ],
       acceptedAnswers: ["强调等待时间超出预期"],
       beginnerExplanation: "数量「三時間」后面的「も」带出“竟然这么久”的评价。",
-      advancedExplanation: "数量词后的「も」可表达超出说话人预期的量；这里是语气效果，不是普通的“也”。"
+      advancedExplanation: "数量词后的「も」可表达超出说话人预期的量；这里是语气效果，不是普通的“也”。",
+      optionNotes: {
+        "仅标记等待动作的直接对象": "标动作对象是 を；数量词后的 も 带「竟然」的超出预期语气。"
+      }
     },
     {
       id: "function-work-made",
@@ -1220,7 +1286,10 @@
       ],
       acceptedAnswers: ["标记工作时间范围的终点"],
       beginnerExplanation: "「まで」标出范围到哪里结束；这里的终点是下午五点。",
-      advancedExplanation: "「まで」标记时间区间的终止边界；它不等于说明工作恰好在该时刻完成。"
+      advancedExplanation: "「まで」标记时间区间的终止边界；它不等于说明工作恰好在该时刻完成。",
+      optionNotes: {
+        "标记工作时间范围的起点": "起点用 から；「五時」是终点，用 まで。"
+      }
     },
     {
       id: "function-cash-shika",
@@ -1243,7 +1312,10 @@
       ],
       acceptedAnswers: ["限定可用方式只有现金，并要求与否定形式搭配"],
       beginnerExplanation: "「しか」和否定形式「使えません」一起表示“只能用现金”。",
-      advancedExplanation: "「しか～ない」表达排他限制；此处的否定可能形「使えません」是句型要求的一部分。"
+      advancedExplanation: "「しか～ない」表达排他限制；此处的否定可能形「使えません」是句型要求的一部分。",
+      optionNotes: {
+        "中性地表示“只有”，后面可以直接接肯定形式": "接肯定形式的是 だけ；「使えません」是否定形，用 しか。"
+      }
     }
   ];
 

@@ -74,13 +74,15 @@ object ParticleEngine {
     /**
      * 用户选中项之外、同样成立的答案（仅一题多答案时非空）。
      * 返回空表示「选错了」；返回非空表示「选对了，但还有另一种说法」。
+     *
+     * **必须传展示用的选项文本**：练习屏的选项是洗过牌的，`question.options` 的下标与界面对不上，
+     * 按下标查会取到别的选项（真实踩过的坑）。
      */
-    fun otherAccepted(question: ParticleQuestion, pickedIndex: Int): List<String> {
-        val picked = question.options.getOrNull(pickedIndex) ?: return emptyList()
-        if (picked !in question.acceptedAnswers) {
+    fun otherAccepted(question: ParticleQuestion, pickedText: String?): List<String> {
+        if (pickedText.isNullOrEmpty() || pickedText !in question.acceptedAnswers) {
             return emptyList()
         }
-        return question.acceptedAnswers.filter { it != picked }
+        return question.acceptedAnswers.filter { it != pickedText }
     }
 
     /**
@@ -98,10 +100,12 @@ object ParticleEngine {
     fun hint(question: ParticleQuestion): String =
         lesson(question.lessonId)?.beginnerSummary ?: ""
 
-    /** 该题的干扰项说明（D-019 补充字段）；未补时返回 null，UI 用整句解析兜底。 */
-    fun optionNote(question: ParticleQuestion, pickedIndex: Int): String? {
-        val picked = question.options.getOrNull(pickedIndex) ?: return null
-        return question.optionNotes[picked]
+    /** 该题的干扰项说明（D-019 补充字段）；未补时返回 null，UI 用整句解析兜底。同样要传展示文本。 */
+    fun optionNote(question: ParticleQuestion, pickedText: String?): String? {
+        if (pickedText.isNullOrEmpty()) {
+            return null
+        }
+        return question.optionNotes[pickedText]
     }
 
     // ---------- 选项洗牌 ----------

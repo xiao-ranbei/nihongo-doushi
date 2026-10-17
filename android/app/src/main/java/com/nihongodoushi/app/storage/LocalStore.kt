@@ -3,6 +3,7 @@ package com.nihongodoushi.app.storage
 import android.content.Context
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.time.Instant
 
 /**
  * 本地 JSON 文件存储：每个 StorageKey 对应 filesDir 下一个 .json 文件。
@@ -44,24 +45,45 @@ class LocalStore(context: Context) {
     fun saveAdjectiveStats(stats: ModuleStats): Boolean = saveStats(StorageKeys.ADJECTIVE_STATS, stats)
 
     /**
-     * 助词错题：纯题目 ID 数组（与 Web 端同键同构）。
-     * 这里只做「非空字符串 + 去重」校验；ID 是否属于当前题库由 AppState 过滤，
-     * 避免存储层依赖引擎数据。
+     * 助词错题（v2）。缺失 v2 时把 v1 的纯 ID 数组迁移成记录：
+     * `dueAt = 现在`（立即可复习）、`count = 1`、`streak = 0`，迁移后写回 v2，v1 原样保留作备份。
      */
-    fun loadParticleMistakes(): List<String> {
-        val raw = readRaw(StorageKeys.PARTICLE_MISTAKES) ?: return emptyList()
-        return try {
-            val ids = json.decodeFromString<List<String>>(raw)
-            val seen = mutableSetOf<String>()
-            ids.filter { it.isNotBlank() && seen.add(it) }
+    fun loadParticleMistakes(): List<ParticleMistakeRecord> {
+        val rawV2 = readRaw(StorageKeys.PARTICLE_MISTAKES)
+        if (rawV2 != null) {
+            return try {
+                json.decodeFromString<List<ParticleMistakeRecord>>(rawV2)
+                    .filter {
+                        it.questionId.isNotBlank() && it.count >= 1 &&
+                            it.correctStreak >= 0 && it.intervalDays >= 1
+                    }
+                    .distinctBy { it.questionId }
+            } catch (error: Exception) {
+                lastLoadInvalid = true
+                emptyList()
+            }
+        }
+
+        val rawV1 = readRaw(StorageKeys.PARTICLE_MISTAKES_LEGACY) ?: return emptyList()
+        val legacyIds = try {
+            json.decodeFromString<List<String>>(rawV1)
         } catch (error: Exception) {
             lastLoadInvalid = true
-            emptyList()
+            return emptyList()
         }
+        val now = Instant.now().toString()
+        val migrated = legacyIds
+            .filter { it.isNotBlank() }
+            .distinct()
+            .map { ParticleMistakeRecord(questionId = it, updatedAt = now, dueAt = now) }
+        if (migrated.isNotEmpty()) {
+            saveParticleMistakes(migrated)
+        }
+        return migrated
     }
 
-    fun saveParticleMistakes(ids: List<String>): Boolean =
-        writeRaw(StorageKeys.PARTICLE_MISTAKES, json.encodeToString(ids.distinct()))
+    fun saveParticleMistakes(records: List<ParticleMistakeRecord>): Boolean =
+        writeRaw(StorageKeys.PARTICLE_MISTAKES, json.encodeToString(records.distinctBy { it.questionId }))
 
     fun loadParticleStats(): ModuleStats = loadStats(StorageKeys.PARTICLE_STATS)
 
