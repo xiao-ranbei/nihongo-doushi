@@ -17,10 +17,13 @@ import com.nihongodoushi.app.storage.DayActivity
 import com.nihongodoushi.app.storage.LocalStore
 import com.nihongodoushi.app.storage.MistakeRecord
 import com.nihongodoushi.app.storage.ModuleStats
+import com.nihongodoushi.app.storage.NicknameCheck
 import com.nihongodoushi.app.storage.ParticleMistakeRecord
 import com.nihongodoushi.app.storage.ParticleReview
 import com.nihongodoushi.app.storage.PracticeProgress
+import com.nihongodoushi.app.storage.ProfileRules
 import com.nihongodoushi.app.storage.ReviewPolicy
+import com.nihongodoushi.app.storage.UserProfile
 import java.time.Instant
 import java.time.LocalDate
 
@@ -63,6 +66,27 @@ class AppState(private val store: LocalStore) {
     /** 会话内已提交作答数（跨模块共享，对应 web 端 sessionAnswerCount） */
     var sessionAnswerCount: Int = 0
         private set
+
+    /** 用户资料（profile-v1）：当前仅昵称 */
+    var profile by mutableStateOf(store.loadProfile())
+        private set
+
+    /** 书签收藏（bookmarks-v1）：本期仅存储骨架与计数，无写入入口（阅读模块上线后启用） */
+    var bookmarks by mutableStateOf(store.loadBookmarks())
+        private set
+
+    /**
+     * 昵称编辑：校验通过才写入并落盘，返回 true；非法输入原值不变、返回 false。
+     */
+    fun updateNickname(raw: String): Boolean {
+        val checked = ProfileRules.check(raw)
+        if (checked !is NicknameCheck.Ok) {
+            return false
+        }
+        profile = UserProfile(nickname = checked.value)
+        store.saveProfile(profile)
+        return true
+    }
 
     init {
         // history-v1 上线时的回填：历史里今天的答题数少于 daily（老键）时取较大值补齐，

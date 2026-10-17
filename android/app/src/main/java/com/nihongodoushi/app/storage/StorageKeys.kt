@@ -24,6 +24,12 @@ object StorageKeys {
 
     /** 已练过的词条集合，供「词库覆盖进度」 */
     const val PRACTICE = "japanese-verb-practice-progress-v1"
+
+    /** 用户资料（profile-v1）：当前仅昵称 */
+    const val PROFILE = "japanese-verb-practice-profile-v1"
+
+    /** 书签收藏（bookmarks-v1）：阅读模块上线前只有存储骨架，无写入入口 */
+    const val BOOKMARKS = "japanese-verb-practice-bookmarks-v1"
 }
 
 /** 间隔复习常量（与 Web 端 app.js 一致） */

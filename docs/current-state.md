@@ -1,7 +1,7 @@
 # 当前实现背景
 
 > 更新时间：2026-10-17
-> 本文记录当前实现，以网页端为主线；Android 原生客户端已实现 MVP（主页／我的两标签 + 动词／形容词练习 + 错题本），详见 [android-two-tab-spec.md](android-two-tab-spec.md) 与 [android-answer-screen-spec.md](android-answer-screen-spec.md)。助词模块在 Android 端尚未实现，设计见 [android-particle-module-spec.md](android-particle-module-spec.md)。
+> 本文记录当前实现，以网页端为主线；Android 原生客户端已实现底部四标签框架（主页/学习/阅读/我的，D-024）+ 动词／形容词三层练习 + 助词模块 + 错题本，详见 [android-four-tab-spec.md](android-four-tab-spec.md) 与 [android-two-tab-spec.md](android-two-tab-spec.md)、[android-answer-screen-spec.md](android-answer-screen-spec.md)。
 
 ## 1. 项目概述
 
@@ -9,7 +9,7 @@
 
 界面、规则引擎和记录均在浏览器本地运行。答题统计、每日练习记录和错题保存在当前浏览器的 `localStorage` 中，不提供云端同步。
 
-每次打开网页默认进入学习主页。桌面端侧栏与主内容区分别滚动，页面外层锁定动态视口且不参与滚动；答题后焦点滚动主内容区时，侧栏保持固定。桌面侧栏左上角的“日”品牌可返回主页，侧栏不重复放置主页按钮，折叠状态在主页导航时保留。窄屏使用左侧抽屉，顶部“日”品牌可返回主页，顶部栏固定，主页内容在独立滚动区内浏览，底部内容带安全留白。动词、形容词和助词是独立学习模块；动词与形容词错题在全局错题本中分组，助词错题在助词模块内复习。Android 端为同一套模块的原生实现，但当前只有动词与形容词，助词模块见设计文档。
+每次打开网页默认进入学习主页。桌面端侧栏与主内容区分别滚动，页面外层锁定动态视口且不参与滚动；答题后焦点滚动主内容区时，侧栏保持固定。桌面侧栏左上角的“日”品牌可返回主页，侧栏不重复放置主页按钮，折叠状态在主页导航时保留。窄屏使用左侧抽屉，顶部“日”品牌可返回主页，顶部栏固定，主页内容在独立滚动区内浏览，底部内容带安全留白。动词、形容词和助词是独立学习模块；动词与形容词错题在全局错题本中分组，助词错题在助词模块内复习。Android 端为同一套模块的原生实现（动词、形容词、助词与共享错题本），导航为底部四标签（主页/学习/阅读/我的）。「阅读」标签与「查词」「模型/API 设置」等预留位是规划中占位，无真实能力。
 
 ## 2. 总体结构
 
@@ -138,6 +138,6 @@ web/index.html ── 页面结构与交互节点
   node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
   ```
 
-当前基线：网页端 6 个测试文件共 111 项全绿；Android 端 `./gradlew :app:testDebugUnitTest` 70 项全绿（助词模块、掌握度口径与调度测试已加入）。
+当前基线：网页端 6 个测试文件共 113 项全绿；Android 端 `./gradlew :app:testDebugUnitTest` 101 项全绿（含谚语抽取、知识点建议与资料／书签校验测试）。
 
 在 `web/` 目录运行测试。维护和扩展时应保持「规则在引擎、交互与编排在 `web/app.js`、结构在 HTML、表现与主题在 CSS」的边界。新增规则应补引擎测试；新增页面节点或交互应补 UI 测试；新增界面文字或日语词条应同步更新 `web/font/` 字体子集。

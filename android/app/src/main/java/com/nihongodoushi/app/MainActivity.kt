@@ -26,28 +26,36 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.storage.LocalStore
 import com.nihongodoushi.app.ui.AppState
-import com.nihongodoushi.app.ui.home.HomeDestination
+import com.nihongodoushi.app.ui.adjective.AdjectiveFlow
 import com.nihongodoushi.app.ui.home.HomeScreen
 import com.nihongodoushi.app.ui.mine.MineScreen
 import com.nihongodoushi.app.ui.mistakes.MistakesScreen
 import com.nihongodoushi.app.ui.particle.ParticleFlow
-import com.nihongodoushi.app.ui.adjective.AdjectiveFlow
 import com.nihongodoushi.app.ui.practice.AdjectivePracticeScreen
 import com.nihongodoushi.app.ui.practice.AdjectivePracticeState
-import com.nihongodoushi.app.ui.verb.VerbFlow
 import com.nihongodoushi.app.ui.practice.VerbPracticeScreen
 import com.nihongodoushi.app.ui.practice.VerbPracticeState
+import com.nihongodoushi.app.ui.read.ReadScreen
+import com.nihongodoushi.app.ui.study.StudyDestination
+import com.nihongodoushi.app.ui.study.StudyScreen
 import com.nihongodoushi.app.ui.theme.NihongoDoushiTheme
+import com.nihongodoushi.app.ui.verb.VerbFlow
 
-/** 底栏两个一级标签（2026-10-15 重设计：动词/形容词/错题本降为二级页） */
-enum class AppTab(val label: String, val icon: ImageVector) {
-    HOME("主页", Icons.Filled.Home),
-    MINE("我的", Icons.Filled.Person),
+/**
+ * 底栏四个一级标签（2026-10-17 四标签框架）。
+ * 图标在 [AppBottomBar] 内统一解析：主页/我的用 Material Icons core，
+ * 学习/阅读用新增 VectorDrawable（ic_tab_study / ic_tab_read）。
+ */
+enum class AppTab(val label: String) {
+    HOME("主页"),
+    STUDY("学习"),
+    READ("阅读"),
+    MINE("我的"),
 }
 
 /** 二级页标识（可保存进 Bundle，故用字符串常量） */
@@ -56,6 +64,14 @@ private object SubPage {
     const val ADJECTIVE = "adjective"
     const val PARTICLE = "particle"
     const val MISTAKES = "mistakes"
+}
+
+/** 学习目的地 → 二级页（主页建议与学习页入口共用） */
+private fun StudyDestination.subPage(): String = when (this) {
+    StudyDestination.VERB -> SubPage.VERB
+    StudyDestination.ADJECTIVE -> SubPage.ADJECTIVE
+    StudyDestination.PARTICLE -> SubPage.PARTICLE
+    StudyDestination.MISTAKES -> SubPage.MISTAKES
 }
 
 class MainActivity : ComponentActivity() {
@@ -167,14 +183,16 @@ private fun AppRoot(
                     },
                 )
                 else -> when (AppTab.valueOf(tab)) {
-                    AppTab.HOME -> HomeScreen(appState) { destination ->
-                        sub = when (destination) {
-                            HomeDestination.VERB -> SubPage.VERB
-                            HomeDestination.ADJECTIVE -> SubPage.ADJECTIVE
-                            HomeDestination.PARTICLE -> SubPage.PARTICLE
-                            HomeDestination.MISTAKES -> SubPage.MISTAKES
-                        }
-                    }
+                    AppTab.HOME -> HomeScreen(
+                        app = appState,
+                        onSelectTab = { tab = it.name },
+                        onOpen = { dest -> sub = dest.subPage() },
+                    )
+                    AppTab.STUDY -> StudyScreen(
+                        app = appState,
+                        onOpen = { dest -> sub = dest.subPage() },
+                    )
+                    AppTab.READ -> ReadScreen(appState)
                     AppTab.MINE -> MineScreen(appState)
                 }
             }
@@ -189,7 +207,26 @@ private fun AppBottomBar(current: AppTab, onSelect: (AppTab) -> Unit) {
             NavigationBarItem(
                 selected = current == entry,
                 onClick = { onSelect(entry) },
-                icon = { Icon(imageVector = entry.icon, contentDescription = entry.label) },
+                icon = {
+                    when (entry) {
+                        AppTab.HOME -> Icon(
+                            imageVector = Icons.Filled.Home,
+                            contentDescription = entry.label,
+                        )
+                        AppTab.STUDY -> Icon(
+                            painter = painterResource(R.drawable.ic_tab_study),
+                            contentDescription = entry.label,
+                        )
+                        AppTab.READ -> Icon(
+                            painter = painterResource(R.drawable.ic_tab_read),
+                            contentDescription = entry.label,
+                        )
+                        AppTab.MINE -> Icon(
+                            imageVector = Icons.Filled.Person,
+                            contentDescription = entry.label,
+                        )
+                    }
+                },
                 label = { Text(text = entry.label) },
             )
         }

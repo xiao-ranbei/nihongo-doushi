@@ -119,7 +119,7 @@ export JAVA_HOME=<待补：本机 JDK 路径>
 
 ### 4.4 Android
 
-底栏两个一级标签：「主页」看今日答题与连续天数，「我的」看累计统计并支持统计清零；动词、形容词练习和错题本是二级页。答题判定为选择题，判定结果在底部抽屉展示。
+底栏四个一级标签：「主页」看随机日语谚语（可换一句）、本周打卡与知识点建议；「学习」是动词、形容词、助词与错题本的模块入口；「阅读」是规划中的工具框架（AI 阅读／排版／撰写／语法单词解析占位）；「我的」看今日统计、编辑本地昵称资料卡、书签收藏夹与统计清零。动词、形容词练习、助词学习和错题本是二级页。答题判定为选择题，判定结果在底部抽屉展示。
 
 ### 4.5 测试
 
@@ -131,7 +131,7 @@ node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/parti
 ./gradlew :app:testDebugUnitTest
 ```
 
-当前基线（2026-10-17 实测）：网页端 111/111 通过；Android 70 项、0 失败（VerbEngine 10、AdjectiveEngine 9、QuizBuilder 9、ActivityAggregation 5、CrossSampleConsistency 3、ParticleEngine 19、ParticleCrossSample 5、Mastery 4、ParticleReview 6）。改动后不得低于该基线。
+当前基线（2026-10-17 实测）：网页端 113/113 通过；Android 101 项、0 失败（VerbEngine 10、AdjectiveEngine 9、QuizBuilder 9、ActivityAggregation 5、CrossSampleConsistency 3、ParticleEngine 19、ParticleCrossSample 5、Mastery 4、ParticleReview 6、ProverbPicker 8、SuggestionEngine 9、ProfileBookmark 14）。改动后不得低于该基线。
 
 ## 5. 关键配置说明
 
@@ -153,6 +153,8 @@ node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/parti
 | `japanese-verb-practice-daily-v1` | 最近练习日期、连续天数、分模块当日题数 |
 | `japanese-verb-practice-history-v1` | 近期每日学习行为（仅 Android，供主页周历与统计） |
 | `japanese-verb-practice-progress-v1` | 已练词条集合，用于词库覆盖进度（仅 Android） |
+| `japanese-verb-practice-profile-v1` | 本地资料（昵称，仅 Android） |
+| `japanese-verb-practice-bookmarks-v1` | 书签收藏（仅 Android；本期为空骨架，阅读模块上线后启用写入） |
 
 ### 5.3 Android 构建参数
 
@@ -208,7 +210,7 @@ keyPassword=<待补>
 
 - **无同步与备份**：不做账号、云同步、自动备份；只能手动导出 JSON（Android 端暂不支持导入导出，D-008 延后）。
 - **两端数据不通**：Web 与 Android 存储结构对齐但不自动迁移，换端等于从零开始。
-- **功能不对齐**：助词模块、活用速查、错题导入导出目前仅 Web 端；Android MVP 只有主页／我的、动词／形容词练习和错题本。
+- **功能不对齐**：活用速查、错题导入导出目前仅 Web 端；Android 为四标签框架（主页/学习/阅读/我的），「阅读」与「查词」是规划中占位、无真实能力，模型/API 设置、发音音色、词库导入导出为预留功能位。
 - **设备范围窄**：Android 只按手机竖屏设计（D-010），平板、横屏、折叠屏未适配；Web 桌面端有侧栏、窄屏有抽屉，未做平板专门布局。
 - **无 PWA**：没有 Service Worker 与应用清单，网页端无法「安装」到桌面，离线依赖本地文件；Android 端本身离线可用。
 - **词库规模有限**：79 动词、15 形容词、9 个助词专题 48 题；不是完整 JLPT 词表。

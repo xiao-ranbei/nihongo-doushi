@@ -23,6 +23,8 @@
 | [android-particle-module-spec.md](android-particle-module-spec.md) | Android 助词学习模块：信息架构与页面流程、UI 布局与状态、学习闭环、教学策略与取舍 | 设计已定稿（D-016～D-021）；待实现 |
 | [design/particle-prototypes.html](design/particle-prototypes.html) | Android 助词模块四版可交互原型（专题地图 / 学习路径 / 直接开练 / 对开对比）与横向对比 | 已选定 A（2026-10-17） |
 | [android-module-three-tier-refactor.md](android-module-three-tier-refactor.md) | 动词／形容词模块三层改造：模块首页 + 讲解页 + 练习屏，含内容划分、跳转、视觉规范与关键点 | 已实现（2026-10-17） |
+| [android-four-tab-spec.md](android-four-tab-spec.md) | 底栏四标签框架（主页/学习/阅读/我的）：IA、各页规格、扩展点、存储、验收标准 | 已实现（2026-10-17） |
+| [design/four-tab-design.md](design/four-tab-design.md) | 四标签四页界面设计说明：分区结构、令牌清单、图标选型、状态矩阵与动效 | 已实现 |
 | [workflow-review-two-increments.md](workflow-review-two-increments.md) | 两次追加功能的工作流复盘：目标、步骤、模块依赖、异同与演进、注意事项与可复用模板 | 参考文档 |
 | [design/home-mine-prototypes.html](design/home-mine-prototypes.html) | 主页/我的 三版可交互原型（框内底栏可切换） | 讨论用原型，不是正式页面 |
 | [design/icon-concepts/](design/icon-concepts/) | 应用图标方向 1「あ・纸页」资产（已轮廓化，含 VectorDrawable）与生成/自检脚本 | 可接入 |

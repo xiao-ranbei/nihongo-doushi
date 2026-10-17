@@ -1,21 +1,26 @@
 package com.nihongodoushi.app.ui.mine
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,39 +35,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.nihongodoushi.app.engine.adjective.AdjectiveData
-import com.nihongodoushi.app.engine.verb.VerbData
-import com.nihongodoushi.app.storage.ActivityAggregation
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.common.ModuleSectionLabel
+import com.nihongodoushi.app.ui.common.PlannedRow
 import com.nihongodoushi.app.ui.theme.paperColors
 import java.time.LocalDate
 
 /**
- * 我的：今日学习统计（V3 形态）。
- * 结构：时长 / 任务紧凑条 → 学习进度（模块进度条）→ 今日明细 → 统计清零。
+ * 我的页（2026-10-17 四标签改版）。
+ * 结构：页头 → 资料卡（昵称可编辑）→ 学习统计（时长/进度/明细）→ 书签收藏夹（空态框架）
+ * → 更多设置（3 个规划中位）→ 统计清零。
  */
 @Composable
 fun MineScreen(app: AppState) {
     var confirmReset by remember { mutableStateOf(false) }
-    val today = app.todayActivity()
-    val (durationValue, durationUnit) = ActivityAggregation.durationParts(today.seconds)
     val paper = paperColors()
-
-    val verbPracticed = app.progress.verbIds.size
-    val adjectivePracticed = app.progress.adjectiveIds.size
-    val verbTotal = VerbData.VERBS.size
-    val adjectiveTotal = AdjectiveData.ADJECTIVES.size
-    val mastered = app.masteredCount
-    val mistakeTotal = app.mistakes.size + mastered
-
-    val verbStats = app.verbStats
-    val adjStats = app.adjectiveStats
-    val totalAnswers = verbStats.correct + verbStats.incorrect + adjStats.correct + adjStats.incorrect
-    val accuracy = if (totalAnswers == 0) {
-        "—"
-    } else {
-        Math.round((verbStats.correct + adjStats.correct) * 100.0 / totalAnswers).toString() + "%"
-    }
 
     Column(
         modifier = Modifier
@@ -71,6 +58,7 @@ fun MineScreen(app: AppState) {
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        // 页头（沿用）
         Column(modifier = Modifier.padding(start = 2.dp, top = 4.dp, bottom = 2.dp)) {
             Text(
                 text = "今天 · " + LocalDate.now().monthValue + "月" + LocalDate.now().dayOfMonth + "日",
@@ -85,129 +73,63 @@ fun MineScreen(app: AppState) {
             )
         }
 
-        // 时长 / 任务
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = 2.dp,
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = durationValue,
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                        Spacer(modifier = Modifier.width(5.dp))
-                        Text(
-                            text = durationUnit,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = paper.muted,
-                            modifier = Modifier.padding(bottom = 6.dp),
-                        )
-                    }
-                    Text(
-                        text = "今日学习时长",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = paper.muted,
-                    )
-                }
-                Spacer(modifier = Modifier.width(14.dp))
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(44.dp)
-                        .background(paper.line),
-                )
-                Spacer(modifier = Modifier.width(14.dp))
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = today.tasks.toString(),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Text(
-                        text = "完成任务",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = paper.muted,
-                    )
-                }
-            }
-        }
+        // 段① 资料卡：首字圆标 + 昵称 + 编辑
+        MineProfileCard(app)
+
+        // 段② 学习统计（原两标签版内容，原样保留）
+        StudyDurationCard(app.todayActivity())
 
         SectionLabel("学习进度")
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = 2.dp,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp, vertical = 15.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                ProgressLine(
-                    label = "动词 · 已练词条",
-                    value = "$verbPracticed / $verbTotal",
-                    ratio = ActivityAggregation.coverage(verbPracticed, verbTotal),
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                ProgressLine(
-                    label = "形容词 · 已练词条",
-                    value = "$adjectivePracticed / $adjectiveTotal",
-                    ratio = ActivityAggregation.coverage(adjectivePracticed, adjectiveTotal),
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                ProgressLine(
-                    label = "错题本 · 已掌握",
-                    value = "$mastered / $mistakeTotal",
-                    ratio = ActivityAggregation.coverage(mastered, mistakeTotal),
-                    color = MaterialTheme.colorScheme.tertiary,
-                )
-            }
-        }
+        StudyProgressCard(app)
 
         SectionLabel("今日明细")
+        StudyDetailCard(app)
+
+        // 段③ 书签收藏夹：本期空态框架 + 计数（N > 99 显示「99+ 条」）
+        BookmarkSectionLabel(app)
+        BookmarkEmptyCard()
+
+        // 段④ 更多设置：3 个规划中位（不可点击）
+        SectionLabel("更多设置")
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             shadowElevation = 2.dp,
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                DetailRow(
-                    title = "答题数",
-                    subtitle = "动词 ${today.verbAnswers} · 形容词 ${today.adjectiveAnswers}",
-                    value = today.answers.toString() + " 题",
+                PlannedRow(
+                    icon = Icons.Filled.Settings,
+                    title = "模型/API 设置",
+                    description = "配置阅读工具使用的模型与服务地址",
                 )
-                DetailRow(
-                    title = "正确率",
-                    subtitle = "累计口径，含全部练习",
-                    value = accuracy,
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant),
                 )
-                DetailRow(
-                    title = "连续学习",
-                    subtitle = "最长 " + app.daily.best + " 天",
-                    value = app.currentStreak().toString() + " 天",
-                    divider = false,
+                PlannedRow(
+                    icon = Icons.Filled.Star,
+                    title = "发音音色",
+                    description = "选择单词与句子的朗读音色",
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant),
+                )
+                PlannedRow(
+                    icon = Icons.Filled.List,
+                    title = "词库导入导出",
+                    description = "导入或导出本地词库数据",
                 )
             }
         }
 
+        // 段⑤ 统计清零（沿用现有实现，不动）
         TextButton(
             onClick = { confirmReset = true },
             modifier = Modifier.padding(start = 2.dp),
@@ -240,6 +162,57 @@ fun MineScreen(app: AppState) {
     }
 }
 
+/** 书签收藏夹小节：左标题 + 右计数（容量防御：>99 折叠为 99+） */
+@Composable
+private fun BookmarkSectionLabel(app: AppState) {
+    val count = app.bookmarks.items.size
+    ModuleSectionLabel(
+        title = "书签收藏夹",
+        caption = if (count > 99) "99+ 条" else "$count 条",
+        modifier = Modifier.padding(start = 2.dp, top = 2.dp),
+    )
+}
+
+/** 书签空态卡：星形图标 + 引导文案（阅读功能上线后可收藏句子与单词） */
+@Composable
+private fun BookmarkEmptyCard() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shadowElevation = 2.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = null,
+                    tint = paperColors().textStrong,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "还没有收藏。阅读功能上线后，可收藏句子与单词",
+                style = MaterialTheme.typography.labelMedium,
+                color = paperColors().muted,
+            )
+        }
+    }
+}
+
 @Composable
 private fun SectionLabel(text: String) {
     Text(
@@ -248,86 +221,4 @@ private fun SectionLabel(text: String) {
         color = paperColors().muted,
         modifier = Modifier.padding(start = 2.dp, top = 2.dp),
     )
-}
-
-@Composable
-private fun ProgressLine(
-    label: String,
-    value: String,
-    ratio: Float,
-    color: androidx.compose.ui.graphics.Color,
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 7.dp)
-                .height(7.dp)
-                .clip(RoundedCornerShape(999.dp))
-                .background(MaterialTheme.colorScheme.outlineVariant),
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(ratio.coerceIn(0f, 1f))
-                    .height(7.dp)
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(color),
-            )
-        }
-    }
-}
-
-@Composable
-private fun DetailRow(title: String, subtitle: String, value: String, divider: Boolean = true) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 15.dp, vertical = 13.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = paperColors().muted,
-                )
-            }
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleMedium,
-                color = paperColors().textStrong,
-            )
-        }
-        if (divider) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant),
-            )
-        }
-    }
 }

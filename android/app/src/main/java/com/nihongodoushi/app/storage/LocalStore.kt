@@ -145,6 +145,54 @@ class LocalStore(context: Context) {
     fun saveProgress(progress: PracticeProgress): Boolean =
         writeRaw(StorageKeys.PRACTICE, json.encodeToString(progress))
 
+    /** 用户资料（profile-v1）：昵称经 sanitize 防御，坏数据回落缺省 */
+    fun loadProfile(): UserProfile {
+        val raw = readRaw(StorageKeys.PROFILE) ?: return UserProfile()
+        return try {
+            val profile = json.decodeFromString<UserProfile>(raw)
+            UserProfile(nickname = ProfileRules.sanitize(profile.nickname))
+        } catch (error: Exception) {
+            lastLoadInvalid = true
+            UserProfile()
+        }
+    }
+
+    fun saveProfile(profile: UserProfile): Boolean =
+        writeRaw(
+            StorageKeys.PROFILE,
+            json.encodeToString(profile.copy(nickname = ProfileRules.sanitize(profile.nickname))),
+        )
+
+    /** 书签收藏（bookmarks-v1）：过滤非法项、id 去重、裁剪到容量上限 */
+    fun loadBookmarks(): BookmarkList {
+        val raw = readRaw(StorageKeys.BOOKMARKS) ?: return BookmarkList()
+        return try {
+            val list = json.decodeFromString<BookmarkList>(raw)
+            BookmarkList(
+                list.items
+                    .filter { BookmarkRules.isValid(it) }
+                    .distinctBy { it.id }
+                    .take(BookmarkRules.MAX_ITEMS),
+            )
+        } catch (error: Exception) {
+            lastLoadInvalid = true
+            BookmarkList()
+        }
+    }
+
+    fun saveBookmarks(list: BookmarkList): Boolean =
+        writeRaw(
+            StorageKeys.BOOKMARKS,
+            json.encodeToString(
+                BookmarkList(
+                    list.items
+                        .filter { BookmarkRules.isValid(it) }
+                        .distinctBy { it.id }
+                        .take(BookmarkRules.MAX_ITEMS),
+                ),
+            ),
+        )
+
     private fun loadStats(key: String): ModuleStats {
         val raw = readRaw(key) ?: return ModuleStats()
         return try {

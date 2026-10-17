@@ -1,7 +1,8 @@
 """生成 LXGW 楷体的字符子集（woff2 + Android TTF），替换 font/ 下的全量字体。
 
-背景：全量字体约 17MB，而页面实际用到的字形只有数百个（词库数据 +
-全部变形结果 + UI 文本，由 collect-chars.js 实测收集）。子集化后首屏
+背景：全量字体约 17MB，而两端实际用到的字形只有数百个（词库数据 +
+全部变形结果 + 两端 UI 文本，由 collect-chars.js 实测收集；自 D-029 起
+同时收集 Android Kotlin 字符串字面量）。子集化后首屏
 不再等待大文件读取，视觉不变。
 
 Android 端复用同一份字符表，产出 `res/font/lxgw_zhenkai_subset.ttf`；
@@ -11,8 +12,8 @@ Android 端复用同一份字符表，产出 `res/font/lxgw_zhenkai_subset.ttf`�
     pip install fonttools brotli
     python font/subset.py
 
-新增动词、助词或新页面文本后，重新跑一次本脚本即可；woff2 路径由
-font/fonts.js 清单声明，本脚本会同步更新其中的文件名与格式。
+新增动词、助词、谚语或新页面文本（任一端）后，重新跑一次本脚本即可；
+woff2 路径由 font/fonts.js 清单声明，本脚本会同步更新其中的文件名与格式。
 """
 
 from pathlib import Path
