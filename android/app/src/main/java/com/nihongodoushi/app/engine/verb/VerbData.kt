@@ -121,6 +121,8 @@ object VerbData {
     val INFLECTION_IDS: Set<String> = INFLECTIONS.map { it.id }.toSet()
 
     val VERB_BY_ID: Map<String, VerbEntry> = VERBS.associateBy { it.id }
+    val VOICE_BY_ID: Map<String, VoiceInfo> = VOICES.associateBy { it.id }
+    val INFLECTION_BY_ID: Map<String, InflectionInfo> = INFLECTIONS.associateBy { it.id }
 
     // 五段动词词尾对应行（う段 -> 各段），键值与 JS 版逐项一致。
     internal val I_ROW: Map<String, String> = mapOf(

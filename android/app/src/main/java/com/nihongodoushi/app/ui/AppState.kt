@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.nihongodoushi.app.engine.adjective.AdjectiveData
+import com.nihongodoushi.app.engine.mastery.Mastery
 import com.nihongodoushi.app.engine.adjective.AdjectiveEntry
 import com.nihongodoushi.app.engine.particle.ParticleData
 import com.nihongodoushi.app.engine.verb.VerbData
@@ -363,6 +364,50 @@ class AppState(private val store: LocalStore) {
         if (adjectiveId.isBlank() || adjectiveId in progress.adjectiveIds) return
         progress = progress.copy(adjectiveIds = progress.adjectiveIds + adjectiveId)
         store.saveProgress(progress)
+    }
+
+    // ---------- 掌握度（三层改造）：只认「未用提示答对」的组合 ----------
+
+    fun markVerbMastered(voiceId: String, inflectionId: String, verbId: String) {
+        val key = Mastery.verbKey(voiceId, inflectionId, verbId)
+        if (key in progress.verbMastered) return
+        progress = progress.copy(verbMastered = progress.verbMastered + key)
+        store.saveProgress(progress)
+    }
+
+    fun markAdjectiveMastered(formId: String, adjectiveId: String) {
+        val key = Mastery.adjectiveKey(formId, adjectiveId)
+        if (key in progress.adjMastered) return
+        progress = progress.copy(adjMastered = progress.adjMastered + key)
+        store.saveProgress(progress)
+    }
+
+    /** 某活用形式下已掌握的不同词条数（分母 = 词条总数） */
+    fun verbMasteredForForm(inflectionId: String): Int =
+        Mastery.verbCountForForm(progress.verbMastered, inflectionId)
+
+    /** 某语态下已掌握的不同词条数（按辞书形统计） */
+    fun verbMasteredForVoice(voiceId: String): Int =
+        Mastery.verbCountForVoice(progress.verbMastered, voiceId)
+
+    /** 形容词某形式下已掌握的不同词条数（分母 = 词条总数） */
+    fun adjectiveMasteredForForm(formId: String): Int =
+        Mastery.adjectiveCountForForm(progress.adjMastered, formId)
+
+    /** 动词模块整体掌握度：各形式/语态卡进度的等权平均（概览用，见三层改造 §3.2） */
+    fun verbModulePercent(): Int {
+        val fractions = VerbData.INFLECTIONS.map { verbMasteredForForm(it.id) / VerbData.VERBS.size.toFloat() } +
+            VerbData.VOICES.filter { it.id != "base" }
+                .map { verbMasteredForVoice(it.id) / VerbData.VERBS.size.toFloat() }
+        return Mastery.modulePercent(fractions)
+    }
+
+    /** 形容词模块整体掌握度 */
+    fun adjectiveModulePercent(): Int {
+        val fractions = com.nihongodoushi.app.engine.adjective.AdjectiveData.FORMS.map {
+            adjectiveMasteredForForm(it.id) / com.nihongodoushi.app.engine.adjective.AdjectiveData.ADJECTIVES.size.toFloat()
+        }
+        return Mastery.modulePercent(fractions)
     }
 
     /** 错题「已掌握」数：连续答对达到毕业次数后从错题本移除的累计数 */

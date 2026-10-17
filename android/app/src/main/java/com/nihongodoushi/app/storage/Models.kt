@@ -102,4 +102,8 @@ data class PracticeProgress(
     val masteredMistakes: Int = 0,
     /** 助词：「未用提示答对过」的题目 ID 集合（掌握度口径，见 D-020） */
     val particleMastered: List<String> = emptyList(),
+    /** 动词：「未用提示答对过」的组合 `voiceId::inflectionId::verbId`（三层改造掌握度口径） */
+    val verbMastered: List<String> = emptyList(),
+    /** 形容词：「未用提示答对过」的组合 `formId::adjectiveId` */
+    val adjMastered: List<String> = emptyList(),
 )

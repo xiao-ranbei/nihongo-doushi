@@ -179,7 +179,7 @@ fun HomeScreen(app: AppState, onOpen: (HomeDestination) -> Unit) {
         EntryCard(
             icon = Icons.Filled.Create,
             title = "动词练习",
-            subtitle = "$verbTotal 个词条 · 已练 $verbPracticed · 7 语态 × 18 活用",
+            subtitle = "$verbTotal 个词条 · 已练 $verbPracticed · 掌握度 ${app.verbModulePercent()}%",
             tint = MaterialTheme.colorScheme.primaryContainer,
             iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
             onClick = { onOpen(HomeDestination.VERB) },
@@ -187,7 +187,7 @@ fun HomeScreen(app: AppState, onOpen: (HomeDestination) -> Unit) {
         EntryCard(
             icon = Icons.Filled.List,
             title = "形容词练习",
-            subtitle = "$adjectiveTotal 个词条 · 已练 $adjectivePracticed · い / な 两类",
+            subtitle = "$adjectiveTotal 个词条 · 已练 $adjectivePracticed · 掌握度 ${app.adjectiveModulePercent()}%",
             tint = MaterialTheme.colorScheme.primaryContainer,
             iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
             onClick = { onOpen(HomeDestination.ADJECTIVE) },

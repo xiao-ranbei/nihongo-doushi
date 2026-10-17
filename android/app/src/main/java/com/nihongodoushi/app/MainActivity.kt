@@ -36,8 +36,10 @@ import com.nihongodoushi.app.ui.home.HomeScreen
 import com.nihongodoushi.app.ui.mine.MineScreen
 import com.nihongodoushi.app.ui.mistakes.MistakesScreen
 import com.nihongodoushi.app.ui.particle.ParticleFlow
+import com.nihongodoushi.app.ui.adjective.AdjectiveFlow
 import com.nihongodoushi.app.ui.practice.AdjectivePracticeScreen
 import com.nihongodoushi.app.ui.practice.AdjectivePracticeState
+import com.nihongodoushi.app.ui.verb.VerbFlow
 import com.nihongodoushi.app.ui.practice.VerbPracticeScreen
 import com.nihongodoushi.app.ui.practice.VerbPracticeState
 import com.nihongodoushi.app.ui.theme.NihongoDoushiTheme
@@ -84,6 +86,8 @@ private fun AppRoot(
     // 从错题本进入助词模块时：记来源（退出时回错题本）并直接开复习
     var particleFromMistakes by rememberSaveable { mutableStateOf(false) }
     var particleAutoReview by rememberSaveable { mutableStateOf(false) }
+    var verbFromMistakes by rememberSaveable { mutableStateOf(false) }
+    var adjectiveFromMistakes by rememberSaveable { mutableStateOf(false) }
 
     // 二级页用系统返回键回到一级页
     BackHandler(enabled = sub != null) { sub = null }
@@ -118,8 +122,22 @@ private fun AppRoot(
                 ),
         ) {
             when (sub) {
-                SubPage.VERB -> VerbPracticeScreen(verbState, onBack = { sub = null })
-                SubPage.ADJECTIVE -> AdjectivePracticeScreen(adjectiveState, onBack = { sub = null })
+                SubPage.VERB -> VerbFlow(
+                    app = appState,
+                    verbState = verbState,
+                    onExit = {
+                        sub = if (verbFromMistakes) SubPage.MISTAKES else null
+                        verbFromMistakes = false
+                    },
+                )
+                SubPage.ADJECTIVE -> AdjectiveFlow(
+                    app = appState,
+                    adjectiveState = adjectiveState,
+                    onExit = {
+                        sub = if (adjectiveFromMistakes) SubPage.MISTAKES else null
+                        adjectiveFromMistakes = false
+                    },
+                )
                 SubPage.PARTICLE -> ParticleFlow(
                     app = appState,
                     onExit = {
@@ -134,6 +152,14 @@ private fun AppRoot(
                     verbState,
                     adjectiveState,
                     onBack = { sub = null },
+                    onReviewVerb = {
+                        verbFromMistakes = true
+                        sub = SubPage.VERB
+                    },
+                    onReviewAdjective = {
+                        adjectiveFromMistakes = true
+                        sub = SubPage.ADJECTIVE
+                    },
                     onReviewParticle = {
                         particleFromMistakes = true
                         particleAutoReview = true

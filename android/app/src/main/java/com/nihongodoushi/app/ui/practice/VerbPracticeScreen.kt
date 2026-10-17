@@ -89,7 +89,8 @@ class VerbPracticeState(internal val app: AppState) {
 
     val progressLabel: String get() = "$numberAtStart/$ROUND_SIZE"
 
-    val roundLabel: String get() = "第 $numberAtStart / $ROUND_SIZE 题"
+    val roundLabel: String
+        get() = (scopeLabel?.let { "$it · " } ?: "") + "第 $numberAtStart / $ROUND_SIZE 题"
 
     /** 本轮累计口径：与抽屉内「本轮小结」使用同一公式，两处数字一致 */
     val statsLabel: String
@@ -105,6 +106,29 @@ class VerbPracticeState(internal val app: AppState) {
             currentQuestion?.isScheduledReview == true -> "间隔复习"
             else -> "随机练习"
         }
+
+    /** 当前练习范围的可读名（由模块首页/讲解页设置，用于顶栏标题） */
+    var scopeLabel by mutableStateOf<String?>(null)
+        private set
+
+    private var hintUsedThisQuestion by mutableStateOf(false)
+
+    /** 按讲解页/模块首页的范围开练：形式卡传 voice=base + inflection；语态卡传 voice + dictionary */
+    fun startScope(voiceId: String?, inflectionId: String?, label: String?) {
+        scopeLabel = label
+        applyFilters(
+            group = "all",
+            voice = voiceId ?: "base",
+            inflection = inflectionId ?: "all",
+            level = "all",
+        )
+    }
+
+    /** 综合练习：不预设任何范围 */
+    fun startAll(label: String? = null) {
+        scopeLabel = label
+        applyFilters("all", "base", "all", "all")
+    }
 
     fun applyFilters(group: String, voice: String, inflection: String, level: String) {
         groupFilter = group
@@ -203,6 +227,7 @@ class VerbPracticeState(internal val app: AppState) {
         showHint = false
         lastTapIndex = -1
         lastTapTime = 0L
+        hintUsedThisQuestion = false
         // 采集：出过题即记为「已练词条」，用于词库覆盖进度
         app.markVerbPracticed(question.verb.id)
     }
@@ -267,6 +292,9 @@ class VerbPracticeState(internal val app: AppState) {
         }
         app.updateVerbStats(correct)
         app.updateDaily("verb")
+        if (correct && !hintUsedThisQuestion) {
+            app.markVerbMastered(question.voiceId, question.inflectionId, question.verb.id)
+        }
         lastCorrect = correct
         judged = true
         lastTapIndex = -1
@@ -308,6 +336,9 @@ class VerbPracticeState(internal val app: AppState) {
 
     fun toggleHint() {
         if (judged) return
+        if (!showHint) {
+            hintUsedThisQuestion = true
+        }
         showHint = !showHint
     }
 

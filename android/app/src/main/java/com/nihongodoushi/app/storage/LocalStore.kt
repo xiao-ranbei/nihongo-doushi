@@ -133,6 +133,8 @@ class LocalStore(context: Context) {
                 adjectiveIds = progress.adjectiveIds.filter { it.isNotBlank() }.distinct(),
                 masteredMistakes = if (progress.masteredMistakes >= 0) progress.masteredMistakes else 0,
                 particleMastered = progress.particleMastered.filter { it.isNotBlank() }.distinct(),
+                verbMastered = progress.verbMastered.filter { it.isNotBlank() }.distinct(),
+                adjMastered = progress.adjMastered.filter { it.isNotBlank() }.distinct(),
             )
         } catch (error: Exception) {
             lastLoadInvalid = true

@@ -47,6 +47,8 @@ fun MistakesScreen(
     verbState: VerbPracticeState,
     adjectiveState: AdjectivePracticeState,
     onBack: (() -> Unit)? = null,
+    onReviewVerb: (() -> Unit)? = null,
+    onReviewAdjective: (() -> Unit)? = null,
     onReviewParticle: (() -> Unit)? = null,
 ) {
     var confirmClear by remember { mutableStateOf(false) }
@@ -77,12 +79,12 @@ fun MistakesScreen(
             MistakeGroup(
                 title = "动词错题（${app.verbMistakes().size}）",
                 records = app.verbMistakes(),
-                onReview = { verbState.startMistakeReview() },
+                onReview = { onReviewVerb?.invoke() ?: verbState.startMistakeReview() },
             )
             MistakeGroup(
                 title = "形容词错题（${app.adjectiveMistakes().size}）",
                 records = app.adjectiveMistakes(),
-                onReview = { adjectiveState.startMistakeReview() },
+                onReview = { onReviewAdjective?.invoke() ?: adjectiveState.startMistakeReview() },
             )
             ParticleMistakeGroup(
                 items = particleItems,

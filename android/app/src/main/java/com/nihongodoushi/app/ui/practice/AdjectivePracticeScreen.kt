@@ -85,7 +85,8 @@ class AdjectivePracticeState(internal val app: AppState) {
 
     val progressLabel: String get() = "$numberAtStart/$ROUND_SIZE"
 
-    val roundLabel: String get() = "第 $numberAtStart / $ROUND_SIZE 题"
+    val roundLabel: String
+        get() = (scopeLabel?.let { "$it · " } ?: "") + "第 $numberAtStart / $ROUND_SIZE 题"
 
     /** 本轮累计口径：与抽屉内「本轮小结」一致 */
     val statsLabel: String
@@ -101,6 +102,24 @@ class AdjectivePracticeState(internal val app: AppState) {
             currentQuestion?.isScheduledReview == true -> "间隔复习"
             else -> "随机练习"
         }
+
+    /** 当前练习范围的可读名（三层改造：由模块首页/讲解页设置） */
+    var scopeLabel by mutableStateOf<String?>(null)
+        private set
+
+    private var hintUsedThisQuestion by mutableStateOf(false)
+
+    /** 按形式卡开练 */
+    fun startScope(inflectionId: String?, label: String?) {
+        scopeLabel = label
+        applyFilters(group = "all", inflection = inflectionId ?: "all", level = "all")
+    }
+
+    /** 综合练习：不预设范围 */
+    fun startAll(label: String? = null) {
+        scopeLabel = label
+        applyFilters("all", "all", "all")
+    }
 
     fun applyFilters(group: String, inflection: String, level: String) {
         groupFilter = group
@@ -188,6 +207,7 @@ class AdjectivePracticeState(internal val app: AppState) {
         showHint = false
         lastTapIndex = -1
         lastTapTime = 0L
+        hintUsedThisQuestion = false
         // 采集：出过题即记为「已练词条」
         app.markAdjectivePracticed(question.adjective.id)
     }
@@ -249,6 +269,9 @@ class AdjectivePracticeState(internal val app: AppState) {
         }
         app.updateAdjectiveStats(correct)
         app.updateDaily("adjective")
+        if (correct && !hintUsedThisQuestion) {
+            app.markAdjectiveMastered(question.formId, question.adjective.id)
+        }
         lastCorrect = correct
         judged = true
         lastTapIndex = -1
@@ -287,6 +310,9 @@ class AdjectivePracticeState(internal val app: AppState) {
 
     fun toggleHint() {
         if (judged) return
+        if (!showHint) {
+            hintUsedThisQuestion = true
+        }
         showHint = !showHint
     }
 

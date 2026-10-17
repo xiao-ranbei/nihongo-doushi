@@ -138,6 +138,6 @@ web/index.html ── 页面结构与交互节点
   node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
   ```
 
-当前基线：网页端 6 个测试文件共 111 项全绿；Android 端 `./gradlew :app:testDebugUnitTest` 60 项全绿（助词模块的引擎与跨端样例测试已加入）。
+当前基线：网页端 6 个测试文件共 111 项全绿；Android 端 `./gradlew :app:testDebugUnitTest` 70 项全绿（助词模块、掌握度口径与调度测试已加入）。
 
 在 `web/` 目录运行测试。维护和扩展时应保持「规则在引擎、交互与编排在 `web/app.js`、结构在 HTML、表现与主题在 CSS」的边界。新增规则应补引擎测试；新增页面节点或交互应补 UI 测试；新增界面文字或日语词条应同步更新 `web/font/` 字体子集。
