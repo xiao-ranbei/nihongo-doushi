@@ -315,6 +315,7 @@
     particleFeedbackTitle: document.getElementById("particle-feedback-title"),
     particleFeedbackAnswer: document.getElementById("particle-feedback-answer"),
     particleFeedbackExplanation: document.getElementById("particle-feedback-explanation"),
+    particleFeedbackNote: document.getElementById("particle-feedback-note"),
     particleCorrectCount: document.getElementById("particle-correct-count"),
     particleIncorrectCount: document.getElementById("particle-incorrect-count"),
     particleTotalCount: document.getElementById("particle-total-count"),
@@ -1759,6 +1760,15 @@
           createParticleTextElement("span", "particle-example-translation", example.translation),
           createParticleTextElement("span", "particle-example-note", example.note)
         );
+        if (example.contrastNote) {
+          item.append(
+            createParticleTextElement(
+              "span",
+              "particle-example-contrast",
+              "换个助词会怎样：" + example.contrastNote
+            )
+          );
+        }
         examples.append(item);
       });
 
@@ -1817,6 +1827,8 @@
     elements.particleQuestionTranslation.hidden = isFunctionQuestion;
     elements.particleFeedback.hidden = true;
     elements.particleFeedback.classList.remove("is-correct", "is-incorrect");
+    elements.particleFeedbackNote.hidden = true;
+    elements.particleFeedbackNote.textContent = "";
     elements.particleNextQuestion.hidden = true;
     elements.particleCheckAnswer.disabled = true;
     selectedParticleAnswer = "";
@@ -2015,6 +2027,17 @@
     elements.particleFeedbackExplanation.textContent = currentParticleQuestion[
       currentParticleQuestion.level === "advanced" ? "advancedExplanation" : "beginnerExplanation"
     ];
+    // 逐项说明（D-019）：只在答错且该选项有说明时出现，避免给正确项也加一段否定语气
+    const optionNote = !correct && currentParticleQuestion.optionNotes
+      ? currentParticleQuestion.optionNotes[selectedParticleAnswer]
+      : undefined;
+    if (optionNote) {
+      elements.particleFeedbackNote.textContent = "你选的「" + selectedParticleAnswer + "」：" + optionNote;
+      elements.particleFeedbackNote.hidden = false;
+    } else {
+      elements.particleFeedbackNote.hidden = true;
+      elements.particleFeedbackNote.textContent = "";
+    }
     elements.particleCheckAnswer.disabled = true;
     elements.particleOptions.querySelectorAll("button").forEach(function (button) {
       button.disabled = true;

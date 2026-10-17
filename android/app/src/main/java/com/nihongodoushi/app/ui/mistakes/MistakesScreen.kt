@@ -26,9 +26,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.storage.MistakeRecord
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.particle.ParticleMistakeItem
+import com.nihongodoushi.app.ui.particle.particleMistakeItems
 import com.nihongodoushi.app.ui.practice.AdjectivePracticeState
 import com.nihongodoushi.app.ui.practice.VerbGroupLabels
 import com.nihongodoushi.app.ui.practice.VerbPracticeState
@@ -44,8 +47,11 @@ fun MistakesScreen(
     verbState: VerbPracticeState,
     adjectiveState: AdjectivePracticeState,
     onBack: (() -> Unit)? = null,
+    onReviewParticle: (() -> Unit)? = null,
 ) {
     var confirmClear by remember { mutableStateOf(false) }
+    val particleItems = app.particleMistakeItems()
+    val totalCount = app.mistakes.size + particleItems.size
 
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -65,7 +71,7 @@ fun MistakesScreen(
                 color = MaterialTheme.colorScheme.onBackground,
             )
         }
-        if (app.mistakes.isEmpty()) {
+        if (totalCount == 0) {
             Text(text = "当前没有错题。答错的题目会按间隔复习计划出现在这里。", color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             MistakeGroup(
@@ -78,6 +84,10 @@ fun MistakesScreen(
                 records = app.adjectiveMistakes(),
                 onReview = { adjectiveState.startMistakeReview() },
             )
+            ParticleMistakeGroup(
+                items = particleItems,
+                onReview = onReviewParticle,
+            )
             OutlinedButton(onClick = { confirmClear = true }) {
                 Text("清空错题")
             }
@@ -88,9 +98,18 @@ fun MistakesScreen(
         AlertDialog(
             onDismissRequest = { confirmClear = false },
             title = { Text("清空错题？") },
-            text = { Text("将删除全部 ${app.mistakes.size} 道错题及其复习进度，此操作不可撤销。练习统计不受影响。") },
+            text = {
+                Text(
+                    "将删除全部 $totalCount 道错题（含助词 ${particleItems.size} 道），" +
+                        "动词与形容词的复习进度一并清除，此操作不可撤销。练习统计不受影响。",
+                )
+            },
             confirmButton = {
-                Button(onClick = { app.clearMistakes(); confirmClear = false }) { Text("清空") }
+                Button(onClick = {
+                    app.clearMistakes()
+                    app.clearParticleMistakes()
+                    confirmClear = false
+                }) { Text("清空") }
             },
             dismissButton = {
                 TextButton(onClick = { confirmClear = false }) { Text("取消") }
@@ -163,4 +182,86 @@ private fun formatDue(record: MistakeRecord): String {
     if (!dueAt.isAfter(Instant.now())) return "现在"
     val date = dueAt.atZone(ZoneId.systemDefault())
     return date.monthValue.toString() + "/" + date.dayOfMonth
+}
+
+/**
+ * 助词组：与动词/形容词组并列，但**不显示到期时间**——助词错题是纯 ID 数组，没有排期字段（D-017）。
+ * 组头按钮进入模块内复习模式，复习答对即移出。
+ */
+@Composable
+private fun ParticleMistakeGroup(
+    items: List<ParticleMistakeItem>,
+    onReview: (() -> Unit)?,
+) {
+    val paper = paperColors()
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "助词错题（${items.size}）",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                if (onReview != null) {
+                    Button(onClick = onReview, enabled = items.isNotEmpty()) { Text("复习") }
+                }
+            }
+            if (items.isEmpty()) {
+                Text(
+                    text = "本组暂无错题。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    items(items, key = { it.questionId }) { item ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = item.lessonParticles + " · " + item.context,
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    text = "待复习",
+                                    modifier = Modifier.padding(start = 10.dp),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = paper.textRed,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                )
+                            }
+                            Text(
+                                text = item.sentence,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = paper.textStrong,
+                            )
+                        }
+                    }
+                }
+                Text(
+                    text = "助词错题不做时间排期：进入复习后答对即移出。",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = paper.muted,
+                )
+            }
+        }
+    }
 }

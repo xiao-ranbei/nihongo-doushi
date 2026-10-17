@@ -2583,6 +2583,16 @@ select:disabled {
   line-height: 1.5;
 }
 
+/* D-019：最小对立提示——换个助词后意思怎么变 */
+.particle-example-contrast {
+  padding: 4px 8px;
+  border-radius: 8px;
+  color: var(--orange-text-deep);
+  background: var(--orange-pale);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
 .particle-example-japanese {
   color: var(--green-dark);
   font-size: 13px;
@@ -2738,6 +2748,13 @@ select:disabled {
   color: var(--text-strong);
   font-size: 11px;
   line-height: 1.6;
+}
+
+/* D-019：答错时指出所选助词为什么在这句不成立 */
+#particle-feedback-note {
+  color: var(--text-red);
+  font-size: 10px;
+  line-height: 1.55;
 }
 
 .particle-feedback.is-correct {

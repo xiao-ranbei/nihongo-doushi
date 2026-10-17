@@ -1,14 +1,17 @@
-"""生成 LXGW 楷体的字符子集（woff2），替换 font/ 下的全量字体。
+"""生成 LXGW 楷体的字符子集（woff2 + Android TTF），替换 font/ 下的全量字体。
 
 背景：全量字体约 17MB，而页面实际用到的字形只有数百个（词库数据 +
 全部变形结果 + UI 文本，由 collect-chars.js 实测收集）。子集化后首屏
 不再等待大文件读取，视觉不变。
 
+Android 端复用同一份字符表，产出 `res/font/lxgw_zhenkai_subset.ttf`；
+两个产物必须同源，否则同一句文案在两端会用到不同的回退字体。
+
 用法（需要 fonttools 与 brotli，仅开发时需要，运行时零依赖）：
     pip install fonttools brotli
     python font/subset.py
 
-新增动词或新页面文本后，重新跑一次本脚本即可；字体路径已由
+新增动词、助词或新页面文本后，重新跑一次本脚本即可；woff2 路径由
 font/fonts.js 清单声明，本脚本会同步更新其中的文件名与格式。
 """
 
@@ -19,6 +22,7 @@ import sys
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "font" / "LXGWZhenKaiGB-Regular.ttf"
 DST = ROOT / "font" / "LXGWZhenKaiGB-Regular.subset.woff2"
+ANDROID_DST = ROOT.parent / "android" / "app" / "src" / "main" / "res" / "font" / "lxgw_zhenkai_subset.ttf"
 CHARS_FILE = ROOT / "font" / "subset-chars.txt"
 FONTS_JS = ROOT / "font" / "fonts.js"
 
@@ -66,6 +70,38 @@ def build_subset() -> None:
             "--no-hinting",
             "--drop-tables+=DSIG",
         ]
+    )
+
+
+def build_android_subset() -> None:
+    """Android 端 TTF 子集：字符表与 Web 完全一致，只换输出格式与路径。"""
+    from fontTools.subset import main as subset_main
+
+    ANDROID_DST.parent.mkdir(parents=True, exist_ok=True)
+    subset_main(
+        [
+            str(SRC),
+            f"--text-file={CHARS_FILE}",
+            f"--output-file={ANDROID_DST}",
+            "--layout-features=*",
+            "--no-hinting",
+            "--drop-tables+=DSIG",
+        ]
+    )
+
+
+def verify_android_subset() -> None:
+    from fontTools.ttLib import TTFont
+
+    wanted = set(CHARS_FILE.read_text(encoding="utf-8"))
+    original_cmap = TTFont(SRC).getBestCmap()
+    cmap = TTFont(ANDROID_DST).getBestCmap()
+    missing = sorted(c for c in wanted if ord(c) in original_cmap and ord(c) not in cmap)
+    if missing:
+        sys.exit(f"Android 子集缺少字形: {''.join(missing)}")
+    print(
+        f"Android 子集: {ANDROID_DST.stat().st_size / 1024:.0f}KB，"
+        f"覆盖 {sum(1 for c in wanted if ord(c) in cmap)}/{len(wanted)} 个字符"
     )
 
 
@@ -130,6 +166,8 @@ def main() -> None:
     print(f"收集到 {len(chars)} 个字符 -> {CHARS_FILE.name}")
     build_subset()
     verify()
+    build_android_subset()
+    verify_android_subset()
     update_manifest()
 
 

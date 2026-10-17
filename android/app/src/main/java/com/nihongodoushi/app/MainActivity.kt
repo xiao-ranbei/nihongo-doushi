@@ -31,6 +31,7 @@ import com.nihongodoushi.app.ui.home.HomeDestination
 import com.nihongodoushi.app.ui.home.HomeScreen
 import com.nihongodoushi.app.ui.mine.MineScreen
 import com.nihongodoushi.app.ui.mistakes.MistakesScreen
+import com.nihongodoushi.app.ui.particle.ParticleFlow
 import com.nihongodoushi.app.ui.practice.AdjectivePracticeScreen
 import com.nihongodoushi.app.ui.practice.AdjectivePracticeState
 import com.nihongodoushi.app.ui.practice.VerbPracticeScreen
@@ -47,6 +48,7 @@ enum class AppTab(val label: String, val icon: ImageVector) {
 private object SubPage {
     const val VERB = "verb"
     const val ADJECTIVE = "adjective"
+    const val PARTICLE = "particle"
     const val MISTAKES = "mistakes"
 }
 
@@ -75,6 +77,9 @@ private fun AppRoot(
 ) {
     var tab by rememberSaveable { mutableStateOf(AppTab.HOME.name) }
     var sub by rememberSaveable { mutableStateOf<String?>(null) }
+    // 从错题本进入助词模块时：记来源（退出时回错题本）并直接开复习
+    var particleFromMistakes by rememberSaveable { mutableStateOf(false) }
+    var particleAutoReview by rememberSaveable { mutableStateOf(false) }
 
     // 二级页用系统返回键回到一级页
     BackHandler(enabled = sub != null) { sub = null }
@@ -98,17 +103,32 @@ private fun AppRoot(
             when (sub) {
                 SubPage.VERB -> VerbPracticeScreen(verbState, onBack = { sub = null })
                 SubPage.ADJECTIVE -> AdjectivePracticeScreen(adjectiveState, onBack = { sub = null })
+                SubPage.PARTICLE -> ParticleFlow(
+                    app = appState,
+                    onExit = {
+                        sub = if (particleFromMistakes) SubPage.MISTAKES else null
+                        particleFromMistakes = false
+                    },
+                    autoReview = particleAutoReview,
+                    onAutoReviewConsumed = { particleAutoReview = false },
+                )
                 SubPage.MISTAKES -> MistakesScreen(
                     appState,
                     verbState,
                     adjectiveState,
                     onBack = { sub = null },
+                    onReviewParticle = {
+                        particleFromMistakes = true
+                        particleAutoReview = true
+                        sub = SubPage.PARTICLE
+                    },
                 )
                 else -> when (AppTab.valueOf(tab)) {
                     AppTab.HOME -> HomeScreen(appState) { destination ->
                         sub = when (destination) {
                             HomeDestination.VERB -> SubPage.VERB
                             HomeDestination.ADJECTIVE -> SubPage.ADJECTIVE
+                            HomeDestination.PARTICLE -> SubPage.PARTICLE
                             HomeDestination.MISTAKES -> SubPage.MISTAKES
                         }
                     }

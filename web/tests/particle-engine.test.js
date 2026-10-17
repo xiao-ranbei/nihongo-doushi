@@ -92,3 +92,27 @@ test("判题接受题目声明的多个自然答案并规范空白", function ()
     engine.getQuestions("beginner", undefined, "unknown");
   }, RangeError);
 });
+
+test("每个例句都有最小对立字段，且与所属专题一致", function () {
+  engine.LESSONS.forEach(function (lesson) {
+    lesson.examples.forEach(function (example, index) {
+      const label = lesson.id + " 例句 " + (index + 1);
+      assert.equal(example.contrastGroup, lesson.id, label + " 的分组应与专题一致");
+      assert.ok(example.contrastNote && example.contrastNote.length >= 8, label + " 缺对比说明");
+    });
+  });
+});
+
+test("选助词题的逐项说明覆盖干扰项且不指向正确答案", function () {
+  engine.QUESTIONS.filter(function (question) {
+    return question.type === "fill";
+  }).forEach(function (question) {
+    const notes = question.optionNotes;
+    assert.ok(notes && Object.keys(notes).length > 0, question.id + " 缺 optionNotes");
+    Object.keys(notes).forEach(function (option) {
+      assert.ok(question.options.indexOf(option) >= 0, question.id + " 的说明键不在选项内：" + option);
+      assert.ok(question.acceptedAnswers.indexOf(option) < 0, question.id + " 不该给正确答案写说明：" + option);
+      assert.ok(notes[option].length >= 8, question.id + " 的说明过短：" + option);
+    });
+  });
+});

@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Android 助词模块 · 四版原型对比</title>
+<style>
+  :root {
+    --paper: #f6f5f0;
+    --surface: #fffefa;
+    --ink: #26332e;
+    --muted: #7b867e;
+    --line: #e7e9e1;
+    --line-faint: #eef0eb;
+    --line-control: #dfe5dc;
+    --line-accent: #c6d4c7;
+    --green: #326151;
+    --green-dark: #254a3d;
+    --green-pale: #edf3eb;
+    --bg-pale-green: #f4f8f2;
+    --bg-pale-strong: #e9eee7;
+    --orange: #b8784f;
+    --orange-pale: #f8efe6;
+    --orange-deep: #895936;
+    --red: #a54e45;
+    --red-pale: #fbf0ed;
+    --text-strong: #657268;
+    --stat-correct: #54705a;
+    --stat-incorrect: #98645b;
+    --reading: #839087;
+    --meaning: #627967;
+    --shadow-card: 0 2px 10px rgba(43, 55, 47, 0.05), 0 12px 32px rgba(43, 55, 47, 0.045);
+    --shadow-float: 0 10px 28px rgba(43, 55, 47, 0.16);
+    --radius-card: 16px;
+    --radius-ctrl: 12px;
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  @font-face {
+    font-family: "LXGW ZhenKai GB";
+    src: url("../../web/font/LXGWZhenKaiGB-Regular.subset.woff2") format("woff2");
+    font-display: swap;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background: #eeeee7;
+    color: var(--ink);
+    font-family: "LXGW ZhenKai GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 40px 28px 80px; }
+
+  header.page { padding-bottom: 22px; border-bottom: 1px solid var(--line-control); }
+
+  header.page h1 { margin: 0 0 8px; font-size: 21px; letter-spacing: 0.02em; }
+
+  .lede { margin: 0; max-width: 760px; color: var(--text-strong); font-size: 13px; }
+
+  .anchorbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+
+  .anchorbar a {
+    display: inline-block; padding: 5px 12px; border: 1px solid var(--line-control);
+    border-radius: 999px; color: var(--green); text-decoration: none; font-size: 12px;
+    background: var(--surface);
+  }
+
+  .anchorbar a:hover { border-color: var(--line-accent); background: var(--green-pale); }
+
+  .variant {
+    display: grid;
+    grid-template-columns: 320px 320px minmax(0, 1fr);
+    gap: 26px;
+    align-items: start;
+    padding: 36px 0;
+    border-bottom: 1px solid var(--line-control);
+  }
+
+  .variant-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 12px; }
+
+  .variant-head h2 { margin: 0; font-size: 17px; }
+
+  .tag {
+    font-size: 11px; padding: 2px 9px; border-radius: 999px;
+    border: 1px solid var(--line-accent); color: var(--green); background: var(--green-pale);
+  }
+
+  .tag.warn { border-color: #e3c9b6; color: var(--orange-deep); background: var(--orange-pale); }
+
+  /* ---------- 手机框 ---------- */
+  .phone {
+    width: 320px; height: 680px; border-radius: 26px; overflow: hidden;
+    background: var(--paper); border: 1px solid var(--line-control);
+    box-shadow: var(--shadow-card); display: flex; flex-direction: column; position: relative;
+  }
+
+  .pbar {
+    height: 24px; flex: 0 0 auto; background: var(--surface); display: flex;
+    align-items: center; justify-content: space-between; padding: 0 14px;
+    font-size: 10px; color: var(--muted); letter-spacing: 0.04em;
+  }
+
+  .screen { flex: 1; overflow-y: auto; overflow-x: hidden; }
+  .screen::-webkit-scrollbar { width: 0; }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 3;
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 13px; background: rgba(255, 254, 250, 0.96);
+    border-bottom: 1px solid var(--line-faint); backdrop-filter: blur(6px);
+  }
+
+  .topbar b { font-size: 14px; font-weight: 500; }
+  .back { color: var(--muted); font-size: 15px; }
+  .grow { flex: 1; }
+  .tiny { font-size: 11px; color: var(--muted); }
+
+  .body { padding: 12px 13px 20px; }
+
+  /* 进度环 */
+  .ring { width: 30px; height: 30px; flex: 0 0 auto; }
+  .ring text { font-size: 8px; fill: var(--green); font-family: inherit; }
+  .ring-wrap { display: flex; align-items: center; gap: 6px; }
+  .ring-num { font-size: 12px; color: var(--green); line-height: 1.1; }
+  .ring-num i { display: block; font-style: normal; font-size: 10px; color: var(--muted); }
+
+  /* 卡片 */
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius-card); padding: 13px; margin-bottom: 12px;
+    box-shadow: 0 1px 2px rgba(43, 55, 47, 0.03);
+  }
+
+  .card.tinted { background: var(--bg-pale-green); border-color: var(--line-accent); }
+  .card.flat { box-shadow: none; }
+
+  .eyebrow {
+    font-size: 10px; letter-spacing: 0.08em; color: var(--muted);
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+
+  .h { font-size: 14px; font-weight: 500; margin: 0 0 3px; }
+  .sub { font-size: 12px; color: var(--text-strong); margin: 0; }
+  .dim { color: var(--muted); }
+  .sec-label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin: 16px 2px 8px; font-size: 11px; color: var(--muted);
+  }
+
+  /* 按钮 */
+  .btn {
+    font: inherit; font-size: 12.5px; border-radius: var(--radius-ctrl); cursor: pointer;
+    border: 1px solid var(--line-control); background: var(--surface); color: var(--ink);
+    padding: 8px 12px; transition: background 0.16s var(--ease), border-color 0.16s var(--ease);
+  }
+  .btn:hover { border-color: var(--line-accent); }
+  .btn.primary { background: var(--green); border-color: var(--green); color: #f7faf5; }
+  .btn.primary:hover { background: var(--green-dark); }
+  .btn.primary:disabled { background: #cfd8cf; border-color: #cfd8cf; color: #f6f6f2; cursor: default; }
+  .btn.ghost { background: transparent; }
+  .btn.small { padding: 5px 10px; font-size: 11.5px; }
+  .btn.block { display: block; width: 100%; }
+
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row.tight { gap: 6px; }
+  .row > .grow { flex: 1; }
+
+  /* 专题网格 */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+
+  .lcard {
+    position: relative; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 13px; padding: 10px 10px 9px;
+  }
+  .lcard .jp { font-size: 15px; color: var(--green-dark); letter-spacing: 0.04em; }
+  .lcard .name { font-size: 11px; color: var(--text-strong); margin-top: 2px; }
+  .lcard .pct { font-size: 11px; color: var(--muted); margin-top: 7px; display: flex; justify-content: space-between; }
+  .bar { height: 4px; border-radius: 999px; background: var(--line-faint); margin-top: 5px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--green); border-radius: 999px; }
+  .lcard .drill {
+    position: absolute; top: 7px; right: 7px; width: 24px; height: 24px; line-height: 22px;
+    text-align: center; border-radius: 8px; border: 1px solid var(--line-control);
+    color: var(--green); background: var(--paper); font-size: 11px; cursor: pointer;
+  }
+  .lcard .drill:hover { background: var(--green-pale); }
+
+  /* 固定底栏 */
+  .fixedbar {
+    flex: 0 0 auto; padding: 10px 13px 14px; background: var(--surface);
+    border-top: 1px solid var(--line-faint);
+  }
+
+  /* 练习 · 题面 */
+  .ctx { font-size: 11.5px; color: var(--muted); margin-bottom: 8px; }
+  .sentence { font-size: 17px; line-height: 1.8; letter-spacing: 0.02em; }
+  .sentence .blank {
+    display: inline-block; min-width: 42px; text-align: center; margin: 0 2px;
+    border-bottom: 2px dashed var(--line-accent); color: var(--green-dark);
+  }
+  .sentence .focus {
+    border-bottom: 2px solid var(--line-accent); padding-bottom: 1px; color: var(--green-dark);
+  }
+  .kana { font-size: 12px; color: var(--reading); margin-top: 5px; letter-spacing: 0.02em; }
+  .hintbox {
+    margin-top: 9px; padding: 8px 10px; border-radius: 10px;
+    background: var(--green-pale); border: 1px solid var(--line-accent);
+    font-size: 11.5px; color: var(--green-dark);
+  }
+
+  /* 选项 */
+  .opts { display: grid; gap: 8px; margin-top: 4px; }
+  .opts.g2 { grid-template-columns: 1fr 1fr; }
+  .opt {
+    position: relative; font: inherit; text-align: left; cursor: pointer;
+    background: var(--surface); border: 1.5px solid var(--line-control);
+    border-radius: var(--radius-ctrl); padding: 11px 10px; color: var(--ink);
+    transition: border-color 0.14s var(--ease), background 0.14s var(--ease);
+  }
+  .opt.big { font-size: 20px; text-align: center; padding: 12px 8px; letter-spacing: 0.04em; }
+  .opt .num {
+    display: inline-block; width: 17px; height: 17px; line-height: 16px; text-align: center;
+    border-radius: 999px; border: 1px solid var(--line-control); color: var(--muted);
+    font-size: 10px; margin-right: 7px;
+  }
+  .opt:hover { border-color: var(--line-accent); background: #fdfefb; }
+  .opt.is-picked { border-color: var(--green); background: var(--green-pale); }
+  .opt.is-picked .num { border-color: var(--green); color: var(--green); }
+  .opt.is-correct { border-color: var(--green); background: var(--green-pale); }
+  .opt.is-wrong { border-color: var(--red); background: var(--red-pale); }
+  .opt.is-reveal { border-style: dashed; border-color: var(--green); }
+  .opt.is-locked { cursor: default; }
+
+  /* 判定栏 / 抽屉 */
+  .dock {
+    flex: 0 0 auto; background: var(--surface); border-top: 1px solid var(--line-faint);
+    padding: 9px 13px 14px; border-radius: 18px 18px 0 0; box-shadow: 0 -6px 18px rgba(43,55,47,0.05);
+  }
+  .grabber { width: 36px; height: 4px; border-radius: 999px; background: var(--line-control); margin: 0 auto 8px; }
+  .fb { font-size: 12px; }
+  .fb-head { display: flex; align-items: center; gap: 6px; font-weight: 500; margin-bottom: 4px; }
+  .fb-head.ok { color: var(--stat-correct); }
+  .fb-head.no { color: var(--stat-incorrect); }
+  .fb-body { color: var(--text-strong); font-size: 11.5px; line-height: 1.65; }
+  .fb-ans { color: var(--green-dark); font-weight: 500; }
+  .fb-more { margin-top: 5px; color: var(--muted); font-size: 11px; }
+  .hidden { display: none !important; }
+
+  /* 版本 B · 路径 */
+  .path { position: relative; padding-left: 26px; }
+  .path::before {
+    content: ""; position: absolute; left: 9px; top: 12px; bottom: 12px;
+    width: 2px; background: var(--line-faint);
+  }
+  .node { position: relative; padding: 9px 0 9px 2px; }
+  .node .dot {
+    position: absolute; left: -22px; top: 15px; width: 14px; height: 14px;
+    border-radius: 999px; background: var(--surface); border: 2px solid var(--line-control);
+  }
+  .node.done .dot { background: var(--green); border-color: var(--green); }
+  .node.now .dot { background: var(--surface); border-color: var(--green); box-shadow: 0 0 0 3px var(--green-pale); }
+  .node .ttl { font-size: 13px; }
+  .node.done .ttl, .node.pending .ttl { color: var(--text-strong); }
+  .node.now .ttl { color: var(--green-dark); font-weight: 500; }
+  .node .meta { font-size: 11px; color: var(--muted); }
+  .node.pending { opacity: 0.62; }
+  .nowtag {
+    display: inline-block; margin-left: 6px; font-size: 10px; padding: 0 6px;
+    border-radius: 999px; background: var(--green); color: #f7faf5; vertical-align: 1px;
+  }
+
+  /* 版本 C · chips 与规则卡 */
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 4px; }
+  .chips::-webkit-scrollbar { height: 0; }
+  .chip {
+    flex: 0 0 auto; font: inherit; font-size: 13px; padding: 5px 11px; border-radius: 999px;
+    border: 1px solid var(--line-control); background: var(--surface); color: var(--text-strong); cursor: pointer;
+  }
+  .chip.on { background: var(--green); border-color: var(--green); color: #f7faf5; }
+
+  .bigcard {
+    background: var(--green); color: #f4f8f1; border-radius: 20px; padding: 18px;
+    margin-bottom: 12px;
+  }
+  .bigcard .n { font-size: 40px; line-height: 1; letter-spacing: -0.02em; }
+  .bigcard .lb { font-size: 11.5px; opacity: 0.82; }
+  .bigcard .btn { background: #f7faf5; border-color: #f7faf5; color: var(--green-dark); margin-top: 12px; }
+
+  .mline { display: flex; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line-faint); }
+  .mline:last-child { border-bottom: 0; }
+  .mline .k { font-size: 14px; color: var(--green-dark); width: 22px; flex: 0 0 auto; }
+  .mline .t { font-size: 12px; }
+  .mline .t small { display: block; color: var(--muted); font-size: 11px; }
+
+  .rulecard {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+    background: var(--surface); border-radius: 20px 20px 0 0; border-top: 1px solid var(--line-control);
+    padding: 14px 14px 16px; box-shadow: var(--shadow-float);
+  }
+  .scrim { position: absolute; inset: 0; z-index: 4; background: rgba(38, 51, 46, 0.16); }
+  .rulecard h4 { margin: 0 0 6px; font-size: 14px; font-weight: 500; }
+  .rulecard p { margin: 0 0 10px; font-size: 12px; color: var(--text-strong); }
+
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
+    background: var(--surface); border-radius: 18px 18px 0 0; border-top: 1px solid var(--line-control);
+    padding: 10px 14px 14px; box-shadow: var(--shadow-float); max-height: 62%; overflow-y: auto;
+  }
+
+  /* 版本 D · 对开 */
+  .pair { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); margin-bottom: 9px; overflow: hidden; }
+  .pair .head { display: flex; justify-content: space-between; padding: 8px 11px; border-bottom: 1px solid var(--line-faint); font-size: 13px; }
+  .pair .head span:last-child { color: var(--muted); font-size: 11px; }
+  .pair .cols { display: grid; grid-template-columns: 1fr 1fr; }
+  .pair .col { padding: 9px 11px; font-size: 12px; }
+  .pair .col + .col { border-left: 1px solid var(--line-faint); }
+  .pair .col b { display: block; font-size: 16px; color: var(--green-dark); font-weight: 400; margin-bottom: 2px; }
+  .pair .col span { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
+
+  .inline-pair { display: flex; gap: 8px; justify-content: center; margin: 10px 0 4px; }
+  .inline-pair .opt { min-width: 62px; font-size: 20px; text-align: center; }
+
+  /* 说明面板 */
+  .note { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 15px 16px; }
+  .note h3 { margin: 0 0 9px; font-size: 14px; font-weight: 500; }
+  .note h4 { margin: 14px 0 5px; font-size: 11px; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; }
+  .note p { margin: 0 0 7px; font-size: 12.5px; color: var(--text-strong); }
+  .note ul { margin: 0; padding-left: 17px; font-size: 12.5px; color: var(--text-strong); }
+  .note li { margin-bottom: 4px; }
+  .note .conflict { border-left: 2px solid var(--orange); padding-left: 10px; margin-top: 10px; }
+  .note .conflict b { color: var(--orange-deep); }
+
+  table.cmp { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 12px; }
+  table.cmp th, table.cmp td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line-faint); vertical-align: top; }
+  table.cmp th { font-weight: 500; color: var(--muted); font-size: 11px; background: var(--bg-pale-green); }
+  table.cmp td b { color: var(--green-dark); font-weight: 500; }
+
+  .legend { font-size: 11.5px; color: var(--muted); margin-top: 10px; }
+
+  @media (max-width: 1080px) {
+    .variant { grid-template-columns: 320px 320px; }
+    .variant > .note { grid-column: 1 / -1; }
+  }
+  @media (max-width: 700px) {
+    .variant { grid-template-columns: 1fr; }
+    .phone { width: 100%; max-width: 340px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="page">
+  <h1>Android 助词模块 · 四版原型对比</h1>
+  <p class="lede">
+    每版都用真实题库内容（9 专题 48 题中的 は／が、に／で、と／や、だけ／しか），都保留已确认的两步式作答（选择 → 确认提交）。
+    差异在<b>默认入口</b>、<b>页面层级</b>、<b>练习形态</b>与<b>视觉重心</b>，不在交互底座。灰色框里的「确认提交」「下一题」都可点。
+  </p>
+  <nav class="anchorbar">
+    <a href="#v-a">A · 专题地图</a>
+    <a href="#v-b">B · 学习路径</a>
+    <a href="#v-c">C · 直接开练</a>
+    <a href="#v-d">D · 对开对比</a>
+    <a href="#cmp">对比表与建议</a>
+  </nav>
+</header>
+
+<!-- ================= A ================= -->
+<section class="variant" id="v-a">
+  <div class="variant-head">
+    <h2>A · 专题地图</h2>
+    <span class="tag">与已定决策完全一致</span>
+  </div>
+
+  <div class="phone">
+    <div class="pbar"><span>9:41</span><span>助词学习</span></div>
+    <div class="screen">
+      <div class="topbar">
+        <span class="back">←</span><b>助词学习</b><span class="grow"></span>
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="15" fill="none" stroke="#e7e9e1" stroke-width="3"></circle>
+            <circle cx="18" cy="18" r="15" fill="none" stroke="#326151" stroke-width="3"
+              stroke-linecap="round" stroke-dasharray="94.2" stroke-dashoffset="70.7"
+              transform="rotate(-90 18 18)"></circle>
+          </svg>
+          <span class="ring-num">25%<i>12/48</i></span>
+        </div>
+      </div>
+      <div class="body">
+        <div class="card tinted">
+          <div class="eyebrow">今日助词</div>
+          <div class="h">先还一道错题，再练四道新的</div>
+          <div class="sub">错题 3 道 · 已掌握 12 / 48 题</div>
+          <div class="row" style="margin-top:11px">
+            <button class="btn primary" style="flex:1">开始 5 题</button>
+            <button class="btn" style="flex:0 0 auto">错题 3 道</button>
+          </div>
+        </div>
+
+        <div class="sec-label"><span>专题</span><span>9 个</span></div>
+        <div class="grid2">
+          <div class="lcard">
+            <button class="drill">练</button>
+            <div class="jp">は / が</div>
+            <div class="name">话题与焦点</div>
+            <div class="pct"><span>83%</span><span>5/6 题</span></div>
+            <div class="bar"><i style="width:83%"></i></div>
+          </div>
+          <div class="lcard">
+            <button class="drill">练</button>
+            <div class="jp">に / で</div>
+            <div class="name">场所与动作</div>
+            <div class="pct"><span>50%</span><span>4/8 题</span></div>
+            <div class="bar"><i style="width:50%"></i></div>
+          </div>
+          <div class="lcard">
+            <button class="drill">练</button>
+            <div class="jp">に / へ</div>
+            <div class="name">移动目的地</div>
+            <div class="pct"><span>25%</span><span>1/4 题</span></div>
+            <div class="bar"><i style="width:25%"></i></div>
+          </div>
+          <div class="lcard">
+            <button class="drill">练</button>
+            <div class="jp">と / や</div>
+            <div class="name">完整列举与举例</div>
+            <div class="pct"><span>33%</span><span>2/6 题</span></div>
+            <div class="bar"><i style="width:33%"></i></div>
+          </div>
+          <div class="lcard">
+            <button class="drill">练</button>
+            <div class="jp">を</div>
+            <div class="name">动作对象</div>
+            <div class="pct"><span>0%</span><span>0/4 题</span></div>
+            <div class="bar"><i style="width:0"></i></div>
+          </div>
+          <div class="lcard">
+            <button class="drill">练</button>
+            <div class="jp">の</div>
+            <div class="name">连接与所属</div>
+            <div class="pct"><span>0%</span><span>0/4 题</span></div>
+            <div class="bar"><i style="width:0"></i></div>
+          </div>
+        </div>
+        <p class="legend" style="margin-top:10px">还有 3 个专题：も、から／まで、だけ／しか</p>
+      </div>
+    </div>
+    <div class="fixedbar">
+      <button class="btn primary block">综合练习 · 48 题</button>
+    </div>
+  </div>
+
+  <div class="phone" data-quiz data-answer="0">
+    <div class="pbar"><span>9:41</span><span>练习</span></div>
+    <div class="screen">
+      <div class="topbar">
+        <span class="back">←</span>
+        <svg class="ring" viewBox="0 0 36 36" style="width:26px;height:26px">
+          <circle cx="18" cy="18" r="15" fill="none" stroke="#e7e9e1" stroke-width="3"></circle>
+          <circle cx="18" cy="18" r="15" fill="none" stroke="#326151" stroke-width="3"
+            stroke-linecap="round" stroke-dasharray="94.2" stroke-dashoffset="56.5"
+            transform="rotate(-90 18 18)"></circle>
+        </svg>
+        <b style="font-size:12.5px">2 / 5</b>
+        <span class="tiny">は / が</span>
+        <span class="grow"></span>
+        <button class="btn small" data-hint>显示提示</button>
+      </div>
+      <div class="body">
+        <div class="card">
+          <div class="ctx">自我介绍，说明自己的身份。</div>
+          <div class="sentence">私<span class="blank">　</span>学生です。</div>
+          <div class="kana">わたし　がくせいです。</div>
+          <div class="hintbox hidden" data-hintbox>
+            は 把「我」设为这句话的话题，后面说明关于我的信息。
+          </div>
+        </div>
+        <div class="opts g2">
+          <button class="opt big" data-i="0"><span class="num">1</span>は</button>
+          <button class="opt big" data-i="1"><span class="num">2</span>が</button>
+          <button class="opt big" data-i="2"><span class="num">3</span>を</button>
+          <button class="opt big" data-i="3"><span class="num">4</span>で</button>
+        </div>
+        <p class="legend" style="margin-top:12px">选项来自本专题的助词集合，洗牌后呈现。</p>
+      </div>
+    </div>
+    <div class="dock">
+      <div class="grabber"></div>
+      <div class="row">
+        <span class="tiny grow" data-picked>未选择</span>
+        <button class="btn primary" data-confirm disabled>确认提交</button>
+      </div>
+      <div class="fb hidden" data-fb="ok" style="margin-top:8px">
+        <div class="fb-head ok">答对 · <span class="fb-ans">は</span></div>
+        <div class="fb-body">は把「我」设为这句话的话题，后面说明关于我的信息。</div>
+        <button class="btn small" data-next style="margin-top:8px">下一题</button>
+      </div>
+      <div class="fb hidden" data-fb="no" style="margin-top:8px">
+        <div class="fb-head no">答错 · 正确答案 <span class="fb-ans">は</span></div>
+        <div class="fb-body">は把「我」设为这句话的话题，后面说明关于我的信息。</div>
+        <div class="fb-more">再进一步：が 用来标出焦点，回答「谁」时会用它。</div>
+        <button class="btn small" data-next style="margin-top:8px">下一题</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <h3>思路：把「学哪一组」放在第一位</h3>
+    <p>模块首页就是一张地图：9 个专题卡各带掌握度，顶栏一个环形图给总量。用户先选专题（建立分类框架），再由专题卡进入讲解或直练。</p>
+    <h4>布局</h4>
+    <ul>
+      <li>2 列卡片网格；卡片右上角常驻「练」按钮（D-021 的显式路径）。</li>
+      <li>底部固定「综合练习 · 48 题」，熟手一步开练。</li>
+      <li>练习屏沿用答题契约：题面卡 + 4 选项 + 底部判定抽屉。</li>
+    </ul>
+    <h4>功能</h4>
+    <p>无难度选择（D-018）；掌握度只认未用提示答对（D-020）；错题进全局错题本（D-017）。</p>
+    <h4>视觉</h4>
+    <p>纸感白卡 + 细边框，信息密度高但不抢眼；绿色只出现在进度、答案与主按钮上。</p>
+    <h4>代价</h4>
+    <p>首屏有 9 张卡，初学者要自己决定从哪开始——「不知道练什么」的人需要靠今日卡兜住。</p>
+    <div class="conflict"><b>与已定决策：</b>零冲突，可直接作为实现基线。</div>
+  </div>
+</section>
+
+<!-- ================= B ================= -->
+<section class="variant" id="v-b">
+  <div class="variant-head">
+    <h2>B · 学习路径</h2>
+    <span class="tag warn">改动默认入口语义</span>
+  </div>
+
+  <div class="phone">
+    <div class="pbar"><span>9:41</span><span>助词学习</span></div>
+    <div class="screen">
+      <div class="topbar">
+        <span class="back">←</span><b>助词学习</b><span class="grow"></span>
+        <span class="tiny">第 4 关 / 共 9 关</span>
+      </div>
+      <div class="body">
+        <div class="card tinted">
+          <div class="eyebrow">推荐顺序</div>
+          <div class="h">按易混程度排的九关</div>
+          <div class="sub">先分清 は／が，再处理场所与方向</div>
+          <div class="bar" style="margin-top:10px;height:6px"><i style="width:33%"></i></div>
+          <div class="row" style="margin-top:10px">
+            <span class="tiny grow">已掌握 3 关 · 12 / 48 题</span>
+            <button class="btn primary small">继续第 4 关</button>
+          </div>
+        </div>
+
+        <div class="path">
+          <div class="node done">
+            <span class="dot"></span>
+            <div class="ttl">は / が <span class="tiny">话题与焦点</span></div>
+            <div class="meta">已掌握 · 6 / 6 题</div>
+          </div>
+          <div class="node done">
+            <span class="dot"></span>
+            <div class="ttl">に / で <span class="tiny">存在与动作场所</span></div>
+            <div class="meta">已掌握 · 7 / 8 题</div>
+          </div>
+          <div class="node done">
+            <span class="dot"></span>
+            <div class="ttl">を <span class="tiny">动作对象</span></div>
+            <div class="meta">已掌握 · 4 / 4 题</div>
+          </div>
+          <div class="node now">
+            <span class="dot"></span>
+            <div class="ttl">と / や <span class="nowtag">进行中</span></div>
+            <div class="meta">2 / 6 题 · 还差 4 题</div>
+          </div>
+          <div class="node pending">
+            <span class="dot"></span>
+            <div class="ttl">だけ / しか <span class="tiny">限制范围</span></div>
+            <div class="meta">尚未开始</div>
+          </div>
+          <div class="node pending">
+            <span class="dot"></span>
+            <div class="ttl">に / へ <span class="tiny">移动目的地</span></div>
+            <div class="meta">尚未开始</div>
+          </div>
+          <div class="node pending">
+            <span class="dot"></span>
+            <div class="ttl">の <span class="tiny">连接与所属</span></div>
+            <div class="meta">尚未开始</div>
+          </div>
+          <div class="node pending">
+            <span class="dot"></span>
+            <div class="ttl">も <span class="tiny">追加与同类</span></div>
+            <div class="meta">尚未开始</div>
+          </div>
+          <div class="node pending">
+            <span class="dot"></span>
+            <div class="ttl">から / まで <span class="tiny">起点与终点</span></div>
+            <div class="meta">尚未开始</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="fixedbar">
+      <button class="btn block">跳到专题列表</button>
+    </div>
+  </div>
+
+  <div class="phone" data-quiz data-answer="0">
+    <div class="pbar"><span>9:41</span><span>练习</span></div>
+    <div class="screen">
+      <div class="topbar">
+        <span class="back">←</span><b style="font-size:12.5px">第 4 关 · と / や</b>
+        <span class="grow"></span><span class="tiny">2 / 6</span>
+      </div>
+      <div class="body">
+        <div class="ctx">只买了列出的两种水果。</div>
+        <div class="sentence">りんご<span class="blank">　</span>バナナを買いました。</div>
+        <div class="kana">りんご　バナナを　かいました。</div>
+        <div class="opts" style="margin-top:14px">
+          <button class="opt" data-i="0"><span class="num">1</span>と　<span class="tiny">完整列举</span></button>
+          <button class="opt" data-i="1"><span class="num">2</span>や　<span class="tiny">举例</span></button>
+          <button class="opt" data-i="2"><span class="num">3</span>も　<span class="tiny">追加</span></button>
+          <button class="opt" data-i="3"><span class="num">4</span>の　<span class="tiny">所属</span></button>
+        </div>
+        <div class="card flat hidden" data-fb="ok" style="margin-top:12px;border-color:var(--line-accent);background:var(--green-pale)">
+          <div class="fb-head ok">答对 · と</div>
+          <div class="fb-body">语境说明清单完整，所以这里用と连接列举项目。</div>
+        </div>
+        <div class="card flat hidden" data-fb="no" style="margin-top:12px;border-color:#e8cfc5;background:var(--red-pale)">
+          <div class="fb-head no">答错 · 正确答案 と</div>
+          <div class="fb-body">语境说明清单完整，所以这里用と连接列举项目。や 表示举例，暗示还买了别的。</div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn primary" data-confirm disabled>确认提交</button>
+          <button class="btn hidden" data-next>下一题</button>
+        </div>
+      </div>
+    </div>
+    <div class="fixedbar">
+      <div class="tiny">判定结果直接出现在选项下方，没有抽屉要收合。</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <h3>思路：用顺序替用户做决定</h3>
+    <p>首页不是九张并列的卡，而是一条九关的路径：已掌握的打勾、当前的展开、未开始的淡出。默认入口只有一个——「继续下一关」。</p>
+    <h4>布局</h4>
+    <ul>
+      <li>纵向时间轴（左侧导轨 + 节点），一屏能看到全部 9 关，滚动成本低。</li>
+      <li>练习屏不再用底部抽屉：判定结果内联在选项下方，选项与解析在同一视线内。</li>
+      <li>「下一题」在题目卡内，不做固定底栏，页面更安静。</li>
+    </ul>
+    <h4>功能</h4>
+    <p>新增「推荐顺序」与「当前关」概念；每关有明确完成线（全题掌握即过关）。底部保留「跳到专题列表」作为逃生口，不做硬锁。</p>
+    <h4>视觉</h4>
+    <p>重心从「多张卡」移到「一条线」，留白更多，节奏更慢，像课程表而不是工具台。</p>
+    <h4>代价</h4>
+    <ul>
+      <li>顺序一旦排定，用户想练第 7 关要先滑过 6 关（除非保留列表入口）。</li>
+      <li>每关题量 4–8 题，全部掌握才过关，尾部长（最后一题反复出现会烦）。</li>
+    </ul>
+    <div class="conflict">
+      <b>与已定决策：</b>D-016 定的是「专题地图首页」，硬锁会推翻它。<br>
+      折中做法：路径改为<b>推荐顺序</b>（可跳关），作为首页的另一种排列，而不是新的权限系统。这样只改布局，不改入口语义。
+    </div>
+  </div>
+</section>
+
+<!-- ================= C ================= -->
+<section class="variant" id="v-c">
+  <div class="variant-head">
+    <h2>C · 直接开练</h2>
+    <span class="tag warn">取消独立讲解页</span>
+  </div>
+
+  <div class="phone">
+    <div class="pbar"><span>9:41</span><span>助词学习</span></div>
+    <div class="screen">
+      <div class="topbar">
+        <span class="back">←</span><b>助词学习</b><span class="grow"></span>
+        <span class="tiny">25% · 12/48</span>
+      </div>
+      <div class="body">
+        <div class="bigcard">
+          <div class="lb">今日助词</div>
+          <div class="n">5</div>
+          <div class="lb">题 · 首题先还一道错题</div>
+          <button class="btn block">开始</button>
+        </div>
+
+        <div class="sec-label"><span>只练某个助词</span><span>可滑动</span></div>
+        <div class="chips">
+          <button class="chip on">全部</button>
+          <button class="chip">は</button>
+          <button class="chip">が</button>
+          <button class="chip">に</button>
+          <button class="chip">で</button>
+          <button class="chip">を</button>
+          <button class="chip">の</button>
+          <button class="chip">と</button>
+          <button class="chip">や</button>
+          <button class="chip">も</button>
+        </div>
+
+        <div class="sec-label"><span>最近错题</span><span>3 道</span></div>
+        <div class="card flat" style="padding:6px 12px">
+          <div class="mline">
+            <span class="k">に</span>
+            <span class="t">猫は部屋〔に〕います。<small>你把「存在地点」记成了 で</small></span>
+          </div>
+          <div class="mline">
+            <span class="k">が</span>
+            <span class="t">田中さん〔が〕来ました。<small>回答「谁来了」要用 が</small></span>
+          </div>
+          <div class="mline">
+            <span class="k">しか</span>
+            <span class="t">水〔しか〕飲みませんでした。<small>しか 必须接否定</small></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="fixedbar">
+      <div class="tiny">没有专题网格，也没有独立讲解页；讲解在练习流里出现。</div>
+    </div>
+  </div>
+
+  <div class="phone" data-quiz data-answer="0">
+    <div class="pbar"><span>9:41</span><span>练习</span></div>
+    <div class="screen">
+      <div class="topbar">
+        <span class="back">←</span><b style="font-size:12.5px">第 1 / 5 题</b>
+        <span class="grow"></span>
+        <span class="tiny">错题优先</span>
+      </div>
+      <div class="body">
+        <div class="ctx">今天只喝了水（肯定句）。</div>
+        <div class="sentence">今日は水<span class="blank">　</span>飲みました。</div>
+        <div class="kana">きょうは　みず　のみました。</div>
+        <div class="opts g2" style="margin-top:14px">
+          <button class="opt big" data-i="0"><span class="num">1</span>だけ</button>
+          <button class="opt big" data-i="1"><span class="num">2</span>しか</button>
+          <button class="opt big" data-i="2"><span class="num">3</span>も</button>
+          <button class="opt big" data-i="3"><span class="num">4</span>まで</button>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn primary block" data-confirm disabled>确认提交</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrim" data-scrim></div>
+    <div class="rulecard" data-rulecard>
+      <h4>だけ / しか：只有</h4>
+      <p>だけ 可以直接接肯定谓语；しか 必须和否定搭配，句子重心落在「没有别的」。先记住这条，再看题。</p>
+      <div class="row">
+        <button class="btn primary grow" data-start>开始第 1 题</button>
+        <button class="btn" data-skip>跳过</button>
+      </div>
+    </div>
+
+    <div class="sheet hidden" data-sheet>
+      <div class="grabber"></div>
+      <div class="fb-head no" data-sheet-head>答错 · 正确答案 だけ</div>
+      <div class="fb-body" data-sheet-body>
+        だけ 表示「只有」，可以直接搭配肯定句。しか 需要否定谓语，所以「飲みました」前不能用 しか。
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn small" data-next>下一题</button>
+        <button class="btn small ghost">看该专题讲解</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <h3>思路：把决策成本压到最低</h3>
+    <p>首页只有一个动作——「开始」。想练某个助词就用一排 chip 过滤，想复习就看最近错题。没有专题网格，也没有独立讲解页：讲解以「题前规则卡」的形式插在练习流里，15 秒读完可跳过。</p>
+    <h4>布局</h4>
+    <ul>
+      <li>首页从上到下：大数字卡 → 助词 chip → 错题列表，三块，无网格。</li>
+      <li>练习屏：规则卡（底部浮起）→ 题面 → 4 选项 → 判定后 60% 半屏解析。</li>
+      <li>「看该专题讲解」放在解析里，讲解变成按需查阅而非必经环节。</li>
+    </ul>
+    <h4>功能</h4>
+    <p>助词 chip 过滤（等价于按助词筛选，而不是按专题）；错题列表直接显示「你错在哪」，可单题重练。</p>
+    <h4>视觉</h4>
+    <p>视觉重心是一个大的绿色数字卡，其余元素压到最小；节奏像每日打卡应用，而不是教材。</p>
+    <h4>代价</h4>
+    <ul>
+      <li>没有专题结构，用户很难建立「は／が 是一组对立」的框架，长期学习容易碎片化。</li>
+      <li>规则卡在题前弹出会打断节奏；每次都弹会烦，只弹一次又不保证读到。</li>
+      <li>chip 按单个助词过滤，与题库按专题组织的结构错位（に 跨两个专题）。</li>
+    </ul>
+    <div class="conflict">
+      <b>与已定决策：</b>推翻 §2.2 的「独立讲解页」，也让 D-016 的模块首页语义从「地图」变成「开练页」。<br>
+      可用部分：题前规则卡很适合「第一次进入某专题」时用一次，不必取代讲解页。
+    </div>
+  </div>
+</section>
+
+<!-- ================= D ================= -->
+<section class="variant" id="v-d">
+  <div class="variant-head">
+    <h2>D · 对开对比</h2>
+    <span class="tag warn">改练习为二选一</span>
+  </div>
+
+  <div class="phone">
+    <div class="pbar"><span>9:41</span><span>助词学习</span></div>
+    <div class="screen">
+      <div class="topbar">
+        <span class="back">←</span><b>助词学习</b><span class="grow"></span>
+        <span class="tiny">25%</span>
+      </div>
+      <div class="body">
+        <div class="sec-label"><span>易混对</span><span>6 组</span></div>
+
+        <div class="pair">
+          <div class="head"><span>は / が</span><span>话题 · 焦点</span></div>
+          <div class="cols">
+            <div class="col"><b>は</b>私は学生です。<span>说到我，我是学生</span></div>
+            <div class="col"><b>が</b>田中さんが来ました。<span>田中先生来了</span></div>
+          </div>
+        </div>
+        <div class="pair">
+          <div class="head"><span>に / で</span><span>存在 · 动作</span></div>
+          <div class="cols">
+            <div class="col"><b>に</b>猫は部屋にいます。<span>猫在房间里</span></div>
+            <div class="col"><b>で</b>図書館で勉強します。<span>在图书馆学习</span></div>
+          </div>
+        </div>
+        <div class="pair">
+          <div class="head"><span>と / や</span><span>完整 · 举例</span></div>
+          <div class="cols">
+            <div class="col"><b>と</b>りんごとバナナ<span>就这两种</span></div>
+            <div class="col"><b>や</b>りんごやバナナ<span>还有别的</span></div>
+          </div>
+        </div>
+        <div class="pair">
+          <div class="head"><span>だけ / しか</span><span>肯定 · 否定</span></div>
+          <div class="cols">
+            <div class="col"><b>だけ</b>水だけ飲みました。<span>只喝了水</span></div>
+            <div class="col"><b>しか</b>水しか飲みません。<span>除水没喝别的</span></div>
+          </div>
+        </div>
+        <p class="legend">还有 に／へ、から／まで，以及 を・の・も 三个单助词</p>
+      </div>
+    </div>
+    <div class="fixedbar">
+      <div class="row">
+        <button class="btn primary" style="flex:1">练这一组</button>
+        <button class="btn" style="flex:0 0 auto">综合</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="phone" data-quiz data-answer="0">
+    <div class="pbar"><span>9:41</span><span>练习</span></div>
+    <div class="screen">
+      <div class="topbar">
+        <span class="back">←</span><b style="font-size:12.5px">は / が · 对比题</b>
+        <span class="grow"></span><span class="tiny">1 / 6</span>
+      </div>
+      <div class="body">
+        <div class="card">
+          <div class="ctx">自我介绍，说明自己的身份。</div>
+          <div class="sentence" style="text-align:center;margin:6px 0 2px">私は学生です。</div>
+          <div class="kana" style="text-align:center">わたしは　がくせいです。</div>
+          <div class="ctx" style="margin-top:12px;margin-bottom:0">换成另一个助词，句子的意思会变。选一个：</div>
+        </div>
+
+        <div class="inline-pair">
+          <button class="opt" data-i="0">は</button>
+          <button class="opt" data-i="1">が</button>
+        </div>
+
+        <div class="row" style="justify-content:center;margin-top:10px">
+          <button class="btn primary" data-confirm disabled>确认提交</button>
+        </div>
+
+        <div class="hidden" data-fb="ok" style="margin-top:12px">
+          <div class="pair" style="border-color:var(--line-accent)">
+            <div class="head"><span>你选的 は</span><span>对</span></div>
+            <div class="cols">
+              <div class="col"><b>は</b>私は学生です。<span>说到我，我是学生</span></div>
+              <div class="col"><b>が</b>私が学生です。<span>是我（不是别人）</span></div>
+            </div>
+          </div>
+          <p class="legend">は 把「我」设为本句话题；が 会把「我」变成新信息焦点，通常用来回答「谁」。</p>
+          <button class="btn small" data-next>下一题</button>
+        </div>
+
+        <div class="hidden" data-fb="no" style="margin-top:12px">
+          <div class="pair" style="border-color:#e8cfc5">
+            <div class="head"><span>你选的 が</span><span>这个语境下不自然</span></div>
+            <div class="cols">
+              <div class="col"><b>は</b>私は学生です。<span>说到我，我是学生</span></div>
+              <div class="col"><b>が</b>私が学生です。<span>是我（不是别人）</span></div>
+            </div>
+          </div>
+          <p class="legend">自我介绍是把「我」设为话题，用 は。が 会强调「是我而不是别人」，需要前文有对比对象。</p>
+          <button class="btn small" data-next>下一题</button>
+        </div>
+      </div>
+    </div>
+    <div class="fixedbar">
+      <div class="tiny">判定后并排显示两个助词的译文，差异在同一屏内可见。</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <h3>思路：把「对比」做成界面本身</h3>
+    <p>助词的难点是成对辨析，所以首页按<b>易混对</b>组织（6 组），练习改成<b>同句二选一</b>，判定后并排给出两个助词各自的译文。教学意图直接体现在布局里，不靠文字解释。</p>
+    <h4>布局</h4>
+    <ul>
+      <li>首页是对开卡片：左 は 右 が，各配一句真实例句，中间一条分隔线。</li>
+      <li>练习屏把候选助词放进句子里（两个大字按钮），判定后展开上下两行对照。</li>
+      <li>讲解不再是长文，而是「这一组的差别一句话」。</li>
+    </ul>
+    <h4>功能</h4>
+    <p>直接对应 D-019 的 <code>contrastGroup</code>：有该字段就能自动生成对开卡，不必另建内容体系。</p>
+    <h4>视觉</h4>
+    <p>左右分栏是主视觉，同句两译并排；信息密度低于 A，但对比关系一眼可见。</p>
+    <h4>代价</h4>
+    <ul>
+      <li>9 个专题里只有 6 组是成对的，を・の・も 三个单助词塞不进对开结构（要么另设「单助词」区，要么被边缘化）。</li>
+      <li>二选一比四选一更容易靠排除法与猜测，正确率会虚高，掌握度口径要跟着改。</li>
+      <li><code>に</code> 同时出现在「に／で」和「に／へ」两组，对开卡的归属需要规则。</li>
+    </ul>
+    <div class="conflict">
+      <b>与已定决策：</b>§2.7 已定「四选一」，二选一与之冲突；D-017 的错题粒度也会受影响。<br>
+      可用部分：对开卡很适合做<b>讲解页的头部</b>（不动练习形态），以及模块首页的第二种入口。
+    </div>
+  </div>
+</section>
+
+<!-- ================= 对比 ================= -->
+<section id="cmp" style="padding-top:34px">
+  <h2 style="font-size:17px;margin:0 0 6px">四版横向对比</h2>
+  <p class="lede" style="margin-bottom:0">「冲突」一列指的是与已确认决策（D-016～D-021、答题屏契约）的冲突程度，不是缺点排序。</p>
+
+  <table class="cmp">
+    <thead>
+      <tr>
+        <th style="width:14%">方面</th>
+        <th style="width:21%">A · 专题地图</th>
+        <th style="width:21%">B · 学习路径</th>
+        <th style="width:21%">C · 直接开练</th>
+        <th style="width:23%">D · 对开对比</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>默认入口</th>
+        <td>专题卡 / 综合练习</td>
+        <td>「继续第 N 关」单入口</td>
+        <td>「开始」单入口</td>
+        <td>易混对卡片</td>
+      </tr>
+      <tr>
+        <th>首页结构</th>
+        <td>2 列网格 + 今日卡</td>
+        <td>纵向时间轴</td>
+        <td>大数字卡 + chips + 错题列表</td>
+        <td>6 组左右对开</td>
+      </tr>
+      <tr>
+        <th>讲解位置</th>
+        <td>独立讲解页（两层说明 + 例句）</td>
+        <td>独立讲解页，从关卡进入</td>
+        <td>题前规则卡，内联</td>
+        <td>压缩成「一句话差别」</td>
+      </tr>
+      <tr>
+        <th>练习形态</th>
+        <td>四选一 + 底部抽屉</td>
+        <td>四选一 + 结果内联</td>
+        <td>四选一 + 半屏解析浮层</td>
+        <td>同句二选一 + 译文对照</td>
+      </tr>
+      <tr>
+        <th>最大优点</th>
+        <td><b>分类框架清楚</b>，进度可比较，零决策冲突</td>
+        <td>不需要做选择，学习路径连贯</td>
+        <td>开练成本最低，适合每天 5 分钟</td>
+        <td><b>教学意图最直接</b>，直接体现成对辨析</td>
+      </tr>
+      <tr>
+        <th>最大代价</th>
+        <td>首屏信息多，初学者要自己选</td>
+        <td>想跳练要额外入口；尾部长</td>
+        <td>缺专题框架，长期碎片化</td>
+        <td>3 个单助词无处安放；二选一容易猜</td>
+      </tr>
+      <tr>
+        <th>需改的已定决策</th>
+        <td>无</td>
+        <td>D-016 首页语义（若做硬锁）</td>
+        <td>§2.2 独立讲解页</td>
+        <td>§2.7 四选一、掌握度口径</td>
+      </tr>
+      <tr>
+        <th>内容依赖</th>
+        <td>无新增</td>
+        <td>需给 9 关定顺序（人工排序）</td>
+        <td>chip 需按助词建索引</td>
+        <td>需 D-019 的 <code>contrastGroup</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note" style="margin-top:22px">
+    <h3>我的建议：A 做主干，吸收 D 的讲解头与 C 的规则卡</h3>
+    <p>A 是唯一与全部已定决策零冲突的版本，实现风险最低。B 和 D 里真正有价值的部分不必整体替换：</p>
+    <ul>
+      <li><b>讲解页头部用 D 的对开卡</b>：`は / が` 左右各一句真实例句，比两段文字更直观。等 D-019 的 <code>contrastGroup</code> 到位就能自动生成，无额外内容工作。</li>
+      <li><b>首次进入某专题时用 C 的规则卡</b>：只弹一次，替代「先读两段说明」；常态仍是 A 的讲解页。</li>
+      <li><b>B 的路径视图</b>可以先不做，等题库扩到每专题 10 题以上再考虑——现在每关 4–8 题，路径的价值撑不起改造成本。</li>
+    </ul>
+    <p>如果更看重「每天打开就能开始」，选 C 的首页 + A 的练习屏；如果更看重「真的分清那几组」，选 D 的对开卡 + A 的四选一练习。</p>
+  </div>
+
+  <p class="legend" style="margin-top:18px">
+    原型说明：颜色令牌取自 <code>web/styles.css</code> 与 <code>Theme.kt</code>；例句与题目全部来自 <code>web/particle-engine.js</code>（未编造日语）；字体加载同仓库的楷体子集，缺字回退系统字体。本文件仅用于方案对比，不是生产代码。
+  </p>
+</section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  function setupQuiz(root) {
+    var answer = (root.getAttribute("data-answer") || "0").split(",").map(Number);
+    var opts = Array.prototype.slice.call(root.querySelectorAll(".opt"));
+    var confirmBtn = root.querySelector("[data-confirm]");
+    var pickedEl = root.querySelector("[data-picked]");
+    var hintBtn = root.querySelector("[data-hint]");
+    var hintBox = root.querySelector("[data-hintbox]");
+    var fbOk = root.querySelector('[data-fb="ok"]');
+    var fbNo = root.querySelector('[data-fb="no"]');
+    var sheet = root.querySelector("[data-sheet]");
+    var scrim = root.querySelector("[data-scrim]");
+    var ruleCard = root.querySelector("[data-rulecard]");
+    var nextBtn = root.querySelector("[data-next]");
+    var startBtn = root.querySelector("[data-start]");
+    var skipBtn = root.querySelector("[data-skip]");
+    var picked = -1;
+    var judged = false;
+
+    function label(index) {
+      var el = opts[index];
+      if (!el) { return ""; }
+      var clone = el.cloneNode(true);
+      var num = clone.querySelector(".num");
+      if (num) { num.remove(); }
+      return clone.textContent.replace(/\\s+/g, " ").trim();
+    }
+
+    function reset() {
+      picked = -1;
+      judged = false;
+      opts.forEach(function (el) {
+        el.classList.remove("is-picked", "is-correct", "is-wrong", "is-reveal", "is-locked");
+      });
+      if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.classList.remove("hidden"); }
+      if (pickedEl) { pickedEl.textContent = "未选择"; pickedEl.classList.remove("hidden"); }
+      if (fbOk) { fbOk.classList.add("hidden"); }
+      if (fbNo) { fbNo.classList.add("hidden"); }
+      if (sheet) { sheet.classList.add("hidden"); }
+    }
+
+    opts.forEach(function (el, i) {
+      el.addEventListener("click", function () {
+        if (judged) { return; }
+        opts.forEach(function (other) { other.classList.remove("is-picked"); });
+        el.classList.add("is-picked");
+        picked = i;
+        if (pickedEl) { pickedEl.textContent = "已选：" + label(i); }
+        if (confirmBtn) { confirmBtn.disabled = false; }
+      });
+    });
+
+    if (confirmBtn) {
+      confirmBtn.addEventListener("click", function () {
+        if (picked < 0 || judged) { return; }
+        judged = true;
+        var ok = answer.indexOf(picked) >= 0;
+        opts.forEach(function (el, i) {
+          el.classList.add("is-locked");
+          el.classList.remove("is-picked");
+          if (answer.indexOf(i) >= 0) {
+            el.classList.add(i === picked ? "is-correct" : "is-reveal");
+          } else if (i === picked) {
+            el.classList.add("is-wrong");
+          }
+        });
+        if (confirmBtn) { confirmBtn.classList.add("hidden"); }
+        if (pickedEl) { pickedEl.classList.add("hidden"); }
+        if (nextBtn) { nextBtn.classList.remove("hidden"); }
+        if (ok && fbOk) { fbOk.classList.remove("hidden"); }
+        if (!ok && fbNo) { fbNo.classList.remove("hidden"); }
+        if (sheet) {
+          var head = sheet.querySelector("[data-sheet-head]");
+          var body = sheet.querySelector("[data-sheet-body]");
+          if (head) {
+            head.className = "fb-head " + (ok ? "ok" : "no");
+            head.textContent = (ok ? "答对 · " : "答错 · 正确答案 ") + label(answer[0]);
+          }
+          if (body && !ok) {
+            body.textContent = "だけ 表示「只有」，可以直接搭配肯定句。しか 需要否定谓语，所以「飲みました」前不能用 しか。";
+          } else if (body) {
+            body.textContent = "だけ 表示「只有」，可以直接搭配肯定句。";
+          }
+          sheet.classList.remove("hidden");
+        }
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener("click", function () {
+        reset();
+      });
+    }
+
+    if (hintBtn) {
+      hintBtn.addEventListener("click", function () {
+        if (!hintBox) { return; }
+        var open = hintBox.classList.toggle("hidden");
+        hintBtn.textContent = open ? "显示提示" : "隐藏提示";
+      });
+    }
+
+    function dismissRule() {
+      if (ruleCard) { ruleCard.classList.add("hidden"); }
+      if (scrim) { scrim.classList.add("hidden"); }
+    }
+
+    if (startBtn) { startBtn.addEventListener("click", dismissRule); }
+    if (skipBtn) { skipBtn.addEventListener("click", dismissRule); }
+
+    reset();
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-quiz]"), setupQuiz);
+}());
+</script>
+</body>
+</html>

@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Refresh
@@ -34,14 +35,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.engine.adjective.AdjectiveData
+import com.nihongodoushi.app.engine.particle.ParticleData
 import com.nihongodoushi.app.engine.verb.VerbData
 import com.nihongodoushi.app.storage.ActivityAggregation
 import com.nihongodoushi.app.ui.AppState
 import com.nihongodoushi.app.ui.theme.paperColors
 import java.time.LocalDate
+import kotlin.math.roundToInt
 
 /** 主页可进入的二级页 */
-enum class HomeDestination { VERB, ADJECTIVE, MISTAKES }
+enum class HomeDestination { VERB, ADJECTIVE, PARTICLE, MISTAKES }
 
 /**
  * 主页：模块统一入口。
@@ -189,13 +192,28 @@ fun HomeScreen(app: AppState, onOpen: (HomeDestination) -> Unit) {
             iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
             onClick = { onOpen(HomeDestination.ADJECTIVE) },
         )
+        val particleTotal = ParticleData.TOTAL_QUESTIONS
+        val particleMastered = app.particleMasteredCount()
+        val particlePercent = if (particleTotal == 0) 0 else (particleMastered * 100.0 / particleTotal).roundToInt()
+        EntryCard(
+            icon = Icons.Filled.Info,
+            title = "助词学习",
+            subtitle = "9 个专题 · 已掌握 $particlePercent% · 错题 ${app.particleMistakes.size} 道",
+            tint = MaterialTheme.colorScheme.primaryContainer,
+            iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
+            onClick = { onOpen(HomeDestination.PARTICLE) },
+        )
+        val particleMistakeCount = app.particleMistakes.size
+        val mistakeTotal = mistakeCount + particleMistakeCount
         EntryCard(
             icon = Icons.Filled.Refresh,
             title = "错题本",
-            subtitle = if (mistakeCount == 0) {
+            subtitle = if (mistakeTotal == 0) {
                 "暂无错题 · 答错的题会按间隔复习排入"
             } else {
-                "$mistakeCount 道待复习" + if (dueCount > 0) " · $dueCount 道今天到期" else " · 今天无到期"
+                "$mistakeTotal 道待复习" +
+                    (if (dueCount > 0) " · $dueCount 道今天到期" else " · 今天无到期") +
+                    (if (particleMistakeCount > 0) " · 助词 $particleMistakeCount 道" else "")
             },
             tint = MaterialTheme.colorScheme.tertiaryContainer,
             iconTint = MaterialTheme.colorScheme.onTertiaryContainer,

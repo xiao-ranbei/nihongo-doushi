@@ -1699,3 +1699,39 @@ test("错题页：只有单模块错题时另一分组整体隐藏", function ()
   assert.equal(app.$("adjective-mistakes-group").hidden, false);
   assert.equal(app.$("mistakes-empty").hidden, true, "仍有错题时不显示空态");
 });
+
+test("助词错答给出所选助词的专属说明，学习地图补最小对立提示", function () {
+  const app = createApp();
+  tab(app, "particle");
+  const question = particleEngine.getQuestion(
+    app.$("particle-question-card").getAttribute("data-question-id")
+  );
+  assert.equal(question.type, "fill", "综合练习首题应为选助词题");
+  const noteKeys = Object.keys(question.optionNotes || {});
+  assert.ok(noteKeys.length > 0, "首题应带逐项说明");
+
+  const distractor = app.$("particle-options").querySelectorAll("button").filter(function (button) {
+    return button.textContent === noteKeys[0];
+  })[0];
+  assert.ok(distractor, "选项里应能找到带说明的干扰项");
+  app.click(distractor);
+  app.click(app.$("particle-check-answer"));
+
+  const note = app.$("particle-feedback-note");
+  assert.equal(note.hidden, false, "答错时应显示逐项说明");
+  assert.match(note.textContent, new RegExp("你选的「" + noteKeys[0] + "」"));
+  assert.match(note.textContent, new RegExp(question.optionNotes[noteKeys[0]].slice(0, 6)));
+
+  const learnSubview = app.document.querySelectorAll("[data-particle-subview]").filter(function (node) {
+    return node.dataset.particleSubview === "learn";
+  })[0];
+  app.click(learnSubview);
+  const expected = particleEngine.LESSONS.reduce(function (total, lesson) {
+    return total + lesson.examples.filter(function (example) {
+      return Boolean(example.contrastNote);
+    }).length;
+  }, 0);
+  const blocks = app.document.querySelectorAll(".particle-example-contrast");
+  assert.equal(blocks.length, expected, "每条带对比说明的例句都应渲染对比提示");
+  assert.match(blocks[0].textContent, /换个助词会怎样/);
+});

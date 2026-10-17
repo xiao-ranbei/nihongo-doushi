@@ -19,14 +19,18 @@
           sentence: "私は学生です。",
           reading: "わたしはがくせいです。",
           translation: "说到我，我是学生。",
-          note: "は把「我」设为本句的话题。"
+          note: "は把「我」设为本句的话题。",
+          contrastGroup: "topic-focus",
+          contrastNote: "换成「私が学生です」会把「我」变成新信息焦点，用来回答「谁是学生」或在对比中强调「是我」。"
         },
         {
           context: "回答“谁来了？”",
           sentence: "田中さんが来ました。",
           reading: "たなかさんがきました。",
           translation: "田中先生来了。",
-          note: "回答疑问词时，が标出新信息。"
+          note: "回答疑问词时，が标出新信息。",
+          contrastGroup: "topic-focus",
+          contrastNote: "换成「田中さんは来ました」会把田中设为话题，暗示「至于田中，他来了」，常带与其他人的对比。"
         }
       ]
     },
@@ -42,14 +46,18 @@
           sentence: "猫は部屋にいます。",
           reading: "ねこはへやにいます。",
           translation: "猫在房间里。",
-          note: "いる表示存在，所在地点用に。"
+          note: "いる表示存在，所在地点用に。",
+          contrastGroup: "location",
+          contrastNote: "换成「部屋で」说不通：いる 表示存在，存在地点用 に；で 后面要接动作。"
         },
         {
           context: "说明学习发生的地点",
           sentence: "図書館で日本語を勉強します。",
           reading: "としょかんでにほんごをべんきょうします。",
           translation: "在图书馆学习日语。",
-          note: "勉強する是动作，动作发生地用で。"
+          note: "勉強する是动作，动作发生地用で。",
+          contrastGroup: "location",
+          contrastNote: "换成「図書館に勉強します」说不通：勉強する 是动作，动作发生地用 で。"
         }
       ]
     },
@@ -65,14 +73,18 @@
           sentence: "駅に着きました。",
           reading: "えきにつきました。",
           translation: "到车站了。",
-          note: "着く表示到达，目标地点用に。"
+          note: "着く表示到达，目标地点用に。",
+          contrastGroup: "destination-direction",
+          contrastNote: "换成「駅へ着きました」也有人这么说，但着く 表示到达，通常配 に；へ 更强调朝车站这个方向。"
         },
         {
           context: "强调前进方向",
           sentence: "京都へ向かいます。",
           reading: "きょうとへむかいます。",
           translation: "朝京都方向前进。",
-          note: "へ突出朝某方向移动；京都に向かう也常见。"
+          note: "へ突出朝某方向移动；京都に向かう也常见。",
+          contrastGroup: "destination-direction",
+          contrastNote: "换成「京都に向かいます」同样自然：に 把京都当作目标点，へ 更突出方向。"
         }
       ]
     },
@@ -88,14 +100,18 @@
           sentence: "毎朝コーヒーを飲みます。",
           reading: "まいあさこーひーをのみます。",
           translation: "每天早上喝咖啡。",
-          note: "を标记直接作用的对象。"
+          note: "を标记直接作用的对象。",
+          contrastGroup: "object-route",
+          contrastNote: "换成「コーヒーが飲みます」意思就变了：が 标动作主体，这里的「咖啡」是动作对象，必须用 を。"
         },
         {
           context: "公园是走过的路线",
           sentence: "公園を一周しました。",
           reading: "こうえんをいっしゅうしました。",
           translation: "绕公园走了一圈。",
-          note: "移动路线也可以用を标记。"
+          note: "移动路线也可以用を标记。",
+          contrastGroup: "object-route",
+          contrastNote: "换成「公園で一周しました」不自然：一周する 把公园当作经过的范围，用 を 标路线。"
         }
       ]
     },
@@ -111,14 +127,18 @@
           sentence: "これは私の本です。",
           reading: "これはわたしのほんです。",
           translation: "这是我的书。",
-          note: "私の连接所有者和物品。"
+          note: "私の连接所有者和物品。",
+          contrastGroup: "noun-link",
+          contrastNote: "换成「私が本です」意思完全不同：が 标主体，の 才表示「我的书」这层所属关系。"
         },
         {
           context: "说明学习内容",
           sentence: "日本語の助詞を学びます。",
           reading: "にほんごのじょしをまなびます。",
           translation: "学习日语助词。",
-          note: "日本語の说明助詞的类别，不表示所有权。"
+          note: "日本語の说明助詞的类别，不表示所有权。",
+          contrastGroup: "noun-link",
+          contrastNote: "换成「日本語と助詞」会变成两个并列对象（日语和助词）；の 在这里限定类别。"
         }
       ]
     },
@@ -134,14 +154,18 @@
           sentence: "りんごとバナナを買いました。",
           reading: "りんごとばななをかいました。",
           translation: "买了苹果和香蕉（就这两种）。",
-          note: "这里把项目列举为完整清单。"
+          note: "这里把项目列举为完整清单。",
+          contrastGroup: "listing",
+          contrastNote: "换成「や」就暗示还买了别的水果；と 把清单说完整。"
         },
         {
           context: "买了列出的水果，还买了别的",
           sentence: "りんごやバナナを買いました。",
           reading: "りんごやばななをかいました。",
           translation: "买了苹果、香蕉等。",
-          note: "や表示举例，不穷举所有项目。"
+          note: "や表示举例，不穷举所有项目。",
+          contrastGroup: "listing",
+          contrastNote: "换成「と」会变成「只买了这两种」；や 保留「还有其他」的意思。"
         }
       ]
     },
@@ -157,14 +181,18 @@
           sentence: "兄は学生です。私も学生です。",
           reading: "あにはがくせいです。わたしもがくせいです。",
           translation: "哥哥是学生，我也是学生。",
-          note: "も表示“我也符合前面说的情况”。"
+          note: "も表示“我也符合前面说的情况”。",
+          contrastGroup: "addition",
+          contrastNote: "换成「私は学生です」只是陈述自己，失去「我也一样」的呼应；も 依赖前文才能成立。"
         },
         {
           context: "强调等待时间很长",
           sentence: "三時間も待ちました。",
           reading: "さんじかんもまちました。",
           translation: "竟等了三个小时。",
-          note: "数量词后的も可带有超出预期的语气。"
+          note: "数量词后的も可带有超出预期的语气。",
+          contrastGroup: "addition",
+          contrastNote: "换成「三時間待ちました」只是客观陈述；も 带出「竟然三个小时」的超出预期语气。"
         }
       ]
     },
@@ -180,14 +208,18 @@
           sentence: "月曜日から金曜日まで働きます。",
           reading: "げつようびからきんようびまではたらきます。",
           translation: "从星期一工作到星期五。",
-          note: "から是起点，まで是终点。"
+          note: "から是起点，まで是终点。",
+          contrastGroup: "range",
+          contrastNote: "换成「月曜日に金曜日まで」不通：に 标具体时间点，不能当起点用。"
         },
         {
           context: "说明工作时间",
           sentence: "九時から五時まで働きます。",
           reading: "くじからごじまではたらきます。",
           translation: "从九点工作到五点。",
-          note: "时间范围也可以用から和まで标记。"
+          note: "时间范围也可以用から和まで标记。",
+          contrastGroup: "range",
+          contrastNote: "换成「九時に五時まで」不通：起点要用 から；に 只能标具体时间点。"
         }
       ]
     },
@@ -203,14 +235,18 @@
           sentence: "今日は水だけ飲みました。",
           reading: "きょうはみずだけのみました。",
           translation: "今天只喝了水。",
-          note: "だけ可以直接搭配肯定谓语。"
+          note: "だけ可以直接搭配肯定谓语。",
+          contrastGroup: "limitation",
+          contrastNote: "换成「水しか飲みました」不通：しか 必须与否定谓语搭配。"
         },
         {
           context: "用否定句强调只有水",
           sentence: "水しか飲みませんでした。",
           reading: "みずしかのみませんでした。",
           translation: "除了水什么也没喝。",
-          note: "しか后接否定谓语。"
+          note: "しか后接否定谓语。",
+          contrastGroup: "limitation",
+          contrastNote: "换成「水だけ飲みませんでした」意思变了：だけ＋否定是「只有水没喝」，不是「只喝了水」。"
         }
       ]
     }
@@ -230,7 +266,10 @@
       options: ["は", "が", "を", "で"],
       acceptedAnswers: ["は"],
       beginnerExplanation: "は把「我」设为这句话的话题，后面说明关于我的信息。",
-      advancedExplanation: "这是中性的话题句。若上下文在对比“我和别人”，は也可以带对比语气。"
+      advancedExplanation: "这是中性的话题句。若上下文在对比“我和别人”，は也可以带对比语气。",
+      optionNotes: {
+        "が": "が 会把「我」标成新信息焦点（是我，不是别人）；自我介绍这种话题句用 は。"
+      }
     },
     {
       id: "ga-focus",
@@ -245,7 +284,10 @@
       options: ["は", "が", "に", "も"],
       acceptedAnswers: ["が"],
       beginnerExplanation: "问题问“谁”，回答中的新信息是田中さん，因此用が。",
-      advancedExplanation: "が把焦点落在回答疑问词的新信息上；若改用は，话题和对比关系会不同。"
+      advancedExplanation: "が把焦点落在回答疑问词的新信息上；若改用は，话题和对比关系会不同。",
+      optionNotes: {
+        "は": "は 会把田中设为话题；回答「谁来了」这类问句时，焦点信息要用 が。"
+      }
     },
     {
       id: "wa-contrast",
@@ -260,7 +302,10 @@
       options: ["は", "が", "を", "も"],
       acceptedAnswers: ["は"],
       beginnerExplanation: "这里把鱼作为话题，并和其他食物形成对比。",
-      advancedExplanation: "は替代宾语位置通常使用的を，形成对比话题；它不是普通的中性主题句。"
+      advancedExplanation: "は替代宾语位置通常使用的を，形成对比话题；它不是普通的中性主题句。",
+      optionNotes: {
+        "が": "这里是「鱼我不吃」的对比话题；が 会变成标焦点，读起来像在回答「什么不吃」。"
+      }
     },
     {
       id: "ni-existence",
@@ -275,7 +320,10 @@
       options: ["に", "で", "を", "へ"],
       acceptedAnswers: ["に"],
       beginnerExplanation: "いる表示存在，存在的位置用に标记。",
-      advancedExplanation: "这里描述的是存在状态，而不是某个动作发生的场所，所以用に。"
+      advancedExplanation: "这里描述的是存在状态，而不是某个动作发生的场所，所以用に。",
+      optionNotes: {
+        "で": "いる 表示存在，存在的地点用 に；で 后面要接动作（如 部屋で寝る）。"
+      }
     },
     {
       id: "de-action-place",
@@ -290,7 +338,10 @@
       options: ["に", "で", "を", "へ"],
       acceptedAnswers: ["で"],
       beginnerExplanation: "勉強する是动作，动作发生的地点用で。",
-      advancedExplanation: "で标记事件发生的场所；若说“人在图书馆”，则用「図書館にいる」。"
+      advancedExplanation: "で标记事件发生的场所；若说“人在图书馆”，则用「図書館にいる」。",
+      optionNotes: {
+        "に": "勉強する 是动作，动作发生地用 で；に 在这个位置会被读成存在地点或到达点。"
+      }
     },
     {
       id: "ni-arrival",
@@ -305,7 +356,10 @@
       options: ["に", "へ", "で", "を"],
       acceptedAnswers: ["に"],
       beginnerExplanation: "着く表示到达某处，到达点通常用に。",
-      advancedExplanation: "へ偏向方向；着く描写抵达目标，通常选择に。"
+      advancedExplanation: "へ偏向方向；着く描写抵达目标，通常选择に。",
+      optionNotes: {
+        "へ": "へ 更强调方向；着く 表示到达，到达点通常用 に 标。"
+      }
     },
     {
       id: "he-destination",
@@ -320,7 +374,10 @@
       options: ["へ", "に", "で", "を"],
       acceptedAnswers: ["へ", "に"],
       beginnerExplanation: "表示移动目标时，へ和に在很多场景都可以使用。",
-      advancedExplanation: "两种答案都自然：へ较突出方向，に把东京作为移动目标。"
+      advancedExplanation: "两种答案都自然：へ较突出方向，に把东京作为移动目标。",
+      optionNotes: {
+        "で": "で 标动作发生的地点；这里是移动的目的地，用 へ 或 に。"
+      }
     },
     {
       id: "wo-object",
@@ -335,7 +392,10 @@
       options: ["を", "に", "で", "から"],
       acceptedAnswers: ["を"],
       beginnerExplanation: "を标记直接作用的对象：喝什么？喝咖啡。",
-      advancedExplanation: "这里是典型的他动词宾语标记；注意を也可用于移动路线。"
+      advancedExplanation: "这里是典型的他动词宾语标记；注意を也可用于移动路线。",
+      optionNotes: {
+        "に": "に 标存在地点或到达点；喝咖啡的「咖啡」是动作对象，用 を。"
+      }
     },
     {
       id: "wo-route",
@@ -350,7 +410,10 @@
       options: ["を", "で", "に", "が"],
       acceptedAnswers: ["を"],
       beginnerExplanation: "这里不是“对公园做动作”，而是把公园表示为经过的路线。",
-      advancedExplanation: "移动动词可用を标记经过或离开的空间，如「道を歩く」「家を出る」。"
+      advancedExplanation: "移动动词可用を标记经过或离开的空间，如「道を歩く」「家を出る」。",
+      optionNotes: {
+        "で": "一周する 把公园当作经过的范围，用 を 标路线；で 更偏「在公园里做某事」。"
+      }
     },
     {
       id: "no-possession",
@@ -365,7 +428,10 @@
       options: ["の", "も", "が", "で"],
       acceptedAnswers: ["の"],
       beginnerExplanation: "の连接「我」和「书」，表示所属关系。",
-      advancedExplanation: "の也能表示类别或说明关系，并不总是所有权。"
+      advancedExplanation: "の也能表示类别或说明关系，并不总是所有权。",
+      optionNotes: {
+        "が": "が 标主体，会变成「我是书」；这里要表达「我的书」，用 の。"
+      }
     },
     {
       id: "to-complete-list",
@@ -380,7 +446,10 @@
       options: ["と", "や", "も", "の"],
       acceptedAnswers: ["と"],
       beginnerExplanation: "语境说明清单完整，所以这里用と连接列举项目。",
-      advancedExplanation: "穷举列举通常使用と；是否完整要看上下文。"
+      advancedExplanation: "穷举列举通常使用と；是否完整要看上下文。",
+      optionNotes: {
+        "や": "や 暗示还有别的；语境是「只买了这两种」，用 と 把清单说完整。"
+      }
     },
     {
       id: "ya-open-list",
@@ -395,7 +464,10 @@
       options: ["と", "や", "も", "の"],
       acceptedAnswers: ["や"],
       beginnerExplanation: "这里没有列出所有水果，用や表示举例。",
-      advancedExplanation: "や通常表达非穷举列举；常和「など」搭配。"
+      advancedExplanation: "や通常表达非穷举列举；常和「など」搭配。",
+      optionNotes: {
+        "と": "と 会把清单说完整；这里还有没列出的水果，用 や 表示举例。"
+      }
     },
     {
       id: "mo-addition",
@@ -410,7 +482,10 @@
       options: ["も", "は", "が", "を"],
       acceptedAnswers: ["も"],
       beginnerExplanation: "も表示“我也符合前面说的情况”。",
-      advancedExplanation: "も常表达追加或类比；它会替换当前成分上原本可能出现的主题标记。"
+      advancedExplanation: "も常表达追加或类比；它会替换当前成分上原本可能出现的主题标记。",
+      optionNotes: {
+        "は": "は 只是另起一个话题；要与前句「哥哥是学生」呼应，用 も。"
+      }
     },
     {
       id: "kara-start",
@@ -425,7 +500,10 @@
       options: ["から", "まで", "に", "で"],
       acceptedAnswers: ["から"],
       beginnerExplanation: "から标记范围或时间的起点。",
-      advancedExplanation: "から指出范围起始端；终点可由まで补出。"
+      advancedExplanation: "から指出范围起始端；终点可由まで补出。",
+      optionNotes: {
+        "まで": "まで 是终点；月曜日是起点，用 から。"
+      }
     },
     {
       id: "made-end",
@@ -440,7 +518,10 @@
       options: ["まで", "から", "に", "で"],
       acceptedAnswers: ["まで"],
       beginnerExplanation: "まで标记范围或时间的终点。",
-      advancedExplanation: "まで指出范围终止端，不一定表示动作恰好在该时刻停止。"
+      advancedExplanation: "まで指出范围终止端，不一定表示动作恰好在该时刻停止。",
+      optionNotes: {
+        "から": "から 是起点；五点结束是终点，用 まで。"
+      }
     },
     {
       id: "dake-limit",
@@ -455,7 +536,10 @@
       options: ["だけ", "しか", "も", "まで"],
       acceptedAnswers: ["だけ"],
       beginnerExplanation: "だけ表示“只有”，可以直接搭配肯定句。",
-      advancedExplanation: "だけ不要求后续否定；与しか相比，限制语气通常较中性。"
+      advancedExplanation: "だけ不要求后续否定；与しか相比，限制语气通常较中性。",
+      optionNotes: {
+        "しか": "しか 必须搭配否定谓语，这里是「飲みました」肯定形。"
+      }
     },
     {
       id: "shika-negative",
@@ -470,7 +554,10 @@
       options: ["しか", "だけ", "も", "から"],
       acceptedAnswers: ["しか"],
       beginnerExplanation: "しか通常和否定搭配，句尾要用否定形式。",
-      advancedExplanation: "「しか～ない」整体表达排他限制；不能只把しか理解为独立的“只有”。"
+      advancedExplanation: "「しか～ない」整体表达排他限制；不能只把しか理解为独立的“只有”。",
+      optionNotes: {
+        "だけ": "だけ 配否定会变成「只有水没喝」；要突出「只喝了水」，用 しか＋否定。"
+      }
     },
     {
       id: "ni-time",
@@ -485,7 +572,10 @@
       options: ["に", "で", "を", "へ"],
       acceptedAnswers: ["に"],
       beginnerExplanation: "具体时间点常用に标记。",
-      advancedExplanation: "に可标记事件发生的时间点；相对期间一般不一定需要に。"
+      advancedExplanation: "に可标记事件发生的时间点；相对期间一般不一定需要に。",
+      optionNotes: {
+        "で": "具体时间点用 に 标；で 标的是动作场所或手段。"
+      }
     },
     {
       id: "ni-recipient",
@@ -500,7 +590,10 @@
       options: ["に", "で", "を", "から"],
       acceptedAnswers: ["に"],
       beginnerExplanation: "に可以标记动作的到达对象，这里是礼物送到的人。",
-      advancedExplanation: "あげる的授受方向指向友達，所以用に标记接受者。"
+      advancedExplanation: "あげる的授受方向指向友達，所以用に标记接受者。",
+      optionNotes: {
+        "で": "あげる 的接受者用 に 标；で 是动作发生的场所。"
+      }
     },
     {
       id: "no-category",
@@ -515,7 +608,10 @@
       options: ["の", "は", "が", "と"],
       acceptedAnswers: ["の"],
       beginnerExplanation: "の连接两个名词，说明后一个名词的类别或所属关系。",
-      advancedExplanation: "这里是名词修饰关系，不表示某个人拥有助词。"
+      advancedExplanation: "这里是名词修饰关系，不表示某个人拥有助词。",
+      optionNotes: {
+        "と": "と 会把日语和助词并列成两个对象；这里是「日语的助词」，用 の 限定类别。"
+      }
     },
     {
       id: "to-together",
@@ -530,7 +626,10 @@
       options: ["と", "や", "も", "で"],
       acceptedAnswers: ["と"],
       beginnerExplanation: "と也能表示一起行动的对象。",
-      advancedExplanation: "这里的と表示共同参与者，不是并列列举。"
+      advancedExplanation: "这里的と表示共同参与者，不是并列列举。",
+      optionNotes: {
+        "や": "や 暗示还有其他人；一起看电影的同伴用 と。"
+      }
     },
     {
       id: "mo-emphasis",
@@ -545,7 +644,10 @@
       options: ["も", "は", "が", "を"],
       acceptedAnswers: ["も"],
       beginnerExplanation: "数量表达后面的も可以加强“这么多／这么久”的语气。",
-      advancedExplanation: "数量＋も常带说话人的评价或超出预期的强调。"
+      advancedExplanation: "数量＋も常带说话人的评价或超出预期的强调。",
+      optionNotes: {
+        "は": "は 只是客观陈述「等了三个小时」；も 带出「竟然」的超出预期语气。"
+      }
     },
     {
       id: "kara-source",
@@ -560,7 +662,10 @@
       options: ["から", "まで", "に", "で"],
       acceptedAnswers: ["から"],
       beginnerExplanation: "から也可以表示来源，相当于“从……那里”。",
-      advancedExplanation: "もらう的来源由から标记；友達に手紙をもらう在口语中也常见。"
+      advancedExplanation: "もらう的来源由から标记；友達に手紙をもらう在口语中也常见。",
+      optionNotes: {
+        "に": "に 也能表示给予者，但本题强调「从朋友那里」这个起点，用 から 更贴合。"
+      }
     },
     {
       id: "shika-only",
@@ -575,7 +680,10 @@
       options: ["しか", "だけ", "も", "まで"],
       acceptedAnswers: ["しか"],
       beginnerExplanation: "しか后面接否定形式；「百円しかありません」表示仅有一百日元。",
-      advancedExplanation: "しか与否定谓语组合，把可用范围限制为百円。"
+      advancedExplanation: "しか与否定谓语组合，把可用范围限制为百円。",
+      optionNotes: {
+        "だけ": "ありません 是否定形；「只有一百日元」要用 しか＋否定，だけ 会变成「一百日元没有」。"
+      }
     }
   ];
 

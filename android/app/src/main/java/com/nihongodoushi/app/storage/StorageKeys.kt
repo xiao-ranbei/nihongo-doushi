@@ -10,6 +10,12 @@ object StorageKeys {
     const val ADJECTIVE_STATS = "japanese-verb-practice-adj-stats-v1"
     const val DAILY = "japanese-verb-practice-daily-v1"
 
+    /** 助词错题：与 Web 端同键同构（纯题目 ID 数组，无排期字段，见 D-017） */
+    const val PARTICLE_MISTAKES = "japanese-particle-practice-mistakes-v1"
+
+    /** 助词答题统计：与 Web 端同构 */
+    const val PARTICLE_STATS = "japanese-particle-practice-stats-v1"
+
     /** 最近若干天学习行为（答题数 / 时长 / 任务数），供主页周历条与「我的」页统计 */
     const val HISTORY = "japanese-verb-practice-history-v1"
 

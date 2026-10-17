@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.nihongodoushi.app.engine.adjective.AdjectiveData
 import com.nihongodoushi.app.engine.adjective.AdjectiveEntry
+import com.nihongodoushi.app.engine.particle.ParticleData
 import com.nihongodoushi.app.engine.verb.VerbData
 import com.nihongodoushi.app.engine.verb.VerbEntry
 import com.nihongodoushi.app.storage.ActivityAggregation
@@ -31,6 +32,15 @@ class AppState(private val store: LocalStore) {
     var verbStats by mutableStateOf(store.loadVerbStats())
         private set
     var adjectiveStats by mutableStateOf(store.loadAdjectiveStats())
+        private set
+
+    /** 助词错题：题目 ID 数组（与 Web 端同构，见 D-017） */
+    var particleMistakes by mutableStateOf(
+        store.loadParticleMistakes().filter { ParticleData.QUESTION_BY_ID.containsKey(it) },
+    )
+        private set
+
+    var particleStats by mutableStateOf(store.loadParticleStats())
         private set
     var daily by mutableStateOf(store.loadDaily())
         private set
@@ -59,11 +69,12 @@ class AppState(private val store: LocalStore) {
         if (daily.lastDate == todayKey) {
             val existing = history.dayOf(todayKey)
             val answersInHistory = existing?.answers ?: 0
-            val answersInDaily = daily.verbAnswers + daily.adjectiveAnswers
+            val answersInDaily = daily.verbAnswers + daily.adjectiveAnswers + daily.particleAnswers
             if (answersInHistory < answersInDaily) {
                 val merged = (existing ?: DayActivity(date = todayKey)).copy(
                     verbAnswers = maxOf(existing?.verbAnswers ?: 0, daily.verbAnswers),
                     adjectiveAnswers = maxOf(existing?.adjectiveAnswers ?: 0, daily.adjectiveAnswers),
+                    particleAnswers = maxOf(existing?.particleAnswers ?: 0, daily.particleAnswers),
                 )
                 val seeded = ActivityAggregation.upsert(history, merged)
                 history = seeded
@@ -174,6 +185,63 @@ class AppState(private val store: LocalStore) {
         store.saveAdjectiveStats(adjectiveStats)
     }
 
+    // ---------- 助词 ----------
+
+    /** 助词错题：加入（去重，append 顺序即加入顺序） */
+    fun recordParticleMistake(questionId: String) {
+        if (questionId.isBlank() || questionId in particleMistakes) {
+            return
+        }
+        if (!ParticleData.QUESTION_BY_ID.containsKey(questionId)) {
+            return
+        }
+        particleMistakes = particleMistakes + questionId
+        store.saveParticleMistakes(particleMistakes)
+    }
+
+    /** 助词错题：复习模式下答对即移出（对齐 web/app.js 的 removeParticleMistake，D-017） */
+    fun removeParticleMistake(questionId: String) {
+        if (questionId !in particleMistakes) {
+            return
+        }
+        particleMistakes = particleMistakes.filter { it != questionId }
+        store.saveParticleMistakes(particleMistakes)
+    }
+
+    fun clearParticleMistakes() {
+        if (particleMistakes.isEmpty()) {
+            return
+        }
+        particleMistakes = emptyList()
+        store.saveParticleMistakes(particleMistakes)
+    }
+
+    fun updateParticleStats(correct: Boolean) {
+        particleStats = bumpStats(particleStats, correct)
+        store.saveParticleStats(particleStats)
+    }
+
+    fun resetParticleStats() {
+        particleStats = ModuleStats()
+        store.saveParticleStats(particleStats)
+    }
+
+    /** 助词掌握度：只认「未用提示答对」的题目，按 ID 去重（D-020） */
+    fun markParticleMastered(questionId: String) {
+        if (questionId.isBlank() || questionId in progress.particleMastered) {
+            return
+        }
+        progress = progress.copy(particleMastered = progress.particleMastered + questionId)
+        store.saveProgress(progress)
+    }
+
+    fun particleMasteredCount(): Int = progress.particleMastered.size
+
+    fun particleMasteredIn(lessonId: String): Int {
+        val ids = ParticleData.QUESTIONS.filter { it.lessonId == lessonId }.map { it.id }.toSet()
+        return progress.particleMastered.count { it in ids }
+    }
+
     // ---------- 每日打卡 ----------
 
     /** 连续天数：今天或昨天有记录才连续（对齐 web getCurrentStreak）。 */
@@ -199,6 +267,7 @@ class AppState(private val store: LocalStore) {
         record = when (module) {
             "verb" -> record.copy(verbAnswers = record.verbAnswers + 1)
             "adjective" -> record.copy(adjectiveAnswers = record.adjectiveAnswers + 1)
+            "particle" -> record.copy(particleAnswers = record.particleAnswers + 1)
             else -> error("Unknown daily activity module: $module")
         }
         daily = record
@@ -209,6 +278,7 @@ class AppState(private val store: LocalStore) {
             when (module) {
                 "verb" -> day.copy(verbAnswers = day.verbAnswers + 1)
                 "adjective" -> day.copy(adjectiveAnswers = day.adjectiveAnswers + 1)
+                "particle" -> day.copy(particleAnswers = day.particleAnswers + 1)
                 else -> day
             }
         }

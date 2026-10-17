@@ -7,19 +7,21 @@
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
 | [product-overview.md](product-overview.md) | 产品愿景、范围、平台关系与设计原则 | 已确认方向 |
-| [information-architecture.md](information-architecture.md) | 学习主页、模块导航、主要视图与用户流程 | Web 主页与导航已实现；Android 导航待定 |
-| [basic-design.md](basic-design.md) | Web 与 Android 的目标技术结构、数据边界和共享服务 | 目标设计；Android 尚未实现 |
-| [android-requirements.md](android-requirements.md) | Android MVP 范围、发布、离线、数据和待决技术项 | 需求已确认；客户端尚未实现 |
+| [information-architecture.md](information-architecture.md) | 学习主页、模块导航、主要视图与用户流程 | Web 与 Android 主页/导航已实现 |
+| [basic-design.md](basic-design.md) | Web 与 Android 的目标技术结构、数据边界和共享服务 | 目标设计；Android MVP 已实现，衍生能力待补 |
+| [android-requirements.md](android-requirements.md) | Android MVP 范围、发布、离线、数据和待决技术项 | 需求已确认；MVP 已实现 |
 | [module-guide.md](module-guide.md) | 新增日语学习模块的设计和接入清单 | 扩展约定 |
 | [current-state.md](current-state.md) | 当前网页代码、功能、存储和测试基线 | 当前实现 |
 | [decisions.md](decisions.md) | 已确认的产品／架构选择与延后决定 | 决策记录 |
 | [deployment-github-pages.md](deployment-github-pages.md) | GitHub Pages 首次启用、自动部署和本地数据说明 | 部署操作指南 |
 | [navigation-prototypes.html](navigation-prototypes.html) | 可点击的网页导航方案原型 | 讨论用原型，不是正式页面 |
 | [android-redesign-proposal.md](android-redesign-proposal.md) | 选择题答题界面、应用图标、视觉层次与交互逻辑的重设计方案 | 待确认；不含代码变更 |
-| [android-answer-screen-spec.md](android-answer-screen-spec.md) | 已确认的答题界面结构与视觉布局说明（方案 A + 底部判定抽屉、图标方向 1） | 设计规格已定；实现待开始 |
+| [android-answer-screen-spec.md](android-answer-screen-spec.md) | 已确认的答题界面结构与视觉布局说明（方案 A + 底部判定抽屉、图标方向 1） | 已实现 |
 | [design/answer-choice-prototypes.html](design/answer-choice-prototypes.html) | 三版选择题答题界面可交互原型（对比用） | 讨论用原型，不是正式页面 |
 | [design/answer-screen-A-drawer.html](design/answer-screen-A-drawer.html) | 确认版原型：方案 A + 底部判定抽屉（7 个状态/标注视图） | 讨论用原型，不是正式页面 |
 | [android-two-tab-spec.md](android-two-tab-spec.md) | 底栏两标签（主页/我的）重设计：结构、层级、视觉、数据口径、选定清单与实现记录 | 已实现 |
+| [android-particle-module-spec.md](android-particle-module-spec.md) | Android 助词学习模块：信息架构与页面流程、UI 布局与状态、学习闭环、教学策略与取舍 | 设计已定稿（D-016～D-021）；待实现 |
+| [design/particle-prototypes.html](design/particle-prototypes.html) | Android 助词模块四版可交互原型（专题地图 / 学习路径 / 直接开练 / 对开对比）与横向对比 | 已选定 A（2026-10-17） |
 | [workflow-review-two-increments.md](workflow-review-two-increments.md) | 两次追加功能的工作流复盘：目标、步骤、模块依赖、异同与演进、注意事项与可复用模板 | 参考文档 |
 | [design/home-mine-prototypes.html](design/home-mine-prototypes.html) | 主页/我的 三版可交互原型（框内底栏可切换） | 讨论用原型，不是正式页面 |
 | [design/icon-concepts/](design/icon-concepts/) | 应用图标方向 1「あ・纸页」资产（已轮廓化，含 VectorDrawable）与生成/自检脚本 | 可接入 |

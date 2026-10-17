@@ -43,6 +43,30 @@ class LocalStore(context: Context) {
 
     fun saveAdjectiveStats(stats: ModuleStats): Boolean = saveStats(StorageKeys.ADJECTIVE_STATS, stats)
 
+    /**
+     * 助词错题：纯题目 ID 数组（与 Web 端同键同构）。
+     * 这里只做「非空字符串 + 去重」校验；ID 是否属于当前题库由 AppState 过滤，
+     * 避免存储层依赖引擎数据。
+     */
+    fun loadParticleMistakes(): List<String> {
+        val raw = readRaw(StorageKeys.PARTICLE_MISTAKES) ?: return emptyList()
+        return try {
+            val ids = json.decodeFromString<List<String>>(raw)
+            val seen = mutableSetOf<String>()
+            ids.filter { it.isNotBlank() && seen.add(it) }
+        } catch (error: Exception) {
+            lastLoadInvalid = true
+            emptyList()
+        }
+    }
+
+    fun saveParticleMistakes(ids: List<String>): Boolean =
+        writeRaw(StorageKeys.PARTICLE_MISTAKES, json.encodeToString(ids.distinct()))
+
+    fun loadParticleStats(): ModuleStats = loadStats(StorageKeys.PARTICLE_STATS)
+
+    fun saveParticleStats(stats: ModuleStats): Boolean = saveStats(StorageKeys.PARTICLE_STATS, stats)
+
     fun loadDaily(): DailyRecord {
         val raw = readRaw(StorageKeys.DAILY) ?: return DailyRecord()
         return try {
@@ -63,7 +87,10 @@ class LocalStore(context: Context) {
             val history = json.decodeFromString<ActivityHistory>(raw)
             ActivityHistory(
                 days = history.days
-                    .filter { it.date.isNotBlank() && it.verbAnswers >= 0 && it.adjectiveAnswers >= 0 && it.seconds >= 0 && it.tasks >= 0 }
+                    .filter {
+                        it.date.isNotBlank() && it.verbAnswers >= 0 && it.adjectiveAnswers >= 0 &&
+                            it.particleAnswers >= 0 && it.seconds >= 0 && it.tasks >= 0
+                    }
                     .sortedBy { it.date },
             )
         } catch (error: Exception) {
@@ -83,6 +110,7 @@ class LocalStore(context: Context) {
                 verbIds = progress.verbIds.filter { it.isNotBlank() }.distinct(),
                 adjectiveIds = progress.adjectiveIds.filter { it.isNotBlank() }.distinct(),
                 masteredMistakes = if (progress.masteredMistakes >= 0) progress.masteredMistakes else 0,
+                particleMastered = progress.particleMastered.filter { it.isNotBlank() }.distinct(),
             )
         } catch (error: Exception) {
             lastLoadInvalid = true
@@ -147,4 +175,4 @@ private fun MistakeRecord.isValid(): Boolean =
         }
 
 private fun DailyRecord.isValid(): Boolean =
-    streak >= 0 && best >= 0 && verbAnswers >= 0 && adjectiveAnswers >= 0
+    streak >= 0 && best >= 0 && verbAnswers >= 0 && adjectiveAnswers >= 0 && particleAnswers >= 0

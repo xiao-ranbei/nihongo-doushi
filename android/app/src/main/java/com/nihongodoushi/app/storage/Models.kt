@@ -47,6 +47,8 @@ data class DailyRecord(
     val best: Int = 0,
     val verbAnswers: Int = 0,
     val adjectiveAnswers: Int = 0,
+    /** 助词模块当日题数；旧存档无该字段时按 0 兼容 */
+    val particleAnswers: Int = 0,
 )
 
 /** 单日学习行为（history-v1 的一天） */
@@ -55,12 +57,13 @@ data class DayActivity(
     val date: String,
     val verbAnswers: Int = 0,
     val adjectiveAnswers: Int = 0,
+    val particleAnswers: Int = 0,
     /** 该日前台学习秒数（进练习屏累计，退到后台暂停） */
     val seconds: Int = 0,
     /** 该日完成任务数（一轮 5 题记 1 个；完成一次错题重练也记 1 个） */
     val tasks: Int = 0,
 ) {
-    val answers: Int get() = verbAnswers + adjectiveAnswers
+    val answers: Int get() = verbAnswers + adjectiveAnswers + particleAnswers
 }
 
 /** 最近若干天的学习历史（history-v1），按日期升序保存 */
@@ -81,4 +84,6 @@ data class PracticeProgress(
     val adjectiveIds: List<String> = emptyList(),
     /** 连续答对达到毕业次数、已从错题本移除的错题数 */
     val masteredMistakes: Int = 0,
+    /** 助词：「未用提示答对过」的题目 ID 集合（掌握度口径，见 D-020） */
+    val particleMastered: List<String> = emptyList(),
 )
