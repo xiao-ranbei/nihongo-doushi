@@ -13,6 +13,7 @@
 | [module-guide.md](module-guide.md) | 新增日语学习模块的设计和接入清单 | 扩展约定 |
 | [current-state.md](current-state.md) | 当前网页代码、功能、存储和测试基线 | 当前实现 |
 | [decisions.md](decisions.md) | 已确认的产品／架构选择与延后决定 | 决策记录 |
+| [known-issues.md](known-issues.md) | 遗留问题登记册：未完成实现、已知缺陷、技术债务与复核方法 | 持续更新（2026-10-17 建立，20 项） |
 | [deployment-github-pages.md](deployment-github-pages.md) | GitHub Pages 首次启用、自动部署和本地数据说明 | 部署操作指南 |
 | [navigation-prototypes.html](navigation-prototypes.html) | 可点击的网页导航方案原型 | 讨论用原型，不是正式页面 |
 | [android-redesign-proposal.md](android-redesign-proposal.md) | 选择题答题界面、应用图标、视觉层次与交互逻辑的重设计方案 | 待确认；不含代码变更 |
@@ -20,7 +21,7 @@
 | [design/answer-choice-prototypes.html](design/answer-choice-prototypes.html) | 三版选择题答题界面可交互原型（对比用） | 讨论用原型，不是正式页面 |
 | [design/answer-screen-A-drawer.html](design/answer-screen-A-drawer.html) | 确认版原型：方案 A + 底部判定抽屉（7 个状态/标注视图） | 讨论用原型，不是正式页面 |
 | [android-two-tab-spec.md](android-two-tab-spec.md) | 底栏两标签（主页/我的）重设计：结构、层级、视觉、数据口径、选定清单与实现记录 | 已实现 |
-| [android-particle-module-spec.md](android-particle-module-spec.md) | Android 助词学习模块：信息架构与页面流程、UI 布局与状态、学习闭环、教学策略与取舍 | 设计已定稿（D-016～D-021）；待实现 |
+| [android-particle-module-spec.md](android-particle-module-spec.md) | Android 助词学习模块：信息架构与页面流程、UI 布局与状态、学习闭环、教学策略与取舍 | 已实现（D-016～D-022，8b9d040/1ba8b4c；四标签后入口在「学习」页） |
 | [design/particle-prototypes.html](design/particle-prototypes.html) | Android 助词模块四版可交互原型（专题地图 / 学习路径 / 直接开练 / 对开对比）与横向对比 | 已选定 A（2026-10-17） |
 | [android-module-three-tier-refactor.md](android-module-three-tier-refactor.md) | 动词／形容词模块三层改造：模块首页 + 讲解页 + 练习屏，含内容划分、跳转、视觉规范与关键点 | 已实现（2026-10-17） |
 | [android-four-tab-spec.md](android-four-tab-spec.md) | 底栏四标签框架（主页/学习/阅读/我的）：IA、各页规格、扩展点、存储、验收标准 | 已实现（2026-10-17） |

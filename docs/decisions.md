@@ -19,7 +19,7 @@
 | D-013 | 当前不做插件注册框架，先用统一模块约定显式接入 | 已确认 |
 | D-014 | Android 保留品牌纸感配色，同时遵循原生系统交互；Android 导航样式留待原型决定 | 已确认原则；部分细节待定 |
 | D-015 | Android MVP 工程选型：minSdk 26（Android 8.0+）、UI 用 Jetpack Compose（Material 3）、本地存储用 kotlinx-serialization 版本化 JSON 文件（结构对齐 Web localStorage 键）、applicationId `com.nihongodoushi.app`；工具链 AGP 8.13.2 + Gradle 8.14.3 + Kotlin 2.2.21 + Compose BOM 2025.08.01（与本机 SDK platform 35 同代） | 已确认 |
-| D-016 | Android 助词模块接入形态：主页第三张入口卡 → 助词二级模块（专题地图首页 → 专题讲解 → 练习屏）；不新增底栏标签 | 已确认；首页形态选定 A「专题地图」（2026-10-17）；待实现 |
+| D-016 | Android 助词模块接入形态：主页第三张入口卡 → 助词二级模块（专题地图首页 → 专题讲解 → 练习屏）；不新增底栏标签 | 已实现（2026-10-17，8b9d040；D-022 补错题排期，四标签改版后入口迁至「学习」页） |
 | D-017 | ~~助词错题沿用纯题目 ID 数组、不做排期~~ → 被 D-022 修订 | 已被 D-022 取代 |
 | D-018 | 助词练习不做难度分层：48 题同池，取消入门／进阶选择器；题目 `level` 只决定解析深度（答对给入门解析，答错补进阶） | 已实现（2026-10-17） |
 | D-019 | 助词内容补字段：`contrastGroup` / `contrastNote`（最小对立对，9 组 18 条）与 `optionNotes`（逐项干扰说明）；先在 `web/particle-engine.js` 补数据与测试，再由生成器产 Kotlin 数据 | 已实现（2026-10-17） |
