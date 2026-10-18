@@ -138,7 +138,7 @@ web/index.html ── 页面结构与交互节点
   node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
   ```
 
-当前基线：网页端 6 个测试文件共 113 项全绿；Android 端 `./gradlew :app:testDebugUnitTest` 101 项全绿（含谚语抽取、知识点建议与资料／书签校验测试）。
+当前基线（2026-10-18 实测）：网页端 6 个测试文件共 121 项全绿；Android 端 `./gradlew :app:testDebugUnitTest` 111 项全绿，仪器化 `TalkBackMergeTest` 4 项全绿（qa36 模拟器，读屏语义树口径，见 D-030/D-031）。
 
 未解决的遗留问题（预留位转正清单、跨端数据缺口、技术债务等）统一登记在 [known-issues.md](known-issues.md)，不要在本文件重复罗列。
 

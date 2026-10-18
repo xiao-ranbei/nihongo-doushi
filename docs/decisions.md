@@ -33,6 +33,9 @@
 | D-027 | 「我的」新增两个本地存储键：`japanese-verb-practice-profile-v1`（昵称，1–12 字符，空白/超长拒绝保存）与 `japanese-verb-practice-bookmarks-v1`（书签骨架，本期无写入入口）；均带版本号 + 防御性校验 + 坏数据回退 | 已实现（2026-10-17） |
 | D-028 | 学习/阅读两枚标签图标用手绘 VectorDrawable（学士帽 / 打开的书）：material-icons-core 无 School/MenuBook 语义图标，icons-extended 在 release 未开 R8（`isMinifyEnabled = false`）时会显著增大 APK；待启用 minify 后评估切回 Material Icons Extended | 已实现（2026-10-17） |
 | D-029 | 字体收集器 `collect-chars.js` 扩展为同时收集 `android/app/src/main/java/**/*.kt` 的双引号字符串字面量，修复「Android 独有文案不进子集」的缺口（本轮 24 条谚语日文 + 新中文 UI 词）；Web woff2 会纳入少量 Android 独有字符（约 10–20KB）换取两端不再漏字 | 已实现（2026-10-17） |
+| D-030 | 读屏无障碍口径（IK-18）：Compose 的 clickable/selectable/combinedClickable 自带合并子语义（`AbstractClickableNode.getShouldMergeDescendantSemantics()=true`，字节码实测），卡片/选项/底栏本就是单一焦点站，禁止手工堆 `mergeDescendants=true`；uiautomator dump 只能拿未合并语义树，不得作为合并性验证手段。真缺口补语义属性：速查词条行与筛选胶囊补 `selected`（读屏可听出选中态）、长按「直接练习」补 `onLongClickLabel`；仪器化回归测试 `TalkBackMergeTest`（4 用例）守护合并树口径，经变异测试验证非空断言 | 已实现（2026-10-18） |
+| D-031 | androidTest 显式声明 `testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"`：AGP 8.13 不显式指定时往 androidTest manifest 注入旧版 `android.test.InstrumentationTestRunner`，不认 JUnit4 注解，仪器化测试「Starting 0 tests」静默假通过 | 已实现（2026-10-18） |
+| D-032 | `AppState.kt`（497 行）按领域拆为 5 文件：主文件只留状态声明（setter 收窄 `internal set`）、会话核心与 companion；错题/统计采集/助词/掌握度四个领域做成同包顶层扩展文件（`AppStateMistakes/Stats/Particle/Mastery.kt`），调用语法不变，子包调用点按函数名补 import；跨文件共享的内部实现（`recordMistake`/`bumpStats`/`updateToday`/`todayKey`）标 `internal` | 已实现（2026-10-18） |
 
 ## 明确延后的决定
 
