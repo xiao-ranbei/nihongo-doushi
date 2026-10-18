@@ -22,6 +22,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.engine.verb.VerbData
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.isReviewDue
+import com.nihongodoushi.app.ui.todayActivity
+import com.nihongodoushi.app.ui.verbMasteredForForm
+import com.nihongodoushi.app.ui.verbMasteredForVoice
+import com.nihongodoushi.app.ui.verbMistakes
+import com.nihongodoushi.app.ui.verbModulePercent
 import com.nihongodoushi.app.ui.common.ModuleBottomSurface
 import com.nihongodoushi.app.ui.common.ModuleSectionLabel
 import com.nihongodoushi.app.ui.common.ModuleTopBar

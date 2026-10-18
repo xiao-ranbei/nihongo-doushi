@@ -60,7 +60,14 @@ fun ThemeCardGrid(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(14.dp))
-                        .combinedClickable(onClick = { onClick(theme) }, onLongClick = { onDrill(theme) }),
+                        // 整卡一个焦点站由 combinedClickable 自带合并保证
+                        // （AbstractClickableNode.shouldMergeDescendantSemantics=true）；
+                        // 长按动作带标签，读屏用户可从自定义操作进入「直接练习」
+                        .combinedClickable(
+                            onClick = { onClick(theme) },
+                            onLongClick = { onDrill(theme) },
+                            onLongClickLabel = "直接练习",
+                        ),
                     shape = RoundedCornerShape(14.dp),
                     color = MaterialTheme.colorScheme.surface,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -84,7 +91,8 @@ fun ThemeCardGrid(
                             )
                             TextButton(
                                 onClick = { onDrill(theme) },
-                                modifier = Modifier.size(width = 40.dp, height = 28.dp),
+                                modifier = Modifier
+                                    .size(width = 40.dp, height = 28.dp),
                                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                             ) {
                                 Text(

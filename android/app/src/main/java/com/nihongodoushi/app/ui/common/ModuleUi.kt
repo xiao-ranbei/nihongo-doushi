@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.ui.theme.paperColors
@@ -149,6 +150,9 @@ fun ModuleSectionLabel(
 /**
  * 模块入口卡（原主页样式迁入，主页/学习页共用）：
  * 16dp 圆角纸白卡 + 40dp 图标盒 + 标题/副信息 + 右箭头，整行可点。
+ * 读屏口径：clickable 自带合并子语义（AbstractClickableNode
+ * .getShouldMergeDescendantSemantics=true，字节码实测），整卡即一个焦点站；
+ * role=Button 让读屏报「按钮」而非只有可双击提示（IK-18）。
  */
 @Composable
 fun EntryCard(
@@ -164,7 +168,7 @@ fun EntryCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick, role = Role.Button),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -201,7 +205,7 @@ fun EntryCard(
                 )
             }
             Icon(
-                imageVector = Icons.Filled.KeyboardArrowRight,
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = paper.muted,
             )

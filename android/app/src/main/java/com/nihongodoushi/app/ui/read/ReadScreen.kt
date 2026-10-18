@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
@@ -57,7 +58,7 @@ private val READ_TOOLS = listOf(
 
 private fun iconFor(tool: ReadTool): ImageVector = when (tool.id) {
     "ai-reading" -> Icons.Filled.Info
-    "layout" -> Icons.Filled.List
+    "layout" -> Icons.AutoMirrored.Filled.List
     "writing" -> Icons.Filled.Create
     else -> Icons.Filled.Search
 }

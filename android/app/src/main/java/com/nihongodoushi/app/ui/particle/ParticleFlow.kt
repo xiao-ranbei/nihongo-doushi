@@ -15,6 +15,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.practice.particleStateSaver
 
 /**
  * 助词模块内的三级导航（spec §1.1 / §1.4）。
@@ -35,7 +36,10 @@ fun ParticleFlow(
     autoReview: Boolean = false,
     onAutoReviewConsumed: () -> Unit = {},
 ) {
-    val practice = remember { ParticlePracticeState(app) }
+    // 进程重启后按 Saver 恢复进行中的一轮（IK-04）
+    val practice = rememberSaveable(saver = particleStateSaver(app)) {
+        ParticlePracticeState(app)
+    }
     var route by rememberSaveable { mutableStateOf(ParticleRoute.HOME) }
     var lessonId by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmExit by remember { mutableStateOf(false) }

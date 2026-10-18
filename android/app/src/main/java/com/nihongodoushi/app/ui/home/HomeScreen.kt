@@ -37,6 +37,13 @@ import com.nihongodoushi.app.engine.suggest.SuggestionEngine
 import com.nihongodoushi.app.engine.verb.VerbData
 import com.nihongodoushi.app.storage.ActivityAggregation
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.adjectiveModulePercent
+import com.nihongodoushi.app.ui.currentStreak
+import com.nihongodoushi.app.ui.isReviewDue
+import com.nihongodoushi.app.ui.particleDueCount
+import com.nihongodoushi.app.ui.particleMasteredCount
+import com.nihongodoushi.app.ui.todayActivity
+import com.nihongodoushi.app.ui.verbModulePercent
 import com.nihongodoushi.app.ui.study.StudyDestination
 import com.nihongodoushi.app.ui.theme.paperColors
 import java.time.LocalDate

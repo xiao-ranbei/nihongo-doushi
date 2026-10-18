@@ -45,6 +45,7 @@ import com.nihongodoushi.app.ui.practice.OptionState
 import com.nihongodoushi.app.ui.practice.ProgressRing
 import com.nihongodoushi.app.ui.practice.StudyTimeTracker
 import com.nihongodoushi.app.ui.practice.ToastLine
+import com.nihongodoushi.app.ui.addStudySeconds
 import com.nihongodoushi.app.ui.theme.paperColors
 
 /**

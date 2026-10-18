@@ -7,6 +7,13 @@ import com.nihongodoushi.app.engine.particle.ParticleData
 import com.nihongodoushi.app.engine.particle.ParticleEngine
 import com.nihongodoushi.app.engine.particle.ParticleQuestion
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.addCompletedTask
+import com.nihongodoushi.app.ui.dueParticleMistakeIds
+import com.nihongodoushi.app.ui.markParticleMastered
+import com.nihongodoushi.app.ui.recordParticleMistake
+import com.nihongodoushi.app.ui.recordParticleReviewSuccess
+import com.nihongodoushi.app.ui.updateDaily
+import com.nihongodoushi.app.ui.updateParticleStats
 import com.nihongodoushi.app.ui.practice.OptionState
 import kotlin.random.Random
 
@@ -81,10 +88,10 @@ class ParticlePracticeState(
         private set
 
     /** 本轮内用过提示的题目 ID：用于「同题第二次出现强制无提示」 */
-    private var hintUsedIds by mutableStateOf(setOf<String>())
+    internal var hintUsedIds by mutableStateOf(setOf<String>())
 
     /** 当前题是否用过提示（只在切题时复位，切换开关不回滚） */
-    private var hintUsedThisQuestion by mutableStateOf(false)
+    internal var hintUsedThisQuestion by mutableStateOf(false)
 
     private var lastTapIndex = -1
     private var lastTapTime = 0L
@@ -295,5 +302,54 @@ class ParticlePracticeState(
         hintUsedThisQuestion = false
         lastTapIndex = -1
         lastTapTime = 0L
+    }
+
+    /**
+     * 本轮题目的可序列化快照（IK-04）：每题一段「题目 id | 选项1/选项2/…」，
+     * 段间用「;」分隔；选项文本均为单个助词，不含分隔符。空轮次返回空串。
+     */
+    internal fun roundPayload(): String = round.joinToString(";") { item ->
+        item.question.id + "|" + item.options.joinToString("/")
+    }
+
+    /**
+     * 进程重启恢复（IK-04）：按 particleStateSaver 保存的平铺列表重放状态。
+     * 轮次题目按 id 取回、选项顺序原样保留，正确下标由引擎按选项重算，
+     * 判定结果与重启前一致；牌堆调度状态（随机序列）不恢复。
+     */
+    internal fun restoreSnapshot(values: List<Any>) {
+        scope = when (values[0] as? String) {
+            // lessonId 保存时规范化为空串，这里解释回 null（空串不是合法 id）
+            "lesson" -> (values[1] as? String)?.takeIf { it.isNotEmpty() }
+                ?.let { ParticleScope.Lesson(it) } ?: ParticleScope.All
+            "review" -> ParticleScope.Review
+            else -> ParticleScope.All
+        }
+        round = (values[2] as? String).orEmpty().split(";").filter { it.isNotEmpty() }.mapNotNull { segment ->
+            val parts = segment.split("|", limit = 2)
+            if (parts.size != 2) return@mapNotNull null
+            val question = ParticleData.QUESTION_BY_ID[parts[0]] ?: return@mapNotNull null
+            val options = parts[1].split("/").filter { it.isNotEmpty() }
+            if (options.isEmpty()) return@mapNotNull null
+            ParticleRoundItem(
+                question = question,
+                options = options,
+                // 按选项文本判定，不按 question.options 下标（选项是洗过牌的，
+                // 原序下标与界面对不上——ParticleEngine.otherAccepted 注释记录过同款坑）
+                correctIndexes = options.indices.filter { options[it] in question.acceptedAnswers }.toSet(),
+            )
+        }
+        index = ((values[3] as? Int) ?: 0).coerceIn(0, (round.size - 1).coerceAtLeast(0))
+        selectedIndex = (values[4] as? Int) ?: -1
+        judged = (values[5] as? Boolean) ?: false
+        lastCorrect = (values[6] as? Boolean) ?: false
+        hintOn = (values[7] as? Boolean) ?: false
+        roundComplete = (values[8] as? Boolean) ?: false
+        roundCorrect = (values[9] as? Int) ?: 0
+        roundWrong = (values[10] as? Int) ?: 0
+        answered = (values[11] as? Int) ?: 0
+        val hintIds = (values[12] as? String).orEmpty()
+        hintUsedIds = if (hintIds.isEmpty()) emptySet() else hintIds.split(",").toSet()
+        hintUsedThisQuestion = (values[13] as? Boolean) ?: false
     }
 }

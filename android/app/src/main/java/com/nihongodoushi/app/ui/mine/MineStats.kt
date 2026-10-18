@@ -27,6 +27,9 @@ import com.nihongodoushi.app.engine.verb.VerbData
 import com.nihongodoushi.app.storage.ActivityAggregation
 import com.nihongodoushi.app.storage.DayActivity
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.currentStreak
+import com.nihongodoushi.app.ui.masteredCount
+import com.nihongodoushi.app.ui.todayActivity
 import com.nihongodoushi.app.ui.theme.paperColors
 
 /**

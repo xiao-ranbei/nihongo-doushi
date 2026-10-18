@@ -1,18 +1,18 @@
 package com.nihongodoushi.app.storage
 
-import android.content.Context
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.time.Instant
 
 /**
- * 本地 JSON 文件存储：每个 StorageKey 对应 filesDir 下一个 .json 文件。
+ * 本地 JSON 文件存储：每个 StorageKey 对应目录下一个 .json 文件。
  * 读取采用防御性校验（与 Web 端一致）：解析失败或结构非法时返回空记录并置 invalid 标记，
  * 由调用方决定提示文案；写入失败静默返回 false（与 Web 端 storageAvailable 降级语义一致）。
+ *
+ * 目录由调用方注入（Android 传 context.filesDir），存储层本身不依赖 Android 框架，
+ * 单测可直接传临时目录。
  */
-class LocalStore(context: Context) {
-
-    private val dir: File = context.filesDir
+class LocalStore(private val dir: File) {
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true

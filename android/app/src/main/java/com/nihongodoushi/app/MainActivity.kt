@@ -38,8 +38,10 @@ import com.nihongodoushi.app.ui.mistakes.MistakesScreen
 import com.nihongodoushi.app.ui.particle.ParticleFlow
 import com.nihongodoushi.app.ui.practice.AdjectivePracticeScreen
 import com.nihongodoushi.app.ui.practice.AdjectivePracticeState
+import com.nihongodoushi.app.ui.practice.adjectiveStateSaver
 import com.nihongodoushi.app.ui.practice.VerbPracticeScreen
 import com.nihongodoushi.app.ui.practice.VerbPracticeState
+import com.nihongodoushi.app.ui.practice.verbStateSaver
 import com.nihongodoushi.app.ui.read.ReadScreen
 import com.nihongodoushi.app.ui.study.StudyDestination
 import com.nihongodoushi.app.ui.study.StudyScreen
@@ -80,11 +82,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             NihongoDoushiTheme {
-                // 状态提升到根级：切换标签 / 进出二级页都不丢练习进度
-                val store = remember { LocalStore(applicationContext) }
+                // 状态提升到根级：切换标签 / 进出二级页都不丢练习进度；
+                // 进程重启后按 Saver 恢复进行中的一轮（IK-04）
+                val store = remember { LocalStore(applicationContext.filesDir) }
                 val appState = remember { AppState(store) }
-                val verbState = remember { VerbPracticeState(appState) }
-                val adjectiveState = remember { AdjectivePracticeState(appState) }
+                val verbState = rememberSaveable(saver = verbStateSaver(appState)) {
+                    VerbPracticeState(appState)
+                }
+                val adjectiveState = rememberSaveable(saver = adjectiveStateSaver(appState)) {
+                    AdjectivePracticeState(appState)
+                }
                 AppRoot(appState, verbState, adjectiveState)
             }
         }
@@ -207,6 +214,8 @@ private fun AppBottomBar(current: AppTab, onSelect: (AppTab) -> Unit) {
             NavigationBarItem(
                 selected = current == entry,
                 onClick = { onSelect(entry) },
+                // 整项一个焦点站由 NavigationBarItem 内部 selectable 自带合并保证
+                // （SelectableNode 继承 ClickableNode，字节码实测）
                 icon = {
                     when (entry) {
                         AppTab.HOME -> Icon(

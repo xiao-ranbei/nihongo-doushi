@@ -6,18 +6,23 @@ kotlin = "2.2.21"
 composeBom = "2025.08.01"
 activityCompose = "1.10.1"
 coreKtx = "1.16.0"
+lifecycleRuntimeCompose = "2.9.0"
 serializationJson = "1.11.0"
+androidxTestExtJunit = "1.2.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleRuntimeCompose" }
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 compose-ui = { group = "androidx.compose.ui", name = "ui" }
 compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 compose-material-icons = { group = "androidx.compose.material", name = "material-icons-core" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serializationJson" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
+androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -15,7 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
@@ -36,6 +36,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.resetAdjectiveStats
+import com.nihongodoushi.app.ui.resetVerbStats
+import com.nihongodoushi.app.ui.todayActivity
 import com.nihongodoushi.app.ui.common.ModuleSectionLabel
 import com.nihongodoushi.app.ui.common.PlannedRow
 import com.nihongodoushi.app.ui.theme.paperColors
@@ -122,7 +125,7 @@ fun MineScreen(app: AppState) {
                         .background(MaterialTheme.colorScheme.outlineVariant),
                 )
                 PlannedRow(
-                    icon = Icons.Filled.List,
+                    icon = Icons.AutoMirrored.Filled.List,
                     title = "词库导入导出",
                     description = "导入或导出本地词库数据",
                 )

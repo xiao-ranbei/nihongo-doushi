@@ -39,6 +39,10 @@ import com.nihongodoushi.app.engine.particle.ParticleData
 import com.nihongodoushi.app.engine.particle.ParticleEngine
 import com.nihongodoushi.app.engine.particle.ParticleLesson
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.particleDueCount
+import com.nihongodoushi.app.ui.particleMasteredCount
+import com.nihongodoushi.app.ui.particleMasteredIn
+import com.nihongodoushi.app.ui.todayActivity
 import com.nihongodoushi.app.ui.practice.ProgressRing
 import com.nihongodoushi.app.ui.theme.paperColors
 import kotlin.math.roundToInt
@@ -244,7 +248,13 @@ private fun ParticleLessonCard(
     Surface(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .combinedClickable(onClick = onClick, onLongClick = onDrill),
+            // 整卡一个焦点站由 combinedClickable 自带合并保证；
+            // 长按带标签「直接练习」，读屏可经自定义操作触发
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onDrill,
+                onLongClickLabel = "直接练习",
+            ),
         shape = RoundedCornerShape(14.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -268,7 +278,8 @@ private fun ParticleLessonCard(
                 )
                 TextButton(
                     onClick = onDrill,
-                    modifier = Modifier.size(width = 40.dp, height = 28.dp),
+                    modifier = Modifier
+                        .size(width = 40.dp, height = 28.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 ) {
                     Text(

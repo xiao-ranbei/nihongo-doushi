@@ -24,6 +24,10 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        // 不显式指定时 AGP 往 androidTest manifest 注入旧版
+        // android.test.InstrumentationTestRunner，不认 JUnit4 注解（0 测试发现）；
+        // androidx  runner 由 androidx.test.ext:junit 传递带入
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -66,6 +70,7 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons)
@@ -75,4 +80,10 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     testImplementation(libs.kotlin.test)
+
+    // IK-18 读屏合并回归：Compose 测试 API 直接断言「合并语义树」，
+    // uiautomator dump 只能看到未合并树，验证不了合并效果
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -31,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.AppTab
@@ -121,7 +123,15 @@ private fun SuggestionRow(suggestion: Suggestion, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (executable) Modifier.clickable(onClick = onClick) else Modifier)
+            // 读屏口径（IK-18）：clickable 自带合并子语义，整行建议即一个焦点站；
+            // role=Button 让读屏报「按钮」
+            .then(
+                if (executable) {
+                    Modifier.clickable(onClick = onClick, role = Role.Button)
+                } else {
+                    Modifier
+                },
+            )
             .padding(horizontal = 15.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(13.dp),
@@ -161,7 +171,7 @@ private fun SuggestionRow(suggestion: Suggestion, onClick: () -> Unit) {
         }
         if (executable) {
             Icon(
-                imageVector = Icons.Filled.KeyboardArrowRight,
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = paper.muted,
             )

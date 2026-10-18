@@ -30,6 +30,11 @@ import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.engine.adjective.AdjectiveData
 import com.nihongodoushi.app.engine.mastery.Mastery
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.adjectiveMasteredForForm
+import com.nihongodoushi.app.ui.adjectiveMistakes
+import com.nihongodoushi.app.ui.adjectiveModulePercent
+import com.nihongodoushi.app.ui.isReviewDue
+import com.nihongodoushi.app.ui.todayActivity
 import com.nihongodoushi.app.ui.common.ModuleBottomSurface
 import com.nihongodoushi.app.ui.common.ModuleProgressBar
 import com.nihongodoushi.app.ui.common.ModuleSectionLabel
@@ -183,9 +188,12 @@ fun AdjectiveHomeScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(14.dp))
+                                // 整卡一个焦点站由 combinedClickable 自带合并保证；
+                                // 长按带标签「直接练习」，读屏可经自定义操作触发
                                 .combinedClickable(
                                     onClick = { onOpenTheme(form.id) },
                                     onLongClick = { onStartTheme(form.id) },
+                                    onLongClickLabel = "直接练习",
                                 ),
                             shape = RoundedCornerShape(14.dp),
                             color = MaterialTheme.colorScheme.surface,
@@ -210,7 +218,8 @@ fun AdjectiveHomeScreen(
                                     )
                                     androidx.compose.material3.TextButton(
                                         onClick = { onStartTheme(form.id) },
-                                        modifier = Modifier.size(width = 40.dp, height = 28.dp),
+                                        modifier = Modifier
+                                            .size(width = 40.dp, height = 28.dp),
                                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                                     ) {
                                         Text(

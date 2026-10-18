@@ -23,6 +23,17 @@ import com.nihongodoushi.app.engine.verb.VerbData
 import com.nihongodoushi.app.engine.verb.VerbEntry
 import com.nihongodoushi.app.storage.MistakeRecord
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.addCompletedTask
+import com.nihongodoushi.app.ui.addStudySeconds
+import com.nihongodoushi.app.ui.isReviewDue
+import com.nihongodoushi.app.ui.markVerbMastered
+import com.nihongodoushi.app.ui.markVerbPracticed
+import com.nihongodoushi.app.ui.mistakeWeight
+import com.nihongodoushi.app.ui.recordSuccessfulReview
+import com.nihongodoushi.app.ui.recordVerbMistake
+import com.nihongodoushi.app.ui.updateDaily
+import com.nihongodoushi.app.ui.updateVerbStats
+import com.nihongodoushi.app.ui.verbMistakes
 import kotlinx.coroutines.delay
 
 /** 动词练习：选择题（纸卡竖排 + 底部判定抽屉）。行为依据 docs/android-answer-screen-spec.md。 */
@@ -73,7 +84,7 @@ class VerbPracticeState(internal val app: AppState) {
         private set
 
     /** 当前题号（进入本题时冻结）：判定后不前进，下一题才推进（对齐已确认规格） */
-    private var numberAtStart by mutableStateOf(1)
+    internal var numberAtStart by mutableStateOf(1)
 
     private val deck = QuestionDeck<VerbPair>()
     private var lastPairKey: String? = null
@@ -111,7 +122,8 @@ class VerbPracticeState(internal val app: AppState) {
     var scopeLabel by mutableStateOf<String?>(null)
         private set
 
-    private var hintUsedThisQuestion by mutableStateOf(false)
+    /** 当前题是否用过提示（只在切题时复位，切换开关不回滚）；进程重启时随快照恢复（IK-04） */
+    internal var hintUsedThisQuestion by mutableStateOf(false)
 
     /** 按讲解页/模块首页的范围开练：形式卡传 voice=base + inflection；语态卡传 voice + dictionary */
     fun startScope(voiceId: String?, inflectionId: String?, label: String?) {
@@ -359,6 +371,42 @@ class VerbPracticeState(internal val app: AppState) {
 
     fun consumeToast() {
         toast = null
+    }
+
+    /**
+     * 进程重启恢复（IK-04）：按 verbStateSaver 保存的平铺列表重放状态。
+     * 题目按「词条 + 语态 + 形式」坐标重建，选项由引擎确定性生成，无需保存题面；
+     * 牌堆/最近词条等纯随机调度状态不恢复，只影响后续出题的避重分布。
+     */
+    internal fun restoreSnapshot(values: List<Any>) {
+        groupFilter = (values[0] as? String) ?: "all"
+        voiceFilter = (values[1] as? String) ?: "base"
+        inflectionFilter = (values[2] as? String) ?: "all"
+        levelFilter = (values[3] as? String) ?: "all"
+        scopeLabel = (values[4] as? String)?.takeIf { it.isNotEmpty() }
+        reviewingMistakes = (values[5] as? Boolean) ?: false
+        roundAnswered = (values[6] as? Int) ?: 0
+        roundCorrect = (values[7] as? Int) ?: 0
+        roundWrong = (values[8] as? Int) ?: 0
+        roundComplete = (values[9] as? Boolean) ?: false
+        // 可空字段保存时规范化为空串，这里解释回 null（空串不是合法 id）
+        val verbId = (values[10] as? String)?.takeIf { it.isNotEmpty() }
+        val questionVoice = (values[11] as? String)?.takeIf { it.isNotEmpty() }
+        val questionInflection = (values[12] as? String)?.takeIf { it.isNotEmpty() }
+        selectedIndex = (values[13] as? Int) ?: -1
+        judged = (values[14] as? Boolean) ?: false
+        showHint = (values[15] as? Boolean) ?: false
+        lastCorrect = (values[16] as? Boolean) ?: false
+        numberAtStart = (values[17] as? Int) ?: 1
+        hintUsedThisQuestion = (values[18] as? Boolean) ?: false
+        currentQuestion = if (verbId != null && questionVoice != null && questionInflection != null) {
+            VerbData.VERB_BY_ID[verbId]?.let { verb ->
+                PracticeQuestion.VerbQ(verb, questionVoice, questionInflection)
+            }
+        } else {
+            null
+        }
+        lastPairKey = null
     }
 }
 

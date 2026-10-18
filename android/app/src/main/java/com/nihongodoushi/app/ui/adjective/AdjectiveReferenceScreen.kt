@@ -23,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.engine.adjective.AdjectiveData
@@ -66,7 +67,8 @@ fun AdjectiveReferenceScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { showPicker = true },
+                    // 读屏口径（IK-18）：clickable 自带合并子语义，整卡一个焦点站
+                    .clickable(role = Role.Button) { showPicker = true },
                 shape = RoundedCornerShape(16.dp),
                 color = paper.bgPaleGreen,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),

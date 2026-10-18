@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.engine.particle.ParticleEngine
 import com.nihongodoushi.app.engine.particle.ParticleExample
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.particleMasteredIn
 import com.nihongodoushi.app.ui.theme.paperColors
 
 /**

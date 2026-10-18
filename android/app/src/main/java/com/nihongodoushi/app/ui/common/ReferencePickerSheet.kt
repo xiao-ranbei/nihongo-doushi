@@ -25,6 +25,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.ui.theme.paperColors
@@ -125,10 +127,15 @@ private fun ReferencePickerRow(
     onClick: () -> Unit,
 ) {
     val paper = paperColors()
+    val isSelected = selected
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            // 读屏选中态（IK-18）：整行一个焦点站由 clickable 的合并保证，
+            // 选中原来只有容器色/字重差别，读屏听不出来——补 selected 语义
+            // （this.selected：函数参数 selected 会遮蔽接收者上的同名扩展属性）
+            .semantics { this.selected = isSelected },
         shape = RoundedCornerShape(12.dp),
         color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
         border = BorderStroke(

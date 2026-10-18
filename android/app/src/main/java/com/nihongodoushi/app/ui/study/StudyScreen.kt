@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
@@ -28,6 +29,10 @@ import com.nihongodoushi.app.engine.adjective.AdjectiveData
 import com.nihongodoushi.app.engine.particle.ParticleData
 import com.nihongodoushi.app.engine.verb.VerbData
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.adjectiveModulePercent
+import com.nihongodoushi.app.ui.isReviewDue
+import com.nihongodoushi.app.ui.particleMasteredCount
+import com.nihongodoushi.app.ui.verbModulePercent
 import com.nihongodoushi.app.ui.common.EntryCard
 import com.nihongodoushi.app.ui.common.PlannedRow
 import com.nihongodoushi.app.ui.theme.paperColors
@@ -109,7 +114,7 @@ fun StudyScreen(
             onClick = { onOpen(StudyDestination.VERB) },
         )
         EntryCard(
-            icon = Icons.Filled.List,
+            icon = Icons.AutoMirrored.Filled.List,
             title = "形容词练习",
             subtitle = "$adjectiveTotal 个词条 · 已练 $adjectivePracticed · 掌握度 ${app.adjectiveModulePercent()}%",
             tint = MaterialTheme.colorScheme.primaryContainer,

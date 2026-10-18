@@ -21,6 +21,8 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.ui.theme.paperColors
@@ -137,7 +139,13 @@ private fun FilterPill(label: String, selected: Boolean, enabled: Boolean, onCli
         selected -> scheme.primary
         else -> scheme.outline
     }
+    val isSelected = selected && enabled
     Surface(
+        // 选中态（IK-18）：筛选胶囊的选中目前只有颜色/字重差别，
+        // 读屏用户必须能听出「已选择」，否则无法确认当前筛选项
+        // （this.selected：函数参数 selected 会遮蔽接收者上的同名扩展属性；
+        // 合并由 Surface(onClick) 内部 clickable 自带保证，无需再 merge）
+        modifier = Modifier.semantics { this.selected = isSelected },
         shape = RoundedCornerShape(999.dp),
         color = background,
         border = androidx.compose.foundation.BorderStroke(1.dp, border),

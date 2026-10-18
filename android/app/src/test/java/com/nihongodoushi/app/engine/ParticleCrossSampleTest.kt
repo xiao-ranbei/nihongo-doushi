@@ -67,12 +67,14 @@ private data class ParticleQuestionSample(
 
 class ParticleCrossSampleTest {
 
+    private val json = Json { ignoreUnknownKeys = true }
+
     private val samples: ParticleSamplesFile by lazy {
         val stream = ParticleCrossSampleTest::class.java
             .getResourceAsStream("/particle-samples.json")
             ?: error("找不到 particle-samples.json；先运行 node web/tools/generate-particle-data.js")
         val text = stream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-        Json { ignoreUnknownKeys = true }.decodeFromString<ParticleSamplesFile>(text)
+        json.decodeFromString<ParticleSamplesFile>(text)
     }
 
     @Test

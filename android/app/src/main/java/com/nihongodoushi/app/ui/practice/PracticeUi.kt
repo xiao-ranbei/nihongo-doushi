@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
@@ -153,7 +154,7 @@ fun PracticeTopArea(
                 }
                 IconButton(onClick = onFilterClick) {
                     Icon(
-                        imageVector = Icons.Filled.List,
+                        imageVector = Icons.AutoMirrored.Filled.List,
                         contentDescription = "筛选练习范围",
                         tint = paperColors().textStrong,
                     )
@@ -349,6 +350,9 @@ fun OptionRow(
                     style = Stroke(width = width, pathEffect = effect),
                 )
             }
+            // 读屏口径（IK-18）：clickable 自带合并子语义——
+            // 序号 + 选项文本 + 判定图标（「正确」/「错误」）即一个焦点站；
+            // 锁定态不可点但内容仍可读
             .clickable(enabled = !locked, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -663,7 +667,7 @@ fun ReviewBanner(reviewing: Boolean, remainingCount: Int) {
  */
 @Composable
 fun StudyTimeTracker(onSeconds: (Int) -> Unit) {
-    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
         var startedAt = System.currentTimeMillis()
         var accumulatedMs = 0L

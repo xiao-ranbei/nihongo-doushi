@@ -23,6 +23,17 @@ import com.nihongodoushi.app.engine.adjective.AdjectiveData
 import com.nihongodoushi.app.engine.adjective.AdjectiveEntry
 import com.nihongodoushi.app.storage.MistakeRecord
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.addCompletedTask
+import com.nihongodoushi.app.ui.addStudySeconds
+import com.nihongodoushi.app.ui.adjectiveMistakes
+import com.nihongodoushi.app.ui.isReviewDue
+import com.nihongodoushi.app.ui.markAdjectiveMastered
+import com.nihongodoushi.app.ui.markAdjectivePracticed
+import com.nihongodoushi.app.ui.mistakeWeight
+import com.nihongodoushi.app.ui.recordAdjectiveMistake
+import com.nihongodoushi.app.ui.recordSuccessfulReview
+import com.nihongodoushi.app.ui.updateAdjectiveStats
+import com.nihongodoushi.app.ui.updateDaily
 import kotlinx.coroutines.delay
 
 /** 形容词练习：与动词同构、独立题池与统计。行为依据 docs/android-answer-screen-spec.md。 */
@@ -70,7 +81,7 @@ class AdjectivePracticeState(internal val app: AppState) {
         private set
 
     /** 当前题号（进入本题时冻结）：判定后不前进，下一题才推进 */
-    private var numberAtStart by mutableStateOf(1)
+    internal var numberAtStart by mutableStateOf(1)
 
     private val deck = QuestionDeck<AdjPair>()
     private var lastPairKey: String? = null
@@ -107,7 +118,8 @@ class AdjectivePracticeState(internal val app: AppState) {
     var scopeLabel by mutableStateOf<String?>(null)
         private set
 
-    private var hintUsedThisQuestion by mutableStateOf(false)
+    /** 当前题是否用过提示（只在切题时复位，切换开关不回滚）；进程重启时随快照恢复（IK-04） */
+    internal var hintUsedThisQuestion by mutableStateOf(false)
 
     /** 按形式卡开练 */
     fun startScope(inflectionId: String?, label: String?) {
@@ -333,6 +345,40 @@ class AdjectivePracticeState(internal val app: AppState) {
 
     fun consumeToast() {
         toast = null
+    }
+
+    /**
+     * 进程重启恢复（IK-04）：按 adjectiveStateSaver 保存的平铺列表重放状态。
+     * 题目按「词条 + 形式」坐标重建，选项由引擎确定性生成；牌堆等纯随机
+     * 调度状态不恢复，只影响后续出题的避重分布。
+     */
+    internal fun restoreSnapshot(values: List<Any>) {
+        groupFilter = (values[0] as? String) ?: "all"
+        inflectionFilter = (values[1] as? String) ?: "all"
+        levelFilter = (values[2] as? String) ?: "all"
+        scopeLabel = (values[3] as? String)?.takeIf { it.isNotEmpty() }
+        reviewingMistakes = (values[4] as? Boolean) ?: false
+        roundAnswered = (values[5] as? Int) ?: 0
+        roundCorrect = (values[6] as? Int) ?: 0
+        roundWrong = (values[7] as? Int) ?: 0
+        roundComplete = (values[8] as? Boolean) ?: false
+        // 可空字段保存时规范化为空串，这里解释回 null（空串不是合法 id）
+        val adjectiveId = (values[9] as? String)?.takeIf { it.isNotEmpty() }
+        val formId = (values[10] as? String)?.takeIf { it.isNotEmpty() }
+        selectedIndex = (values[11] as? Int) ?: -1
+        judged = (values[12] as? Boolean) ?: false
+        showHint = (values[13] as? Boolean) ?: false
+        lastCorrect = (values[14] as? Boolean) ?: false
+        numberAtStart = (values[15] as? Int) ?: 1
+        hintUsedThisQuestion = (values[16] as? Boolean) ?: false
+        currentQuestion = if (adjectiveId != null && formId != null) {
+            AppState.adjectiveById[adjectiveId]?.let { adjective ->
+                PracticeQuestion.AdjQ(adjective, formId)
+            }
+        } else {
+            null
+        }
+        lastPairKey = null
     }
 }
 

@@ -30,6 +30,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nihongodoushi.app.storage.MistakeRecord
 import com.nihongodoushi.app.ui.AppState
+import com.nihongodoushi.app.ui.adjectiveMistakes
+import com.nihongodoushi.app.ui.clearMistakes
+import com.nihongodoushi.app.ui.clearParticleMistakes
+import com.nihongodoushi.app.ui.verbMistakes
 import com.nihongodoushi.app.ui.particle.ParticleMistakeItem
 import com.nihongodoushi.app.ui.particle.particleMistakeItems
 import com.nihongodoushi.app.ui.practice.AdjectivePracticeState
