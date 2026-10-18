@@ -275,6 +275,7 @@
               <div class="answer-help">
                 <span>例如：書きます、かきます或 kakimasu</span>
                 <button class="inline-button" id="hint-button" type="button" aria-expanded="false">显示规律提示</button>
+                <button class="inline-button" id="reveal-answer" type="button">查看答案</button>
               </div>
               <p class="hint-text" id="rule-hint" hidden></p>
             </form>
@@ -527,6 +528,7 @@
               <div class="answer-help">
                 <span>例如：静かじゃない、しずかじゃない或 shizukajyanai</span>
                 <button class="inline-button" id="adj-hint-button" type="button" aria-expanded="false">显示规律提示</button>
+                <button class="inline-button" id="adj-reveal-answer" type="button">查看答案</button>
               </div>
               <p class="hint-text" id="adj-rule-hint" hidden></p>
             </form>
@@ -973,5 +975,7 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <!-- IK-18：导航类状态变化的屏幕阅读器播报出口（视觉隐藏） -->
+  <p class="sr-only" id="view-announcer" role="status" aria-live="polite"></p>
 </body>
 </html>

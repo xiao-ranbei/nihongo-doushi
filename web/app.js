@@ -384,6 +384,7 @@
     answerInput: document.getElementById("answer-input"),
     submitAnswer: document.getElementById("submit-answer"),
     hintButton: document.getElementById("hint-button"),
+    revealAnswer: document.getElementById("reveal-answer"),
     ruleHint: document.getElementById("rule-hint"),
     feedbackPanel: document.getElementById("feedback-panel"),
     feedbackMark: document.getElementById("feedback-mark"),
@@ -421,6 +422,7 @@
     adjSubviewPractice: document.getElementById("adj-subview-practice"),
     adjSubviewReference: document.getElementById("adj-subview-reference"),
     toast: document.getElementById("toast"),
+    viewAnnouncer: document.getElementById("view-announcer"),
     // —— 形容词模块 ——
     adjGroupFilter: document.getElementById("adj-group-filter"),
     adjInflectionFilter: document.getElementById("adj-inflection-filter"),
@@ -444,6 +446,7 @@
     adjAnswerInput: document.getElementById("adj-answer-input"),
     adjSubmitAnswer: document.getElementById("adj-submit-answer"),
     adjHintButton: document.getElementById("adj-hint-button"),
+    adjRevealAnswer: document.getElementById("adj-reveal-answer"),
     adjRuleHint: document.getElementById("adj-rule-hint"),
     adjFeedbackPanel: document.getElementById("adj-feedback-panel"),
     adjFeedbackMark: document.getElementById("adj-feedback-mark"),
@@ -551,6 +554,21 @@
     toastTimeout = window.setTimeout(function () {
       elements.toast.classList.remove("is-visible");
     }, 3000);
+  }
+
+  // IK-18：导航类状态变化的统一播报出口（视图/子视图切换）。
+  // live region 重复写入相同文本不触发播报，先清空再写入。
+  // 有子视图的模块（动词/助词）由子视图函数播报更具体的「模块 · 子视图」，
+  // 其余模块在此播报模块名。
+  const VIEW_ANNOUNCE_LABELS = {
+    home: "学习主页",
+    adjective: "形容词模块",
+    mistakes: "错题本"
+  };
+
+  function announce(message) {
+    elements.viewAnnouncer.textContent = "";
+    elements.viewAnnouncer.textContent = message;
   }
 
   function renderRuleExplanation(element, explanation) {
@@ -706,7 +724,10 @@
     const countValue = Number(raw.count);
     const streakValue = Number(raw.correctStreak);
     const intervalValue = Number(raw.intervalDays);
-    const sessionValue = Number(raw.sessionDueAtAnswerCount);
+    // 可空字段必须先挡 null/undefined：Number(null) === 0，会把「无会话内重试」
+    // 误归一成「0 次答题后重试」，导致 Android 写入的未到期错题全部判为到期（IK-20 实测）
+    const sessionRaw = raw.sessionDueAtAnswerCount;
+    const sessionValue = sessionRaw === null || sessionRaw === undefined ? NaN : Number(sessionRaw);
     const dueTimestamp = typeof raw.dueAt === "string" ? Date.parse(raw.dueAt) : NaN;
     return {
       questionId: questionId,
@@ -1461,6 +1482,7 @@
     elements.answerInput.value = "";
     elements.answerInput.disabled = false;
     elements.submitAnswer.disabled = false;
+    elements.revealAnswer.disabled = false;
     elements.feedbackPanel.hidden = true;
     elements.feedbackPanel.classList.remove("is-wrong");
     elements.nextQuestion.hidden = true;
@@ -1666,6 +1688,48 @@
     elements.nextQuestion.focus();
   }
 
+  // IK-16 查看答案通道：卡题时揭示正解。按「未答对」记账——计入错题
+  // （wrongAnswer 记「（查看答案）」）、统计计错、不当答对处理；与 Android
+  // 「未提示答对才计掌握度」口径一致（D-020），Web 暂无按词条掌握度故无需额外标记。
+  function revealVerbAnswer() {
+    if (!currentQuestion || elements.submitAnswer.disabled) {
+      return; // 已判定或已查看答案，不可重复触发
+    }
+    setVerbPromptDetailsVisible(true);
+    sessionAnswerCount += 1;
+
+    elements.answerInput.disabled = true;
+    elements.submitAnswer.disabled = true;
+    elements.revealAnswer.disabled = true;
+    elements.feedbackPanel.hidden = false;
+    elements.feedbackPanel.classList.add("is-wrong");
+    elements.feedbackMark.textContent = "!";
+    elements.feedbackTitle.textContent = "已查看答案";
+    elements.feedbackUserAnswer.textContent = "你的答案：（查看了答案，未作答）";
+    elements.feedbackCorrectAnswer.textContent = currentQuestion.result.written;
+    elements.feedbackReading.textContent = currentQuestion.result.kana === currentQuestion.result.written
+      ? ""
+      : "读音：" + currentQuestion.result.kana;
+    const voice = VOICE_BY_ID.get(currentQuestion.voiceId);
+    const inflection = INFLECTION_BY_ID.get(currentQuestion.inflectionId);
+    elements.feedbackVoiceMeaning.hidden = currentQuestion.voiceId === "base";
+    elements.feedbackVoiceMeaning.textContent = "语态：" + voice.meaning;
+    elements.feedbackInflectionMeaning.textContent = (currentQuestion.voiceId === "base" ? "" : "活用：")
+      + inflection.meaning;
+    renderRuleExplanation(
+      elements.feedbackRule,
+      engine.explain(currentQuestion.verb, currentQuestion.voiceId, currentQuestion.inflectionId)
+    );
+    elements.nextQuestion.hidden = false;
+
+    recordMistake(currentQuestion, "（查看答案）");
+    updateMistakeCount();
+    updatePracticeStats(false);
+    updateDailyStreak("verb");
+    showToast("已查看答案，本题记入错题，稍后重练。", false);
+    elements.nextQuestion.focus();
+  }
+
   function updateMistakeCount() {
     elements.mistakeCount.textContent = String(mistakes.length);
     elements.homeMistakeCount.textContent = String(mistakes.length);
@@ -1745,6 +1809,7 @@
     if (activeViewId === "verb" && !showPractice) {
       renderReferenceTable();
     }
+    announce("动词 · " + (showPractice ? "练习" : "速查"));
   }
 
   // 形容词模块二级切换：练习（做题训练）与速查（规则查阅）分视，
@@ -1758,6 +1823,7 @@
       subtab.classList.toggle("is-active", active);
       subtab.setAttribute("aria-selected", String(active));
     });
+    announce("形容词 · " + (showPractice ? "练习" : "速查"));
   }
 
   function setParticleSubview(subview) {
@@ -1788,6 +1854,7 @@
     } else if (subview === "review") {
       renderParticleMistakes();
     }
+    announce("助词 · " + heading.title);
     elements.appMain.scrollTop = 0;
   }
 
@@ -2252,11 +2319,12 @@
     renderParticleQuestion();
   }
 
-  function showView(viewId) {
+  // options.focus === false 时只切视图不抢焦点（初始装载用，避免 h1 出现焦点环）。
+  function showView(viewId, options) {
     if (!Object.prototype.hasOwnProperty.call(elements.views, viewId)) {
       throw new RangeError("Unknown view: " + viewId);
     }
-    const sidebarWasOpen = elements.appShell.classList.contains("is-sidebar-open");
+    const moveFocus = !options || options.focus !== false;
     activeViewId = viewId;
     Object.keys(elements.views).forEach(function (id) {
       elements.views[id].hidden = id !== viewId;
@@ -2281,8 +2349,13 @@
       }
     });
     renderIntro(viewId);
-    if (sidebarWasOpen) {
+    // IK-18：视图切换后把焦点移到视图主标题（h1 已设 tabindex=-1），
+    // 键盘与屏幕阅读器用户从新内容顶部开始，而非留在原标签上。
+    if (moveFocus) {
       elements.introTitle.focus();
+    }
+    if (VIEW_ANNOUNCE_LABELS[viewId]) {
+      announce("已进入" + VIEW_ANNOUNCE_LABELS[viewId]);
     }
     elements.appMain.scrollTop = 0;
 
@@ -3105,6 +3178,7 @@
     elements.adjAnswerInput.value = "";
     elements.adjAnswerInput.disabled = false;
     elements.adjSubmitAnswer.disabled = false;
+    elements.adjRevealAnswer.disabled = false;
     elements.adjFeedbackPanel.hidden = true;
     elements.adjFeedbackPanel.classList.remove("is-wrong");
     elements.adjNextQuestion.hidden = true;
@@ -3212,6 +3286,41 @@
     updateMistakeCount();
     updateAdjectiveStats(correct);
     updateDailyStreak("adjective");
+    elements.adjNextQuestion.focus();
+  }
+
+  // IK-16 查看答案通道（形容词）：记账口径同动词侧 revealVerbAnswer。
+  function revealAdjectiveAnswer() {
+    if (!adjCurrentQuestion || elements.adjSubmitAnswer.disabled) {
+      return; // 已判定或已查看答案，不可重复触发
+    }
+    sessionAnswerCount += 1;
+
+    elements.adjAnswerInput.disabled = true;
+    elements.adjSubmitAnswer.disabled = true;
+    elements.adjRevealAnswer.disabled = true;
+    elements.adjFeedbackPanel.hidden = false;
+    elements.adjFeedbackPanel.classList.add("is-wrong");
+    elements.adjFeedbackMark.textContent = "!";
+    elements.adjFeedbackTitle.textContent = "已查看答案";
+    elements.adjFeedbackUserAnswer.textContent = "你的答案：（查看了答案，未作答）";
+    elements.adjFeedbackCorrectAnswer.textContent = adjCurrentQuestion.result.written;
+    elements.adjFeedbackReading.textContent = adjCurrentQuestion.result.kana === adjCurrentQuestion.result.written
+      ? ""
+      : "读音：" + adjCurrentQuestion.result.kana;
+    const form = ADJ_FORMS.find(function (item) { return item.id === adjCurrentQuestion.formId; });
+    elements.adjFeedbackFormMeaning.textContent = form.meaning;
+    renderRuleExplanation(
+      elements.adjFeedbackRule,
+      adjEngine.explain(adjCurrentQuestion.adjective, adjCurrentQuestion.formId)
+    );
+    elements.adjNextQuestion.hidden = false;
+
+    recordMistake(adjCurrentQuestion, "（查看答案）");
+    updateMistakeCount();
+    updateAdjectiveStats(false);
+    updateDailyStreak("adjective");
+    showToast("已查看答案，本题记入错题，稍后重练。", false);
     elements.adjNextQuestion.focus();
   }
 
@@ -3502,6 +3611,7 @@
     elements.ruleHint.hidden = expanded;
     elements.hintButton.textContent = expanded ? "显示规律提示" : "收起规律提示";
   });
+  elements.revealAnswer.addEventListener("click", revealVerbAnswer);
 
   elements.referenceSearch.addEventListener("input", function () {
     populateReferenceControls(elements.referenceSearch.value);
@@ -3557,6 +3667,7 @@
     elements.adjRuleHint.hidden = expanded;
     elements.adjHintButton.textContent = expanded ? "显示规律提示" : "收起规律提示";
   });
+  elements.adjRevealAnswer.addEventListener("click", revealAdjectiveAnswer);
   elements.adjGuideLink.addEventListener("click", function () {
     setAdjectiveSubview("reference");
   });
@@ -3604,5 +3715,5 @@
   renderParticleMistakes();
   newRandomQuestion();
   newAdjectiveQuestion();
-  showView("home");
+  showView("home", { focus: false }); // 初始装载不抢焦点
 })();

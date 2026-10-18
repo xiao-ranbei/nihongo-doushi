@@ -16,6 +16,7 @@ const { createApp } = require("./helpers/dom-stub.js");
 
 const MISTAKES_KEY = "japanese-verb-practice-mistakes-v1";
 const STATS_KEY = "japanese-verb-practice-stats-v1";
+const ADJ_STATS_KEY = "japanese-verb-practice-adj-stats-v1";
 const PARTICLE_MISTAKES_KEY = "japanese-particle-practice-mistakes-v1";
 const PARTICLE_MISTAKES_V2_KEY = "japanese-particle-practice-mistakes-v2";
 const PARTICLE_STATS_KEY = "japanese-particle-practice-stats-v1";
@@ -1316,6 +1317,111 @@ test("错题存档：形容词记录校验与 verb 兼容迁移", function () {
   assert.equal(app.$("mistake-count").textContent, "1", "非法形容词错题应被丢弃");
 });
 
+// —— 查看答案通道（IK-16） ——
+
+test("动词练习：查看答案揭示正解并按未答对记账", function () {
+  const app = createApp();
+  tab(app, "practice");
+  const expected = currentAnswer(app);
+  const keyBefore = currentQuestionKey(app);
+
+  app.click(app.$("reveal-answer"));
+
+  assert.equal(app.$("feedback-panel").hidden, false, "查看答案后应展开反馈面板");
+  assert.equal(app.$("feedback-title").textContent, "已查看答案");
+  assert.equal(app.$("feedback-correct-answer").textContent, expected, "应揭示正解");
+  assert.equal(app.$("feedback-user-answer").textContent, "你的答案：（查看了答案，未作答）");
+  assert.equal(app.$("feedback-panel").classList.contains("is-wrong"), true, "查看答案不算答对");
+  assert.equal(app.$("submit-answer").disabled, true, "查看答案后禁止再提交");
+  assert.equal(app.$("reveal-answer").disabled, true, "查看答案不可重复触发");
+  assert.equal(app.$("answer-input").disabled, true, "查看答案后锁定输入");
+  assert.equal(app.$("next-question").hidden, false, "应提供下一题入口");
+
+  const stored = JSON.parse(app.window.localStorage.getItem(MISTAKES_KEY));
+  assert.equal(stored.length, 1, "查看答案应记入错题");
+  assert.equal(stored[0].key, keyBefore, "错题应为当前题");
+  assert.equal(stored[0].wrongAnswer, "（查看答案）", "错题答案应标注查看答案");
+
+  const stats = JSON.parse(app.window.localStorage.getItem(STATS_KEY));
+  assert.equal(stats.correct, 0, "查看答案不得计答对");
+  assert.equal(stats.incorrect, 1, "查看答案应计答错");
+  assert.equal(app.$("incorrect-answer-count").textContent, "1");
+  assert.equal(app.$("answer-accuracy").textContent, "0%");
+
+  // 下一题后按钮复位，仍可正常作答闭环
+  app.click(app.$("next-question"));
+  assert.equal(app.$("feedback-panel").hidden, true, "下一题应重置反馈面板");
+  assert.equal(app.$("reveal-answer").disabled, false, "新一题应恢复查看答案");
+  app.$("answer-input").value = currentAnswer(app);
+  app.$("answer-form").dispatch("submit");
+  assert.equal(app.$("feedback-mark").textContent, "✓", "查看答案不影响后续正常判题");
+});
+
+test("形容词练习：查看答案揭示正解并按未答对记账", function () {
+  const app = createApp();
+  tab(app, "adjective");
+  const word = app.$("adj-question-word").textContent;
+  const adjective = adjEngine.ADJECTIVES.filter(function (item) {
+    return item.word === word;
+  })[0];
+  assert.ok(adjective, "题目形容词应存在于词表：" + word);
+
+  app.click(app.$("adj-reveal-answer"));
+
+  assert.equal(app.$("adj-feedback-panel").hidden, false);
+  assert.equal(app.$("adj-feedback-title").textContent, "已查看答案");
+  assert.equal(app.$("adj-feedback-user-answer").textContent, "你的答案：（查看了答案，未作答）");
+  assert.equal(app.$("adj-submit-answer").disabled, true);
+  assert.equal(app.$("adj-reveal-answer").disabled, true);
+
+  const stored = JSON.parse(app.window.localStorage.getItem(ADJ_MISTAKES_KEY));
+  assert.equal(stored.length, 1, "查看答案应记入错题");
+  assert.equal(stored[0].module, "adjective");
+  assert.equal(stored[0].adjectiveId, adjective.id);
+  assert.equal(stored[0].wrongAnswer, "（查看答案）");
+
+  const adjStats = JSON.parse(app.window.localStorage.getItem(ADJ_STATS_KEY));
+  assert.equal(adjStats.correct, 0);
+  assert.equal(adjStats.incorrect, 1, "查看答案应计答错");
+});
+
+// —— 无障碍：导航播报与焦点管理（IK-18） ——
+
+test("视图切换播报模块名并把焦点移到主标题", function () {
+  const app = createApp();
+  tab(app, "adjective");
+  assert.equal(app.$("view-announcer").textContent, "已进入形容词模块");
+  assert.equal(
+    app.document.activeElement,
+    app.$("intro-title"),
+    "视图切换后焦点应落在主标题（h1 tabindex=-1）"
+  );
+
+  tab(app, "mistakes");
+  assert.equal(app.$("view-announcer").textContent, "已进入错题本");
+  assert.equal(app.document.activeElement, app.$("intro-title"));
+});
+
+test("有子视图的模块播报更具体的模块与子视图", function () {
+  const app = createApp();
+  tab(app, "verb");
+  assert.equal(app.$("view-announcer").textContent, "动词 · 练习");
+
+  const referenceSubtab = app.document.querySelectorAll("[data-verb-subview]").filter(function (subtab) {
+    return subtab.dataset.verbSubview === "reference";
+  })[0];
+  app.click(referenceSubtab);
+  assert.equal(app.$("view-announcer").textContent, "动词 · 速查");
+
+  tab(app, "particle");
+  assert.equal(app.$("view-announcer").textContent, "助词 · 在句子中练习");
+  const learnSubtab = app.document.querySelectorAll("[data-particle-subview]").filter(function (subtab) {
+    return subtab.dataset.particleSubview === "learn";
+  })[0];
+  app.click(learnSubtab);
+  assert.equal(app.$("view-announcer").textContent, "助词 · 先看语境，再选助词");
+});
+
 // —— 错题加权与每日打卡 ——
 
 function localDateKey(offsetDays) {
@@ -1823,4 +1929,84 @@ test("复习连续答对达到毕业次数后移出助词错题本", function ()
     [],
     "连对 6 次后应移出错题本"
   );
+});
+
+// IK-20 跨端互通：Android 写出的 mistakes-v2（storage/Models.kt ParticleMistakeRecord）
+// 必须能被 Web 原样读取、保留排期语义，且不被重写。
+test("Web 原样读取 Android 写出的助词错题 v2 记录", function () {
+  const dueAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+  const androidRecord = {
+    questionId: "wa-topic",
+    count: 2,
+    wrongAnswer: "は",
+    updatedAt: new Date().toISOString(),
+    correctStreak: 3,
+    intervalDays: 7,
+    dueAt: dueAt,
+    sessionDueAtAnswerCount: null
+  };
+  const app = createApp({
+    storage: { [PARTICLE_MISTAKES_V2_KEY]: JSON.stringify([androidRecord]) }
+  });
+  tab(app, "particle");
+
+  // 排期语义：未到期不计入「今天到期」
+  assert.equal(
+    app.$("particle-review-count").textContent,
+    "本地保存 1 道助词错题 · 0 道今天到期"
+  );
+
+  // v2 文件不被重写：Android 的记录原样保留（字段与顺序都不动）
+  assert.deepEqual(
+    JSON.parse(app.window.localStorage.getItem(PARTICLE_MISTAKES_V2_KEY)),
+    [androidRecord],
+    "Web 读取 Android v2 后不应重写文件"
+  );
+
+  // 复习列表按 Android 字段渲染
+  const reviewTab = app.document.querySelectorAll("[data-particle-subview]").filter(function (node) {
+    return node.dataset.particleSubview === "review";
+  })[0];
+  app.click(reviewTab);
+  const item = app.$("particle-review-list").querySelector(".particle-review-item");
+  assert.ok(item, "应渲染 Android 写入的错题");
+  assert.match(item.textContent, /错 2 次/);
+  assert.match(item.textContent, /已连对 3\/6/);
+  const expectedDate = new Date(dueAt).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" });
+  assert.match(item.textContent, new RegExp("下次复习：" + expectedDate));
+
+  // 复习模式取全部错题（含未到期）：Android 侧同一口径
+  assert.equal(app.$("particle-start-review").disabled, false);
+  app.click(app.$("particle-start-review"));
+  assert.equal(
+    app.$("particle-question-card").getAttribute("data-question-id"),
+    "wa-topic",
+    "复习队列应包含 Android 写入的错题"
+  );
+});
+
+test("Web 丢弃 Android 旧版本遗留的无效题目 ID", function () {
+  const app = createApp({
+    storage: {
+      [PARTICLE_MISTAKES_V2_KEY]: JSON.stringify([
+        {
+          questionId: "旧版本遗留的不存在题目",
+          count: 4,
+          wrongAnswer: "が",
+          updatedAt: new Date().toISOString(),
+          correctStreak: 1,
+          intervalDays: 3,
+          dueAt: new Date().toISOString(),
+          sessionDueAtAnswerCount: null
+        }
+      ])
+    }
+  });
+  tab(app, "particle");
+  assert.equal(
+    app.$("particle-review-count").textContent,
+    "还没有需要复习的助词错题",
+    "无效题目 ID 应被静默丢弃"
+  );
+  assert.equal(app.$("particle-start-review").disabled, true);
 });
