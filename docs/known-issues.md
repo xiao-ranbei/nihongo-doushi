@@ -5,7 +5,7 @@
 - 盘点时间：2026-10-17（commit 72d9377，工作区干净）
 - 测试基线（盘点当时实测复跑）：Web 113/113 全绿；Android 101/101 全绿（0 失败）
 - 盘点方式：全库标记扫描（TODO/FIXME/XXX/HACK 零命中）、跨端数据比对、编译警告收集、文档与实现交叉核对、单文件行数审计
-- 复核：2026-10-18 批次收口（Web 121/121、Android 111/111 单测 + 仪器化 4/4 全绿）；IK-04/06/08/16 关闭，IK-20 剩 Web↔Android v2 错题互通实测一项
+- 复核：2026-10-18 批次收口（Web 121/121、Android 111/111 单测 + 仪器化 4/4 全绿）；IK-04/06/08/16/20 关闭
 
 ## 优先级定义
 
@@ -34,7 +34,6 @@
 | IK-17 | Web PWA 与打印样式缺失 | web/（无 manifest/sw、无 @media print） | P2 |
 | IK-18 | Web aria-live 与焦点管理漏点 | web/index.html（10 处已覆盖，切换场景漏） | P2 |
 | IK-19 | 速查页难度过滤未做 | web/app.js:3336 | P2 |
-| IK-20 | Android 助词模块实测缺口（剩 Web↔Android v2 错题互通） | ui/particle/ | P2 |
 
 ## 明细
 
@@ -132,12 +131,6 @@
 - 影响：查找特定难度形式需滚动
 - 建议时机：低优先级
 
-#### IK-20 Android 助词模块实测缺口
-
-- 位置：`ui/particle/` 全模块
-- 已完成（2026-10-18）：① TalkBack 语义树实测——仪器化 `TalkBackMergeTest` 4 用例（合并树口径 + picker 选中态 + 变异验证），并落实 D-030 真修复（selected 语义 / onLongClickLabel）；② 进程重启状态验证——qa36 模拟器两轮 `HOME → am kill → 重启` 实测，练习屏题目进度与选中/判题态均经 rememberSaveable 恢复（截图 `docs/design/particle-ui/qa-restart-1~3`）
-- 剩余：③ Web 读取 Android 写出的 mistakes-v2 互通未实测（两端键与迁移逻辑均已就绪：web/app.js:750-814）
-
 ## 已关闭
 
 #### IK-04 练习屏无状态保存（2026-10-18 关闭）
@@ -155,6 +148,12 @@
 #### IK-16 Web 看答案通道缺失（2026-10-18 关闭）
 
 - 处理：Web 练习反馈区新增「查看答案」通道，与既有规律提示并列；测试基线随批次升级（Web 121/121）
+
+#### IK-20 Android 助词模块实测缺口（2026-10-18 关闭）
+
+- ① TalkBack 语义树实测：仪器化 `TalkBackMergeTest` 4 用例（合并树口径 + picker 选中态，变异验证非空断言），并落实 D-030 真修复（selected 语义 / onLongClickLabel）
+- ② 进程重启状态验证：qa36 两轮 `HOME → am kill → 重启` 实测，练习屏题目进度与选中/判题态均经 rememberSaveable 恢复（截图 `qa-restart-1~3`）
+- ③ Web↔Android mistakes-v2 互通实测：qa36 真实答错产生错题（`run-as cat files/japanese-particle-practice-mistakes-v2.json` 取出）→ Playwright 将该 JSON 原样注入 Web localStorage 同名键 → 10 项断言全过：纳秒精度 ISO 时间戳可解析、角标计数、复习列表 1 条（错 1 次/下次复习 10/19）、function 题句 before+mark+after 正确拼接、到期判定（dueAt 明天 + session=5 → 今天 0 道到期）、复习按钮可用（截图 `qa-ik20-web-read.png`）
 
 ## 复核方法
 
