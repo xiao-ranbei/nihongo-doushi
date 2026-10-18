@@ -5,7 +5,7 @@
 - 盘点时间：2026-10-17（commit 72d9377，工作区干净）
 - 测试基线（盘点当时实测复跑）：Web 113/113 全绿；Android 101/101 全绿（0 失败）
 - 盘点方式：全库标记扫描（TODO/FIXME/XXX/HACK 零命中）、跨端数据比对、编译警告收集、文档与实现交叉核对、单文件行数审计
-- 复核：2026-10-18 批次收口（Web 121/121、Android 111/111 单测 + 仪器化 4/4 全绿）；IK-04/06/16 关闭，IK-20 剩 Web↔Android v2 错题互通实测一项
+- 复核：2026-10-18 批次收口（Web 121/121、Android 111/111 单测 + 仪器化 4/4 全绿）；IK-04/06/08/16 关闭，IK-20 剩 Web↔Android v2 错题互通实测一项
 
 ## 优先级定义
 
@@ -24,7 +24,6 @@
 | IK-03 | 跨端样例生成器陷阱（ adjectives 105→150 断言崩） | web/tools/generate-cross-samples.js + CrossSampleConsistencyTest.kt:100 | P0 |
 | IK-05 | 编译警告 7 条（图标 AutoMirrored ×6、LocalLifecycleOwner ×1） | 见明细 | P1 |
 | IK-07 | 文档滞后：D-016 与 particle spec 状态仍写「待实现」 | docs/decisions.md、docs/README.md | P1 |
-| IK-08 | 本地领先 origin/master 多个提交未推送 | git | P1 |
 | IK-09 | Android 应用图标未接入自绘资产 | AndroidManifest.xml:6 + docs/design/icon-concepts/ | P1 |
 | IK-10 | Web romaji 归一化失败静默回退 | web/verb-engine.js:641 | P1 |
 | IK-11 | 查词入口为规划中位 | ui/study/StudyScreen.kt:142 | P2 |
@@ -84,12 +83,6 @@
 - 事实：助词模块已实现并提交（8b9d040 数据+UI、1ba8b4c D-022 错题排期），四标签后仍可访问
 - 影响：文档与实现不同步会误导后续协作（人或 AI）以为助词模块待建
 - 建议时机：本登记册建立时同批修正
-
-#### IK-08 提交未推送
-
-- 位置：git master 领先 origin/master 2 个提交（d3435c6 三层改造、72d9377 四标签）
-- 影响：远端仓库落后；协作者 KK 拉取后看不到四标签框架；存在本地单点风险
-- 建议时机：尽快 `git push`（需走本机代理 127.0.0.1:2874 或 SteamTools 9973 通道，SSL 配置已按仓库级 schannel 修复）
 
 #### IK-09 应用图标未接入
 
@@ -154,6 +147,10 @@
 #### IK-06 AppState.kt 超长（2026-10-18 关闭）
 
 - 处理：按领域拆为 5 文件（D-032）——主文件 128 行（状态声明 + internal set + 会话核心 + companion），`AppStateMistakes.kt` 119 / `AppStateStats.kt` 103 / `AppStateParticle.kt` 93 / `AppStateMastery.kt` 91；调用语法不变，行为经单测 111/111 + 仪器化 4/4 验证
+
+#### IK-08 提交未推送（2026-10-18 关闭）
+
+- 处理：`git push origin master` 成功（1ba8b4c → 9f9d952，批次 A/B/C 共 6 个提交），远端已同步
 
 #### IK-16 Web 看答案通道缺失（2026-10-18 关闭）
 
