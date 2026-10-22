@@ -74,7 +74,7 @@ function push(lines) {
 // ---------- 文件头 ----------
 
 push([
-  "package com.nihongodoushi.app.engine.verb",
+  "package com.kotonoha.app.engine.verb",
   "",
   "/**",
   " * 动词引擎词库与形式常量（自动生成，勿手改）。",

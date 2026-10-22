@@ -74,7 +74,7 @@ function push(lines) {
 // ---------- 文件头 ----------
 
 push([
-  "package com.nihongodoushi.app.engine.adjective",
+  "package com.kotonoha.app.engine.adjective",
   "",
   "/**",
   " * 形容词引擎词库与形式常量（自动生成，勿手改）。",

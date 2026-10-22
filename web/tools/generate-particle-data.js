@@ -134,7 +134,7 @@ function questionBlock(question) {
 }
 
 const header = [
-  "package com.nihongodoushi.app.engine.particle",
+  "package com.kotonoha.app.engine.particle",
   "",
   "/**",
   " * 助词模块数据（自动生成，勿手改）。",

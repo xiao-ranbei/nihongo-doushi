@@ -14,12 +14,12 @@ val keystoreProps = Properties().apply {
 }
 
 android {
-    namespace = "com.nihongodoushi.app"
+    namespace = "com.kotonoha.app"
     compileSdk = 35
     buildToolsVersion = "35.0.1"
 
     defaultConfig {
-        applicationId = "com.nihongodoushi.app"
+        applicationId = "com.kotonoha.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
