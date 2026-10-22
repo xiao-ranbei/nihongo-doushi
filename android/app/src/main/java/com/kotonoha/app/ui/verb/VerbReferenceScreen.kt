@@ -35,6 +35,7 @@ import com.kotonoha.app.ui.common.ModuleTopBar
 import com.kotonoha.app.ui.common.ReferencePickerItem
 import com.kotonoha.app.ui.common.ReferencePickerSheet
 import com.kotonoha.app.ui.practice.VerbGroupLabels
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 
 /**
@@ -49,6 +50,7 @@ fun VerbReferenceScreen(
     onBack: () -> Unit,
     onPractice: (voiceId: String, inflectionId: String, label: String) -> Unit,
 ) {
+    val g = geometry()
     val paper = paperColors()
     var verbId by rememberSaveable { mutableStateOf(VerbData.VERBS.first().id) }
     var voiceId by rememberSaveable { mutableStateOf("base") }
@@ -73,7 +75,7 @@ fun VerbReferenceScreen(
                     .fillMaxWidth()
                     // 读屏口径（IK-18）：clickable 自带合并子语义，整卡一个焦点站
                     .clickable(role = Role.Button) { showPicker = true },
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(g.cardRadius),
                 color = paper.bgPaleGreen,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
@@ -129,7 +131,7 @@ fun VerbReferenceScreen(
                 val result = VerbEngine.conjugate(verb, item.id, "dictionary")
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(g.smallRadius),
                     color = if (item.id == voiceId) paper.bgPaleGreen else MaterialTheme.colorScheme.surface,
                     border = BorderStroke(
                         1.dp,
@@ -181,7 +183,7 @@ fun VerbReferenceScreen(
                     val result = VerbEngine.conjugate(verb, voiceId, form.id)
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(g.smallRadius),
                         color = MaterialTheme.colorScheme.surface,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     ) {
@@ -269,6 +271,7 @@ private fun VoiceChips(
     selectedId: String,
     onSelect: (String) -> Unit,
 ) {
+    val g = geometry()
     val paper = paperColors()
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
@@ -278,7 +281,7 @@ private fun VoiceChips(
         VerbData.VOICES.forEach { item ->
             val selected = item.id == selectedId
             Surface(
-                shape = RoundedCornerShape(999.dp),
+                shape = RoundedCornerShape(g.pillRadius),
                 color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                 border = BorderStroke(
                     1.dp,

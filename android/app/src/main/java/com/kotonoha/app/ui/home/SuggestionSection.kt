@@ -41,6 +41,7 @@ import com.kotonoha.app.engine.suggest.SuggestionAction
 import com.kotonoha.app.ui.common.ModuleGlyphBox
 import com.kotonoha.app.ui.common.ModuleSectionLabel
 import com.kotonoha.app.ui.study.StudyDestination
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.moduleTone
 import com.kotonoha.app.ui.theme.paperColors
 
@@ -55,6 +56,7 @@ fun SuggestionSection(
     onOpen: (StudyDestination) -> Unit,
     onSelectTab: (AppTab) -> Unit,
 ) {
+    val g = geometry()
     ModuleSectionLabel(
         title = "知识点建议",
         modifier = Modifier.padding(start = 2.dp, top = 2.dp),
@@ -62,10 +64,10 @@ fun SuggestionSection(
     )
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(g.cardRadius),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             suggestions.forEachIndexed { index, suggestion ->
@@ -118,6 +120,7 @@ private fun isWarm(suggestion: Suggestion): Boolean =
 
 @Composable
 private fun SuggestionRow(suggestion: Suggestion, onClick: () -> Unit) {
+    val g = geometry()
     val paper = paperColors()
     val icon = iconFor(suggestion)
     val warm = isWarm(suggestion)
@@ -146,7 +149,7 @@ private fun SuggestionRow(suggestion: Suggestion, onClick: () -> Unit) {
                 modifier = Modifier
                     .width(36.dp)
                     .height(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(g.smallRadius))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
             ) {

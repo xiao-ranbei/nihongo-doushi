@@ -34,6 +34,7 @@ import com.kotonoha.app.engine.particle.ParticleEngine
 import com.kotonoha.app.engine.particle.ParticleExample
 import com.kotonoha.app.ui.AppState
 import com.kotonoha.app.ui.particleMasteredIn
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 
 /**
@@ -51,6 +52,7 @@ fun ParticleLessonScreen(
     onBack: () -> Unit,
     onStart: () -> Unit,
 ) {
+    val g = geometry()
     val lesson = ParticleEngine.lesson(lessonId) ?: return
     val paper = paperColors()
     val questions = ParticleEngine.questionsOf(lessonId)
@@ -84,7 +86,7 @@ fun ParticleLessonScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 lesson.particles.forEach { particle ->
                     Surface(
-                        shape = RoundedCornerShape(999.dp),
+                        shape = RoundedCornerShape(g.pillRadius),
                         color = MaterialTheme.colorScheme.primaryContainer,
                     ) {
                         Text(
@@ -107,7 +109,7 @@ fun ParticleLessonScreen(
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(g.cardRadius),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
@@ -135,7 +137,7 @@ fun ParticleLessonScreen(
                     if (showAdvanced) {
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(g.smallRadius),
                             color = paper.bgPaleGreen,
                         ) {
                             Text(
@@ -175,9 +177,9 @@ fun ParticleLessonScreen(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            shape = RoundedCornerShape(topStart = g.cardRadius, topEnd = g.cardRadius),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = 2.dp,
+            shadowElevation = g.cardShadow,
         ) {
             Button(
                 onClick = onStart,
@@ -185,7 +187,7 @@ fun ParticleLessonScreen(
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 10.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(g.smallRadius),
             ) {
                 Text(
                     text = "开始练习（本专题 ${questions.size} 题）",
@@ -203,10 +205,11 @@ private fun ParticleExampleCard(
     revealed: Boolean,
     onToggle: () -> Unit,
 ) {
+    val g = geometry()
     val paper = paperColors()
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(g.smallRadius),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
@@ -242,7 +245,7 @@ private fun ParticleExampleCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 2.dp),
-                    shape = RoundedCornerShape(9.dp),
+                    shape = RoundedCornerShape(g.smallRadius),
                     color = paper.bgPaleGreen,
                 ) {
                     Text(
@@ -257,7 +260,7 @@ private fun ParticleExampleCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 2.dp),
-                        shape = RoundedCornerShape(9.dp),
+                        shape = RoundedCornerShape(g.smallRadius),
                         color = paper.orangePale,
                     ) {
                         Column(

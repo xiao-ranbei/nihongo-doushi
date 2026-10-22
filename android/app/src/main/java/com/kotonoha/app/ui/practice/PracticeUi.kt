@@ -47,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kotonoha.app.storage.ReviewPolicy
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 import kotlinx.coroutines.delay
 
@@ -112,14 +113,15 @@ fun PracticeTopArea(
     onFilterClick: () -> Unit,
     onHintClick: () -> Unit,
 ) {
+    val g = geometry()
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 10.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(g.cardRadius),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
@@ -194,14 +196,15 @@ fun PromptCard(
     hintOn: Boolean,
     onToggleHint: () -> Unit,
 ) {
+    val g = geometry()
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .animateContentSize(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(g.cardRadius),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Column(
             modifier = Modifier
@@ -248,7 +251,7 @@ fun PromptCard(
                 if (hintOn) {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(g.smallRadius),
                         color = paperColors().bgPaleGreen,
                     ) {
                         Text(
@@ -267,6 +270,7 @@ fun PromptCard(
 
 @Composable
 fun Chip(text: String, tone: ChipTone) {
+    val g = geometry()
     val scheme = MaterialTheme.colorScheme
     val paper = paperColors()
     val background = when (tone) {
@@ -284,7 +288,7 @@ fun Chip(text: String, tone: ChipTone) {
         ChipTone.Green -> paper.lineAccent
         ChipTone.Target -> scheme.tertiary
     }
-    Surface(shape = RoundedCornerShape(999.dp), color = background, border = BorderStroke(1.dp, border)) {
+    Surface(shape = RoundedCornerShape(g.pillRadius), color = background, border = BorderStroke(1.dp, border)) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
@@ -304,11 +308,12 @@ fun OptionRow(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
+    val g = geometry()
     val scheme = MaterialTheme.colorScheme
     val paper = paperColors()
     val locked = state == OptionState.Locked
-    val shape = RoundedCornerShape(12.dp)
-    val cornerPx = with(LocalDensity.current) { 12.dp.toPx() }
+    val shape = RoundedCornerShape(g.smallRadius)
+    val cornerPx = with(LocalDensity.current) { g.smallRadius.toPx() }
 
     val borderColor = when (state) {
         OptionState.Selected, OptionState.Correct, OptionState.Reveal -> scheme.primary
@@ -361,7 +366,7 @@ fun OptionRow(
         Box(
             modifier = Modifier
                 .size(26.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(g.smallRadius))
                 .background(badgeBackground)
                 .drawBehind {
                     if (state != OptionState.Selected && state != OptionState.Correct && state != OptionState.Wrong) {
@@ -419,6 +424,7 @@ fun JudgementDock(
     onConfirm: () -> Unit,
     onNext: () -> Unit,
 ) {
+    val g = geometry()
     if (question == null) return
     val scheme = MaterialTheme.colorScheme
     val paper = paperColors()
@@ -427,9 +433,9 @@ fun JudgementDock(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = scheme.surface,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        shape = RoundedCornerShape(topStart = g.cardRadius, topEnd = g.cardRadius),
         border = BorderStroke(1.dp, scheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Column(
             modifier = Modifier
@@ -482,7 +488,7 @@ fun JudgementDock(
                 Button(
                     onClick = onNext,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(g.smallRadius),
                 ) {
                     Text("再来一轮", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 }
@@ -515,7 +521,7 @@ fun JudgementDock(
                     Button(
                         onClick = onConfirm,
                         enabled = picked,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(g.smallRadius),
                     ) {
                         Text("确认提交", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     }
@@ -543,7 +549,7 @@ fun JudgementDock(
                         )
                     }
                     if (!correct) {
-                        Surface(shape = RoundedCornerShape(999.dp), color = scheme.tertiaryContainer) {
+                        Surface(shape = RoundedCornerShape(g.pillRadius), color = scheme.tertiaryContainer) {
                             Text(
                                 text = "已加入错题本",
                                 modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
@@ -592,7 +598,7 @@ fun JudgementDock(
                 Button(
                     onClick = onNext,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(g.smallRadius),
                 ) {
                     Text("下一题", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 }
@@ -621,6 +627,7 @@ fun EmptyPoolHint(onReset: () -> Unit) {
 
 @Composable
 fun ToastLine(toast: String?, onConsume: () -> Unit) {
+    val g = geometry()
     if (toast == null) return
     LaunchedEffect(toast) {
         delay(2500)
@@ -631,7 +638,7 @@ fun ToastLine(toast: String?, onConsume: () -> Unit) {
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp),
         color = MaterialTheme.colorScheme.primaryContainer,
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(g.smallRadius),
     ) {
         Text(
             text = toast,
@@ -645,11 +652,12 @@ fun ToastLine(toast: String?, onConsume: () -> Unit) {
 /** 错题重练横幅：本轮待练数量 */
 @Composable
 fun ReviewBanner(reviewing: Boolean, remainingCount: Int) {
+    val g = geometry()
     if (!reviewing) return
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.tertiaryContainer,
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(g.smallRadius),
     ) {
         Text(
             text = "错题重练中：本轮待练 $remainingCount 题，完成 " +

@@ -5,8 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -65,6 +66,8 @@ import com.kotonoha.app.ui.theme.ModuleTone
 import com.kotonoha.app.ui.theme.ModuleTones
 import com.kotonoha.app.ui.theme.KotonohaTheme
 import com.kotonoha.app.ui.theme.ProvideModuleTone
+import com.kotonoha.app.ui.theme.geometry
+import com.kotonoha.app.ui.theme.themedTone
 import com.kotonoha.app.ui.theme.paperColors
 import com.kotonoha.app.ui.verb.VerbFlow
 
@@ -114,7 +117,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            KotonohaTheme {
+            KotonohaTheme(darkTheme = isSystemInDarkTheme()) {
                 // 状态提升到根级：切换标签 / 进出二级页都不丢练习进度；
                 // 进程重启后按 Saver 恢复进行中的一轮（IK-04）
                 val store = remember { LocalStore(applicationContext.filesDir) }
@@ -274,16 +277,12 @@ private fun AppRoot(
  */
 @Composable
 private fun AppBottomBar(current: AppTab, onSelect: (AppTab) -> Unit) {
+    val g = geometry()
     val paper = paperColors()
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-    ) {
+    // 底栏内的一条格子行：两种外壳共用它，点击热区与间距完全一致，切换只换外壳。
+    val tabs: @Composable (Modifier) -> Unit = { rowModifier ->
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 6.dp, vertical = 6.dp),
+            modifier = rowModifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             AppTab.entries.forEach { entry ->
@@ -294,6 +293,31 @@ private fun AppBottomBar(current: AppTab, onSelect: (AppTab) -> Unit) {
                     muted = paper.muted,
                     modifier = Modifier.weight(1f),
                 )
+            }
+        }
+    }
+    if (g.navFloating) {
+        // 糖果卡：悬浮药丸。导航栏内边距垫在外层，药丸整体浮在内容之上，不画上边线。
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 7.dp, vertical = 8.dp),
+        ) {
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(g.pillRadius),
+                shadowElevation = g.cardShadow,
+            ) {
+                tabs(Modifier)
+            }
+        }
+    } else {
+        // 墨夜：平铺全宽，白底一直铺到导航栏下方，靠一条 1dp 细线与内容分隔，无圆角无阴影。
+        Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
+            Column {
+                HorizontalDivider(thickness = 1.dp, color = paper.line)
+                tabs(Modifier.navigationBarsPadding())
             }
         }
     }
@@ -308,10 +332,11 @@ private fun BottomTabItem(
     muted: Color,
     modifier: Modifier = Modifier,
 ) {
-    val tone = toneOf(entry)
+    val g = geometry()
+    val tone = themedTone(toneOf(entry))
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(g.smallRadius))
             .background(if (selected) tone.pale else Color.Transparent)
             .selectable(selected = selected, role = Role.Tab, onClick = onClick)
             .padding(vertical = 7.dp),

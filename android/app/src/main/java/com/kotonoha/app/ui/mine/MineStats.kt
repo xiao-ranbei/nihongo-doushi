@@ -30,6 +30,7 @@ import com.kotonoha.app.ui.AppState
 import com.kotonoha.app.ui.currentStreak
 import com.kotonoha.app.ui.masteredCount
 import com.kotonoha.app.ui.todayActivity
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 
 /**
@@ -40,14 +41,15 @@ import com.kotonoha.app.ui.theme.paperColors
 /** 时长 / 任务紧凑条：今日学习时长（大数字锚点）+ 完成任务数 */
 @Composable
 fun StudyDurationCard(today: DayActivity) {
+    val g = geometry()
     val paper = paperColors()
     val (durationValue, durationUnit) = ActivityAggregation.durationParts(today.seconds)
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(g.cardRadius),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Row(
             modifier = Modifier
@@ -105,6 +107,7 @@ fun StudyDurationCard(today: DayActivity) {
 /** 学习进度卡：动词 / 形容词 / 错题本三条进度线 */
 @Composable
 fun StudyProgressCard(app: AppState) {
+    val g = geometry()
     val verbPracticed = app.progress.verbIds.size
     val adjectivePracticed = app.progress.adjectiveIds.size
     val verbTotal = VerbData.VERBS.size
@@ -114,10 +117,10 @@ fun StudyProgressCard(app: AppState) {
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(g.cardRadius),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Column(
             modifier = Modifier
@@ -150,6 +153,7 @@ fun StudyProgressCard(app: AppState) {
 /** 今日明细卡：答题数 / 正确率 / 连续学习 */
 @Composable
 fun StudyDetailCard(app: AppState) {
+    val g = geometry()
     val today = app.todayActivity()
     val verbStats = app.verbStats
     val adjStats = app.adjectiveStats
@@ -162,10 +166,10 @@ fun StudyDetailCard(app: AppState) {
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(g.cardRadius),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             DetailRow(
@@ -195,6 +199,7 @@ private fun ProgressLine(
     ratio: Float,
     color: Color,
 ) {
+    val g = geometry()
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -217,14 +222,14 @@ private fun ProgressLine(
                 .fillMaxWidth()
                 .padding(top = 7.dp)
                 .height(7.dp)
-                .clip(RoundedCornerShape(999.dp))
+                .clip(RoundedCornerShape(g.pillRadius))
                 .background(MaterialTheme.colorScheme.outlineVariant),
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(ratio.coerceIn(0f, 1f))
                     .height(7.dp)
-                    .clip(RoundedCornerShape(999.dp))
+                    .clip(RoundedCornerShape(g.pillRadius))
                     .background(color),
             )
         }

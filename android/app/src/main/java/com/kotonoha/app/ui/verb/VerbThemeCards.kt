@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kotonoha.app.engine.verb.VerbData
 import com.kotonoha.app.ui.common.ModuleProgressBar
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 import kotlin.math.roundToInt
 
@@ -41,6 +42,7 @@ fun ThemeCardGrid(
     onClick: (VerbTheme) -> Unit,
     onDrill: (VerbTheme) -> Unit,
 ) {
+    val g = geometry()
     val paper = paperColors()
     themes.chunked(2).forEach { row ->
         Row(
@@ -59,7 +61,7 @@ fun ThemeCardGrid(
                 Surface(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(g.smallRadius))
                         // 整卡一个焦点站由 combinedClickable 自带合并保证
                         // （AbstractClickableNode.shouldMergeDescendantSemantics=true）；
                         // 长按动作带标签，读屏用户可从自定义操作进入「直接练习」
@@ -68,10 +70,10 @@ fun ThemeCardGrid(
                             onLongClick = { onDrill(theme) },
                             onLongClickLabel = "直接练习",
                         ),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(g.smallRadius),
                     color = MaterialTheme.colorScheme.surface,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    shadowElevation = 1.dp,
+                    shadowElevation = g.cardShadow,
                 ) {
                     Column(
                         modifier = Modifier

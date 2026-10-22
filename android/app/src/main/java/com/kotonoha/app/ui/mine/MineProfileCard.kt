@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.kotonoha.app.storage.NicknameCheck
 import com.kotonoha.app.storage.ProfileRules
 import com.kotonoha.app.ui.AppState
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 
 /**
@@ -46,15 +47,16 @@ import com.kotonoha.app.ui.theme.paperColors
  */
 @Composable
 fun MineProfileCard(app: AppState) {
+    val g = geometry()
     val paper = paperColors()
     var editing by remember { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(g.cardRadius),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Row(
             modifier = Modifier
@@ -65,7 +67,7 @@ fun MineProfileCard(app: AppState) {
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(999.dp))
+                    .clip(RoundedCornerShape(g.pillRadius))
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center,
             ) {

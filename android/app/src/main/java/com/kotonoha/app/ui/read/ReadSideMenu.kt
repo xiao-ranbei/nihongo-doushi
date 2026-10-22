@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 import kotlinx.coroutines.launch
 
@@ -153,11 +154,12 @@ fun ReadSideMenu(
  */
 @Composable
 private fun ReadToggle(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    val g = geometry()
     val paper = paperColors()
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(g.smallRadius))
             .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -172,7 +174,7 @@ private fun ReadToggle(label: String, checked: Boolean, onCheckedChange: (Boolea
             modifier = Modifier
                 .width(30.dp)
                 .height(18.dp)
-                .clip(RoundedCornerShape(99.dp))
+                .clip(RoundedCornerShape(g.pillRadius))
                 .background(if (checked) MaterialTheme.colorScheme.primary else paper.lineControl),
             // 圆点靠容器对齐切换两端，省掉动画依赖：开关要的是状态可辨，不是缓动
             contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,

@@ -46,6 +46,7 @@ import com.kotonoha.app.ui.particleMasteredCount
 import com.kotonoha.app.ui.todayActivity
 import com.kotonoha.app.ui.verbModulePercent
 import com.kotonoha.app.ui.study.StudyDestination
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 import java.time.LocalDate
 import kotlin.math.roundToInt
@@ -62,6 +63,7 @@ fun HomeScreen(
     onSelectTab: (AppTab) -> Unit,
     onOpen: (StudyDestination) -> Unit,
 ) {
+    val g = geometry()
     val paper = paperColors()
     val today = LocalDate.now()
     val week = ActivityAggregation.weekStrip(app.history, today)
@@ -106,10 +108,10 @@ fun HomeScreen(
         // 段③ 今日概览（沿用现有周历条 + 本周小结行，样式不改）
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(g.cardRadius),
             color = MaterialTheme.colorScheme.surface,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = 2.dp,
+            shadowElevation = g.cardShadow,
         ) {
             Column(
                 modifier = Modifier
@@ -133,7 +135,7 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .width(34.dp)
                                     .height(34.dp)
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .clip(RoundedCornerShape(g.smallRadius))
                                     .background(
                                         when {
                                             cell.isToday -> MaterialTheme.colorScheme.primary

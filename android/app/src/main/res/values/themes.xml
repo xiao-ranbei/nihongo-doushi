@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 平台原生浅色无标题栏主题；纸感配色在 Compose 主题层实现 -->
-    <style name="Theme.Kotonoha" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- 平台原生浅色无标题栏主题；糖果卡配色在 Compose 主题层实现。
+         windowBackground 显式给出：冷启动的第一帧来自这里，留空会先闪一帧系统默认底再切到 Compose -->
+    <style name="Theme.Kotonoha" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#FAFAF8</item>
+    </style>
 </resources>

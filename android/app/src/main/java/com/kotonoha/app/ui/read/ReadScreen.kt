@@ -36,6 +36,7 @@ import com.kotonoha.app.ui.AppState
 import com.kotonoha.app.ui.common.ModuleGlyphBox
 import com.kotonoha.app.ui.common.ModuleHeader
 import com.kotonoha.app.ui.common.PlannedRow
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.moduleTone
 import com.kotonoha.app.ui.theme.paperColors
 import java.time.LocalDate
@@ -79,6 +80,7 @@ private fun iconFor(tool: ReadTool): ImageVector = when (tool.id) {
  */
 @Composable
 fun ReadScreen(app: AppState, onOpen: (ReadTool) -> Unit) {
+    val g = geometry()
     val paper = paperColors()
     val tone = moduleTone()
     val today = LocalDate.now()
@@ -101,10 +103,10 @@ fun ReadScreen(app: AppState, onOpen: (ReadTool) -> Unit) {
         // 段② 框架说明卡：全页唯一「可读长文」
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(g.cardRadius),
             color = MaterialTheme.colorScheme.surface,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = 2.dp,
+            shadowElevation = g.cardShadow,
         ) {
             Row(
                 modifier = Modifier
@@ -140,10 +142,10 @@ fun ReadScreen(app: AppState, onOpen: (ReadTool) -> Unit) {
         // 段③ 工具列表：数据驱动，AVAILABLE 行可点，PLANNED 行不可点
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(g.cardRadius),
             color = MaterialTheme.colorScheme.surface,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = 2.dp,
+            shadowElevation = g.cardShadow,
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 READ_TOOLS.forEachIndexed { index, tool ->
@@ -173,7 +175,7 @@ fun ReadScreen(app: AppState, onOpen: (ReadTool) -> Unit) {
 /**
  * 可点工具行：排版照 [com.kotonoha.app.ui.common.EntryCard]（40dp 图标块 + 标题副标题 + 右侧箭头），
  * 但不自带 Surface——它住在段③那张卡里，自带边框会变成卡中卡。
- * 水波由 clickable 提供，Surface 已按 16dp 圆角裁掉溢出部分。
+ * 水波由 clickable 提供，Surface 已按 cardRadius 圆角裁掉溢出部分。
  */
 @Composable
 private fun AvailableToolRow(tool: ReadTool, onClick: () -> Unit) {

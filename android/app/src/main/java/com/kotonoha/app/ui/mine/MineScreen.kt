@@ -51,6 +51,7 @@ import com.kotonoha.app.ui.common.ModuleGlyphBox
 import com.kotonoha.app.ui.common.ModuleHeader
 import com.kotonoha.app.ui.common.ModuleSectionLabel
 import com.kotonoha.app.ui.common.PlannedRow
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.moduleTone
 import com.kotonoha.app.ui.theme.paperColors
 import java.time.Instant
@@ -66,6 +67,7 @@ import java.time.LocalDate
  */
 @Composable
 fun MineScreen(app: AppState, onOpenModelSettings: () -> Unit) {
+    val g = geometry()
     var confirmReset by remember { mutableStateOf(false) }
 
     Column(
@@ -110,10 +112,10 @@ fun MineScreen(app: AppState, onOpenModelSettings: () -> Unit) {
         SectionLabel("更多设置")
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(g.cardRadius),
             color = MaterialTheme.colorScheme.surface,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = 2.dp,
+            shadowElevation = g.cardShadow,
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 SettingsEntryRow(onClick = onOpenModelSettings)
@@ -189,12 +191,13 @@ private fun BookmarkSectionLabel(app: AppState) {
 /** 书签空态卡：星形图标 + 引导文案（收藏入口 2026-10 已移到点词展开的详情里） */
 @Composable
 private fun BookmarkEmptyCard() {
+    val g = geometry()
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(g.cardRadius),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Column(
             modifier = Modifier
@@ -254,15 +257,16 @@ private fun bookmarkEpoch(raw: String): Instant =
 /** 单条书签：类型标记 + 标题 + 可选备注 + 删除入口 */
 @Composable
 private fun BookmarkRow(bookmark: Bookmark, onRemove: () -> Unit) {
+    val g = geometry()
     val paper = paperColors()
     val tone = moduleTone()
     val isWord = bookmarkIsWord(bookmark)
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(g.cardRadius),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Row(
             modifier = Modifier
@@ -280,7 +284,7 @@ private fun BookmarkRow(bookmark: Bookmark, onRemove: () -> Unit) {
             )
             Column(modifier = Modifier.weight(1f)) {
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
+                    shape = RoundedCornerShape(g.smallRadius),
                     color = tone.pale,
                     border = BorderStroke(1.dp, tone.line),
                 ) {

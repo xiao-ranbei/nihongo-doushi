@@ -40,6 +40,7 @@ import com.kotonoha.app.ui.common.ModuleProgressBar
 import com.kotonoha.app.ui.common.ModuleSectionLabel
 import com.kotonoha.app.ui.common.ModuleTopBar
 import com.kotonoha.app.ui.practice.ProgressRing
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 import kotlin.math.roundToInt
 
@@ -54,6 +55,7 @@ fun AdjectiveHomeScreen(
     onStartReview: () -> Unit,
     onOpenReference: () -> Unit,
 ) {
+    val g = geometry()
     val paper = paperColors()
     val total = AdjectiveData.ADJECTIVES.size
     val percent = app.adjectiveModulePercent()
@@ -98,7 +100,7 @@ fun AdjectiveHomeScreen(
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(g.cardRadius),
                 color = paper.bgPaleGreen,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
@@ -141,14 +143,14 @@ fun AdjectiveHomeScreen(
                         Button(
                             onClick = onStartAll,
                             modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(g.smallRadius),
                         ) {
                             Text("随机 5 题", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         }
                         OutlinedButton(
                             onClick = onStartReview,
                             enabled = mistakes > 0,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(g.smallRadius),
                         ) {
                             Text(
                                 text = if (mistakes == 0) "暂无错题" else "错题 $mistakes 道",
@@ -162,7 +164,7 @@ fun AdjectiveHomeScreen(
             OutlinedButton(
                 onClick = onOpenReference,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(g.smallRadius),
             ) {
                 Text(
                     text = "变形速查：按词条查全部形式",
@@ -187,7 +189,7 @@ fun AdjectiveHomeScreen(
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(14.dp))
+                                .clip(RoundedCornerShape(g.smallRadius))
                                 // 整卡一个焦点站由 combinedClickable 自带合并保证；
                                 // 长按带标签「直接练习」，读屏可经自定义操作触发
                                 .combinedClickable(
@@ -195,10 +197,10 @@ fun AdjectiveHomeScreen(
                                     onLongClick = { onStartTheme(form.id) },
                                     onLongClickLabel = "直接练习",
                                 ),
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(g.smallRadius),
                             color = MaterialTheme.colorScheme.surface,
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                            shadowElevation = 1.dp,
+                            shadowElevation = g.cardShadow,
                         ) {
                             Column(
                                 modifier = Modifier
@@ -276,7 +278,7 @@ fun AdjectiveHomeScreen(
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 10.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(g.smallRadius),
             ) {
                 Text(
                     text = "综合练习 · 全部组合",

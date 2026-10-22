@@ -38,6 +38,7 @@ import com.kotonoha.app.engine.read.ReadRules
 import com.kotonoha.app.ui.AppState
 import com.kotonoha.app.ui.common.ModuleTopBar
 import com.kotonoha.app.ui.deleteArticle
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 import java.time.Instant
 
@@ -68,6 +69,7 @@ fun ReadInputScreen(
     onOpenArticle: (ReadArticle) -> Unit,
     onBack: () -> Unit,
 ) {
+    val g = geometry()
     val paper = paperColors()
     val configReady = ReadRules.validateConfig(app.readConfig).isEmpty()
     val canStart = ReadUiLogic.canStart(text)
@@ -98,10 +100,10 @@ fun ReadInputScreen(
             // 正文输入卡：minLines = 8 保证首屏就有「这是一篇文章」的体积感
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(g.cardRadius),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                shadowElevation = 2.dp,
+                shadowElevation = g.cardShadow,
             ) {
                 Column(
                     modifier = Modifier
@@ -118,7 +120,7 @@ fun ReadInputScreen(
                             fontSize = 17.sp,
                             lineHeight = 30.sp,
                         ),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(g.smallRadius),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -158,10 +160,10 @@ fun ReadInputScreen(
                 )
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(g.cardRadius),
                     color = MaterialTheme.colorScheme.surface,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    shadowElevation = 2.dp,
+                    shadowElevation = g.cardShadow,
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         articles.forEachIndexed { index, article ->

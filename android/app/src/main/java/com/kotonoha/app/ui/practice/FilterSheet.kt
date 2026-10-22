@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 
 /**
@@ -49,6 +50,7 @@ fun FilterSheet(
     onDismiss: () -> Unit,
     onApply: (Map<String, String>) -> Unit,
 ) {
+    val g = geometry()
     val sheetState = rememberModalBottomSheetState()
     val draft = remember(sections) {
         mutableStateMapOf<String, String>().apply { sections.forEach { put(it.key, it.selected) } }
@@ -116,7 +118,7 @@ fun FilterSheet(
                 Button(
                     onClick = { onApply(draft.toMap()) },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(g.smallRadius),
                 ) {
                     Text("应用并重新出题", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 }
@@ -127,6 +129,7 @@ fun FilterSheet(
 
 @Composable
 private fun FilterPill(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    val g = geometry()
     val scheme = MaterialTheme.colorScheme
     val background = if (selected && enabled) scheme.primaryContainer else scheme.surface
     val foreground = when {
@@ -146,7 +149,7 @@ private fun FilterPill(label: String, selected: Boolean, enabled: Boolean, onCli
         // （this.selected：函数参数 selected 会遮蔽接收者上的同名扩展属性；
         // 合并由 Surface(onClick) 内部 clickable 自带保证，无需再 merge）
         modifier = Modifier.semantics { this.selected = isSelected },
-        shape = RoundedCornerShape(999.dp),
+        shape = RoundedCornerShape(g.pillRadius),
         color = background,
         border = androidx.compose.foundation.BorderStroke(1.dp, border),
         enabled = enabled,

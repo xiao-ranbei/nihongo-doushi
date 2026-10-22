@@ -1,8 +1,10 @@
 package com.kotonoha.app.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -10,78 +12,192 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.kotonoha.app.R
 
 /**
- * 纸感主题：色值全部移植自 web/styles.css 的 :root 语义令牌（D-015 / android-requirements §5）。
- * 本文件是全应用唯一的颜色定义处；UI 组件禁止硬编码颜色（P0-3）。
+ * 双主题：浅色「糖果卡」、深色「墨夜」，完全跟随系统深浅色，不提供手动开关。
+ * 本文件是全应用唯一的颜色与几何定义处；UI 组件禁止硬编码颜色（P0-3）。
  */
-object PaperTokens {
-    val Paper = Color(0xFFF6F5F0)        // --paper
-    val Surface = Color(0xFFFFFEFA)      // --surface
-    val Ink = Color(0xFF26332E)          // --ink
-    val Muted = Color(0xFF7B867E)        // --muted
-    val Line = Color(0xFFE7E9E1)         // --line
-    val Green = Color(0xFF326151)        // --green
-    val GreenDark = Color(0xFF254A3D)    // --green-dark
-    val GreenPale = Color(0xFFEDF3EB)    // --green-pale
-    val Orange = Color(0xFFB8784F)       // --orange
-    val OrangePale = Color(0xFFF8EFE6)   // --orange-pale
-    val OrangeTextDeep = Color(0xFF895936) // --orange-text-deep
-    val Red = Color(0xFFA54E45)          // --red
-    val RedPale = Color(0xFFFBF0ED)      // --red-pale
-    val TextRed = Color(0xFF9C5B50)      // --text-red
-    val ReadingText = Color(0xFF839087)  // --reading
-    val MeaningText = Color(0xFF627967)  // --meaning-text
-    val TextStrong = Color(0xFF657268)   // --text-strong
-    val TextGreen = Color(0xFF657C69)    // --text-green
-    val StatCorrectText = Color(0xFF54705A) // --stat-correct-text
-    val StatIncorrectText = Color(0xFF98645B) // --stat-incorrect-text
-    val LineAccent = Color(0xFFC6D4C7)   // --line-accent
-    val BgPaleGreen = Color(0xFFF4F8F2)  // --bg-pale-green
-    val BgPaleStrong = Color(0xFFE9EEE7) // --bg-pale-strong
-    val LineControl = Color(0xFFDFE5DC)  // --line-control
-
-    // 逐词区品詞底色块：13 项品詞归成 9 组，同组共用一色。
-    // 名詞/動詞 的值与 --green-pale/--orange-pale 相同，但语义独立，不复用变量。
-    val PosNounPale = Color(0xFFEDF3EB)
-    val PosPronounPale = Color(0xFFEAF2EF)
-    val PosVerbPale = Color(0xFFF8EFE6)
-    val PosAdjectivePale = Color(0xFFECF1F6)
-    val PosNaAdjectivePale = Color(0xFFF0EDF6)
-    val PosAdverbPale = Color(0xFFF5F2E1)
-    val PosOtherPale = Color(0xFFEEF0EB)
-    val PosParticlePale = Color(0xFFE9F1F2)
-    val PosAuxiliaryPale = Color(0xFFEDEFF4)
-
-    // 四标签模块色块簿（视觉重设计）：阅读的描边色、我的（灰蓝）整组。
-    // 学习沿用 Green / GreenPale / GreenDark / LineAccent；主页与学习同族，不另设色。
-    val OrangeLine = Color(0xFFE6D3C3)
-    val SlateBlue = Color(0xFF5A6E86)
-    val SlateBluePale = Color(0xFFEDF1F6)
-    val SlateBlueDeep = Color(0xFF3F5065)
-    val SlateBlueLine = Color(0xFFC9D5E1)
-}
 
 /**
- * 品詞 → 逐词区底色；未收录的品詞返回 null（不铺色块）。
- * 逐词区不再渲染品詞文字，色块是唯一的品詞线索，因此只给模型须守的 13 项封闭集合配色：
- * 模型偶尔吐出的其它值保持无底色，免得把不认识的东西染成看起来有意义的颜色。
+ * 一套主题的全部语义色。糖果卡与墨夜各一份，字段一一对应：
+ * 换肤只换这张表，四个取色入口（MaterialTheme.colorScheme / paperColors / moduleTone / geometry）不变。
  */
-fun posBackgroundColor(pos: String): Color? = when (pos) {
-    "名詞" -> PaperTokens.PosNounPale
-    "代名詞" -> PaperTokens.PosPronounPale
-    "動詞" -> PaperTokens.PosVerbPale
-    "形容詞" -> PaperTokens.PosAdjectivePale
-    "形容動詞" -> PaperTokens.PosNaAdjectivePale
-    "副詞" -> PaperTokens.PosAdverbPale
-    "連体詞", "接続詞", "感動詞" -> PaperTokens.PosOtherPale
-    "助詞" -> PaperTokens.PosParticlePale
-    "助動詞" -> PaperTokens.PosAuxiliaryPale
-    else -> null
-}
+internal data class Palette(
+    val dark: Boolean,
+    val paper: Color,             // --paper
+    val surface: Color,           // --surface
+    val ink: Color,               // --ink
+    val muted: Color,             // --muted
+    val line: Color,              // --line
+    val lineControl: Color,       // --line-control
+    val green: Color,             // --green（深色下即 M3 primary 冷蓝）
+    val greenDark: Color,         // --green-dark
+    val greenPale: Color,         // --green-pale
+    val lineAccent: Color,        // --line-accent
+    val orange: Color,            // --orange
+    val orangePale: Color,        // --orange-pale
+    val orangeTextDeep: Color,    // --orange-text-deep
+    val orangeLine: Color,
+    val red: Color,               // --red
+    val redPale: Color,           // --red-pale
+    val textRed: Color,           // --text-red
+    val readingText: Color,       // --reading
+    val meaningText: Color,       // --meaning-text
+    val textStrong: Color,        // --text-strong
+    val textGreen: Color,         // --text-green
+    val statCorrectText: Color,   // --stat-correct-text
+    val statIncorrectText: Color, // --stat-incorrect-text
+    val bgPaleGreen: Color,       // --bg-pale-green
+    val bgPaleStrong: Color,      // --bg-pale-strong
+    val slateBlue: Color,
+    val slateBluePale: Color,
+    val slateBlueDeep: Color,
+    val slateBlueLine: Color,
+    val surfaceVariant: Color,
+    // 逐词区品詞底色块：13 项品詞归成 9 组，同组共用一色。
+    // 浅色是实色；深色是带 alpha 的叠色，让它们叠在 surface 上自己混。
+    val posNoun: Color,
+    val posPronoun: Color,
+    val posVerb: Color,
+    val posAdjective: Color,
+    val posNaAdjective: Color,
+    val posAdverb: Color,
+    val posOther: Color,
+    val posParticle: Color,
+    val posAuxiliary: Color,
+)
 
-/** 细粒度语义色：Material 3 ColorScheme 覆盖不到的 Web 令牌，经 CompositionLocal 下发 */
+/** 浅色 = 糖果卡：白卡 + 大圆角 + 柔投影 + 竹绿强调色。 */
+private val CandyPalette = Palette(
+    dark = false,
+    paper = Color(0xFFFAFAF8),
+    surface = Color(0xFFFFFFFF),
+    ink = Color(0xFF212430),
+    muted = Color(0xFF8A8D9C),
+    line = Color(0xFFEFF0F4),
+    lineControl = Color(0xFFE4E7EE),
+    green = Color(0xFF2E9463),
+    greenDark = Color(0xFF1F6B47),
+    greenPale = Color(0xFFE9F7EF),
+    lineAccent = Color(0xFFCFE9DA),
+    orange = Color(0xFFD98243),
+    orangePale = Color(0xFFFFE6D1),
+    orangeTextDeep = Color(0xFF9A5A2A),
+    orangeLine = Color(0xFFF3D3B8),
+    red = Color(0xFFD2544C),
+    redPale = Color(0xFFFFE7E3),
+    textRed = Color(0xFFB05048),
+    readingText = Color(0xFF8A8D9C),
+    meaningText = Color(0xFF6C7D72),
+    textStrong = Color(0xFF6E7180),
+    textGreen = Color(0xFF4E8C74),
+    statCorrectText = Color(0xFF2E9463),
+    statIncorrectText = Color(0xFFB4635B),
+    bgPaleGreen = Color(0xFFF4F8F4),
+    bgPaleStrong = Color(0xFFEAF2EC),
+    slateBlue = Color(0xFF5E7392),
+    slateBluePale = Color(0xFFE7EDF6),
+    slateBlueDeep = Color(0xFF3A4B63),
+    slateBlueLine = Color(0xFFD3DEEC),
+    surfaceVariant = Color(0xFFEEF0F5),
+    posNoun = Color(0xFFDBF2E4),
+    posPronoun = Color(0xFFD9EEF0),
+    posVerb = Color(0xFFFFE6D1),
+    posAdjective = Color(0xFFDAE8FB),
+    posNaAdjective = Color(0xFFEDE3FB),
+    posAdverb = Color(0xFFFBF3D6),
+    posOther = Color(0xFFEEF0F5),
+    posParticle = Color(0xFFD7EDEC),
+    posAuxiliary = Color(0xFFE2E5F6),
+)
+
+/** 深色 = 墨夜：墨黑底 + 冷蓝强调 + 小圆角 + 零阴影。 */
+private val InkNightPalette = Palette(
+    dark = true,
+    paper = Color(0xFF0F1114),
+    surface = Color(0xFF181C21),
+    ink = Color(0xFFE9E7E2),
+    muted = Color(0xFF8B93A0),
+    line = Color(0xFF262B33),
+    lineControl = Color(0xFF333A44),
+    green = Color(0xFF9FBBD3),
+    greenDark = Color(0xFFCFE0EE),
+    greenPale = Color(0xFF1D2831),
+    lineAccent = Color(0xFF3B4A57),
+    orange = Color(0xFFC9927A),
+    orangePale = Color(0xFF2E2119),
+    orangeTextDeep = Color(0xFFEFCDBA),
+    orangeLine = Color(0xFF4A3A2E),
+    red = Color(0xFFD98B80),
+    redPale = Color(0xFF2A1D1B),
+    textRed = Color(0xFFD09186),
+    readingText = Color(0xFF8490A0),
+    meaningText = Color(0xFF93A8A2),
+    textStrong = Color(0xFFA9B4BE),
+    textGreen = Color(0xFF9CC0B4),
+    statCorrectText = Color(0xFF8FC0A0),
+    statIncorrectText = Color(0xFFD0928A),
+    bgPaleGreen = Color(0xFF14181A),
+    bgPaleStrong = Color(0xFF1C2226),
+    slateBlue = Color(0xFF9FB3CC),
+    slateBluePale = Color(0xFF202A38),
+    slateBlueDeep = Color(0xFFC3D3E6),
+    slateBlueLine = Color(0xFF36465A),
+    surfaceVariant = Color(0xFF20262E),
+    posNoun = Color(0x299FBBD3),
+    posPronoun = Color(0x249FBBD3),
+    posVerb = Color(0x38CE6E58),
+    posAdjective = Color(0x33AE98E0),
+    posNaAdjective = Color(0x33C9A0E0),
+    posAdverb = Color(0x2ED9C978),
+    posOther = Color(0x29A0A8B0),
+    posParticle = Color(0x2978C4A8),
+    posAuxiliary = Color(0x2E8FA0C0),
+)
+
+/** 纯函数取表：不依赖 Composable，单测可直接钉住两套皮肤的值。 */
+internal fun paletteFor(dark: Boolean): Palette = if (dark) InkNightPalette else CandyPalette
+
+/**
+ * 几何令牌：两套皮肤的圆角与阴影差异。
+ * - [cardRadius] 一级卡片/入口卡圆角
+ * - [smallRadius] 行/小色块/图标盒圆角
+ * - [cardShadow] Surface 的 shadowElevation
+ * - [pillRadius] 胶囊圆角
+ * - [navFloating] 底栏是否悬浮药丸
+ */
+data class ModuleGeometry(
+    val cardRadius: Dp,
+    val smallRadius: Dp,
+    val cardShadow: Dp,
+    val pillRadius: Dp,
+    val navFloating: Boolean,
+)
+
+private val CandyGeometry = ModuleGeometry(
+    cardRadius = 20.dp,
+    smallRadius = 12.dp,
+    cardShadow = 3.dp,
+    pillRadius = 999.dp,
+    navFloating = true,
+)
+
+private val InkNightGeometry = ModuleGeometry(
+    cardRadius = 13.dp,
+    smallRadius = 9.dp,
+    cardShadow = 0.dp,
+    pillRadius = 999.dp,
+    navFloating = false,
+)
+
+/** 纯函数取几何：不依赖 Composable，单测可直接钉住两套皮肤的圆角与阴影。 */
+internal fun geometryFor(dark: Boolean): ModuleGeometry =
+    if (dark) InkNightGeometry else CandyGeometry
+
+/** 细粒度语义色：Material 3 ColorScheme 覆盖不到的令牌，经 CompositionLocal 下发 */
 data class PaperColors(
     val textStrong: Color,
     val textGreen: Color,
@@ -99,23 +215,55 @@ data class PaperColors(
     val bgPaleGreen: Color,
 )
 
-private val LocalPaperColors = staticCompositionLocalOf {
-    PaperColors(
-        textStrong = PaperTokens.TextStrong,
-        textGreen = PaperTokens.TextGreen,
-        muted = PaperTokens.Muted,
-        statCorrectText = PaperTokens.StatCorrectText,
-        statIncorrectText = PaperTokens.StatIncorrectText,
-        textRed = PaperTokens.TextRed,
-        reading = PaperTokens.ReadingText,
-        meaning = PaperTokens.MeaningText,
-        greenPale = PaperTokens.GreenPale,
-        orangePale = PaperTokens.OrangePale,
-        line = PaperTokens.Line,
-        lineControl = PaperTokens.LineControl,
-        lineAccent = PaperTokens.LineAccent,
-        bgPaleGreen = PaperTokens.BgPaleGreen,
-    )
+private val LocalPalette = staticCompositionLocalOf { CandyPalette }
+private val LocalGeometry = staticCompositionLocalOf { CandyGeometry }
+private val LocalPaperColors = staticCompositionLocalOf { paperColorsFor(CandyPalette) }
+
+/** 细粒度语义色访问入口：paperColors().textGreen 等（仅限 Composable 上下文） */
+@Composable
+fun paperColors(): PaperColors = LocalPaperColors.current
+
+/** 几何令牌访问入口：geometry().cardRadius 等（仅限 Composable 上下文） */
+@Composable
+fun geometry(): ModuleGeometry = LocalGeometry.current
+
+internal fun paperColorsFor(palette: Palette): PaperColors = PaperColors(
+    textStrong = palette.textStrong,
+    textGreen = palette.textGreen,
+    muted = palette.muted,
+    statCorrectText = palette.statCorrectText,
+    statIncorrectText = palette.statIncorrectText,
+    textRed = palette.textRed,
+    reading = palette.readingText,
+    meaning = palette.meaningText,
+    greenPale = palette.greenPale,
+    orangePale = palette.orangePale,
+    line = palette.line,
+    lineControl = palette.lineControl,
+    lineAccent = palette.lineAccent,
+    bgPaleGreen = palette.bgPaleGreen,
+)
+
+/**
+ * 品詞 → 逐词区底色；未收录的品詞返回 null（不铺色块）。
+ * 逐词区不再渲染品詞文字，色块是唯一的品詞线索，因此只给模型须守的 13 项封闭集合配色：
+ * 模型偶尔吐出的其它值保持无底色，免得把不认识的东西染成看起来有意义的颜色。
+ */
+@Composable
+fun posBackgroundColor(pos: String): Color? {
+    val palette = LocalPalette.current
+    return when (pos) {
+        "名詞" -> palette.posNoun
+        "代名詞" -> palette.posPronoun
+        "動詞" -> palette.posVerb
+        "形容詞" -> palette.posAdjective
+        "形容動詞" -> palette.posNaAdjective
+        "副詞" -> palette.posAdverb
+        "連体詞", "接続詞", "感動詞" -> palette.posOther
+        "助詞" -> palette.posParticle
+        "助動詞" -> palette.posAuxiliary
+        else -> null
+    }
 }
 
 /** 纸感字体：LXGW 楷体 TTF 子集（449KB，字符集复用 web/font/subset-chars.txt） */
@@ -142,44 +290,78 @@ private val PaperTypography: Typography = run {
     )
 }
 
-private val PaperColorScheme: ColorScheme = lightColorScheme(
-    primary = PaperTokens.Green,
-    onPrimary = PaperTokens.Surface,
-    primaryContainer = PaperTokens.GreenPale,
-    onPrimaryContainer = PaperTokens.GreenDark,
-    secondary = PaperTokens.TextGreen,
-    onSecondary = PaperTokens.Surface,
-    secondaryContainer = PaperTokens.GreenPale,
-    onSecondaryContainer = PaperTokens.GreenDark,
-    tertiary = PaperTokens.Orange,
-    onTertiary = PaperTokens.Surface,
-    tertiaryContainer = PaperTokens.OrangePale,
-    onTertiaryContainer = PaperTokens.OrangeTextDeep,
-    error = PaperTokens.Red,
-    onError = PaperTokens.Surface,
-    errorContainer = PaperTokens.RedPale,
-    onErrorContainer = PaperTokens.TextRed,
-    background = PaperTokens.Paper,
-    onBackground = PaperTokens.Ink,
-    surface = PaperTokens.Surface,
-    onSurface = PaperTokens.Ink,
-    surfaceVariant = Color(0xFFEEF0EB), // --line-faint
-    onSurfaceVariant = PaperTokens.Muted,
-    outline = PaperTokens.LineControl,
-    outlineVariant = PaperTokens.Line,
-    // M3 容器色阶全部覆写为纸感色，避免默认中性基色带出的淡紫（P0-2）
-    surfaceContainerLowest = PaperTokens.Surface,
-    surfaceContainerLow = PaperTokens.Surface,
-    surfaceContainer = PaperTokens.BgPaleGreen,
-    surfaceContainerHigh = PaperTokens.GreenPale,
-    surfaceContainerHighest = PaperTokens.BgPaleStrong,
-    surfaceBright = PaperTokens.Surface,
-    surfaceDim = PaperTokens.Paper,
+/** 浅色糖果卡：M3 色板全部换成本主题令牌，不留 M3 默认中性基色带出的淡紫（P0-2）。 */
+private fun candyColorScheme(p: Palette): ColorScheme = lightColorScheme(
+    primary = p.green,
+    onPrimary = p.surface,
+    primaryContainer = p.greenPale,
+    onPrimaryContainer = p.greenDark,
+    secondary = p.textGreen,
+    onSecondary = p.surface,
+    secondaryContainer = p.greenPale,
+    onSecondaryContainer = p.greenDark,
+    tertiary = p.orange,
+    onTertiary = p.surface,
+    tertiaryContainer = p.orangePale,
+    onTertiaryContainer = p.orangeTextDeep,
+    error = p.red,
+    onError = p.surface,
+    errorContainer = p.redPale,
+    onErrorContainer = p.textRed,
+    background = p.paper,
+    onBackground = p.ink,
+    surface = p.surface,
+    onSurface = p.ink,
+    surfaceVariant = p.surfaceVariant,
+    onSurfaceVariant = p.muted,
+    outline = p.lineControl,
+    outlineVariant = p.line,
+    surfaceContainerLowest = p.surface,
+    surfaceContainerLow = p.surface,
+    surfaceContainer = p.bgPaleGreen,
+    surfaceContainerHigh = p.greenPale,
+    surfaceContainerHighest = p.bgPaleStrong,
+    surfaceBright = p.surface,
+    surfaceDim = p.paper,
 )
 
-/** 细粒度语义色访问入口：paperColors().textGreen 等（仅限 Composable 上下文） */
-@Composable
-fun paperColors(): PaperColors = LocalPaperColors.current
+/** 深色墨夜：同样整组覆写，容器色阶全部落在墨黑冷调上，不留 M3 默认中性紫。 */
+private fun inkNightColorScheme(p: Palette): ColorScheme = darkColorScheme(
+    primary = p.green,
+    onPrimary = p.paper,
+    primaryContainer = Color(0xFF263340),
+    onPrimaryContainer = p.greenDark,
+    secondary = p.textGreen,
+    onSecondary = p.paper,
+    secondaryContainer = Color(0xFF223330),
+    onSecondaryContainer = Color(0xFFC9E2DA),
+    tertiary = p.orange,
+    onTertiary = p.paper,
+    tertiaryContainer = Color(0xFF33241D),
+    onTertiaryContainer = p.orangeTextDeep,
+    error = p.red,
+    onError = p.paper,
+    errorContainer = Color(0xFF3A2220),
+    onErrorContainer = Color(0xFFF0C0B8),
+    background = p.paper,
+    onBackground = p.ink,
+    surface = p.surface,
+    onSurface = p.ink,
+    surfaceVariant = p.surfaceVariant,
+    onSurfaceVariant = p.muted,
+    outline = p.lineControl,
+    outlineVariant = p.line,
+    surfaceContainerLowest = Color(0xFF14181C),
+    surfaceContainerLow = Color(0xFF1A1F24),
+    surfaceContainer = Color(0xFF1C2226),
+    surfaceContainerHigh = Color(0xFF212931),
+    surfaceContainerHighest = Color(0xFF262E36),
+    surfaceBright = Color(0xFF232A31),
+    surfaceDim = Color(0xFF0B0D10),
+)
+
+internal fun colorSchemeFor(palette: Palette): ColorScheme =
+    if (palette.dark) inkNightColorScheme(palette) else candyColorScheme(palette)
 
 /**
  * 一个模块的一组色块：主色 / 浅底 / 深字 / 描边。
@@ -196,32 +378,64 @@ data class ModuleTone(
     val line: Color,
 )
 
-/** 四标签 + 主页的模块色块实例。主页是总览页，与学习同族（品牌墨绿）。 */
+/**
+ * 四标签 + 主页的模块色块实例，取浅色糖果卡的值。
+ * 深色墨夜的对应值由 [ProvideModuleTone] 按同一族自动换表，页面侧无需分支。
+ * 主页是总览页，与学习同族（品牌绿）。
+ */
 object ModuleTones {
     val Home = ModuleTone(
-        main = PaperTokens.Green,
-        pale = PaperTokens.GreenPale,
-        deep = PaperTokens.GreenDark,
-        line = PaperTokens.LineAccent,
+        main = CandyPalette.green,
+        pale = CandyPalette.greenPale,
+        deep = CandyPalette.greenDark,
+        line = CandyPalette.lineAccent,
     )
     val Study = ModuleTone(
-        main = PaperTokens.Green,
-        pale = PaperTokens.GreenPale,
-        deep = PaperTokens.GreenDark,
-        line = PaperTokens.LineAccent,
+        main = CandyPalette.green,
+        pale = CandyPalette.greenPale,
+        deep = CandyPalette.greenDark,
+        line = CandyPalette.lineAccent,
     )
     val Read = ModuleTone(
-        main = PaperTokens.Orange,
-        pale = PaperTokens.OrangePale,
-        deep = PaperTokens.OrangeTextDeep,
-        line = PaperTokens.OrangeLine,
+        main = CandyPalette.orange,
+        pale = CandyPalette.orangePale,
+        deep = CandyPalette.orangeTextDeep,
+        line = CandyPalette.orangeLine,
     )
     val Mine = ModuleTone(
-        main = PaperTokens.SlateBlue,
-        pale = PaperTokens.SlateBluePale,
-        deep = PaperTokens.SlateBlueDeep,
-        line = PaperTokens.SlateBlueLine,
+        main = CandyPalette.slateBlue,
+        pale = CandyPalette.slateBluePale,
+        deep = CandyPalette.slateBlueDeep,
+        line = CandyPalette.slateBlueLine,
     )
+}
+
+private val InkNightHomeTone = ModuleTone(
+    main = InkNightPalette.green,
+    pale = InkNightPalette.greenPale,
+    deep = InkNightPalette.greenDark,
+    line = InkNightPalette.lineAccent,
+)
+
+private val InkNightReadTone = ModuleTone(
+    main = InkNightPalette.orange,
+    pale = InkNightPalette.orangePale,
+    deep = InkNightPalette.orangeTextDeep,
+    line = InkNightPalette.orangeLine,
+)
+
+private val InkNightMineTone = ModuleTone(
+    main = InkNightPalette.slateBlue,
+    pale = InkNightPalette.slateBluePale,
+    deep = InkNightPalette.slateBlueDeep,
+    line = InkNightPalette.slateBlueLine,
+)
+
+/** 浅色色块 → 墨夜同族色块；Home 与 Study 同族（数据相等），一并落到绿系。 */
+private fun inkNightToneOf(tone: ModuleTone): ModuleTone = when (tone) {
+    ModuleTones.Read -> InkNightReadTone
+    ModuleTones.Mine -> InkNightMineTone
+    else -> InkNightHomeTone
 }
 
 /** 当前模块色块访问入口：moduleTone().main 等（仅限 Composable 上下文） */
@@ -231,38 +445,38 @@ private val LocalModuleTone = staticCompositionLocalOf { ModuleTones.Home }
 fun moduleTone(): ModuleTone = LocalModuleTone.current
 
 /**
+ * 把浅色色块实例解析成当前主题下的同族色块：浅色原样返回，深色换成墨夜同色系。
+ * 非 Composable 代码拿不到主题，必须经这里；Composable 里若自己又取了一遍 ModuleTones 常量，也要用这个方法归一。
+ */
+@Composable
+fun themedTone(tone: ModuleTone): ModuleTone =
+    if (LocalPalette.current.dark) inkNightToneOf(tone) else tone
+
+/**
  * 给一段 UI 指定模块色块。一级页在 AppRoot 里按当前标签包一层，
  * 页面内的页头/色块/底栏因此自动取到本模块的颜色，不必层层传参。
+ * 深色主题下在这里把浅色色块换成墨夜同族色，调用方仍只传 ModuleTones 的实例。
  */
 @Composable
 fun ProvideModuleTone(tone: ModuleTone, content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalModuleTone provides tone, content = content)
+    CompositionLocalProvider(LocalModuleTone provides themedTone(tone), content = content)
 }
 
 @Composable
-fun KotonohaTheme(content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalPaperColors provides defaultPaperColors()) {
+fun KotonohaTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) {
+    val palette = paletteFor(darkTheme)
+    CompositionLocalProvider(
+        LocalPalette provides palette,
+        LocalGeometry provides geometryFor(darkTheme),
+        LocalPaperColors provides paperColorsFor(palette),
+    ) {
         MaterialTheme(
-            colorScheme = PaperColorScheme,
+            colorScheme = colorSchemeFor(palette),
             typography = PaperTypography,
             content = content,
         )
     }
 }
-
-private fun defaultPaperColors(): PaperColors = PaperColors(
-    textStrong = PaperTokens.TextStrong,
-    textGreen = PaperTokens.TextGreen,
-    muted = PaperTokens.Muted,
-    statCorrectText = PaperTokens.StatCorrectText,
-    statIncorrectText = PaperTokens.StatIncorrectText,
-    textRed = PaperTokens.TextRed,
-    reading = PaperTokens.ReadingText,
-    meaning = PaperTokens.MeaningText,
-    greenPale = PaperTokens.GreenPale,
-    orangePale = PaperTokens.OrangePale,
-    line = PaperTokens.Line,
-    lineControl = PaperTokens.LineControl,
-    lineAccent = PaperTokens.LineAccent,
-    bgPaleGreen = PaperTokens.BgPaleGreen,
-)

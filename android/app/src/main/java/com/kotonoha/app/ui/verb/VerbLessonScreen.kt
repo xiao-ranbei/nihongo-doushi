@@ -23,6 +23,7 @@ import com.kotonoha.app.engine.verb.VerbData
 import com.kotonoha.app.engine.verb.VerbEngine
 import com.kotonoha.app.ui.common.ModuleBottomSurface
 import com.kotonoha.app.ui.common.ModuleTopBar
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 
 /**
@@ -37,6 +38,7 @@ fun VerbLessonScreen(
     onBack: () -> Unit,
     onStart: () -> Unit,
 ) {
+    val g = geometry()
     val paper = paperColors()
     val (title, meaning) = when (theme) {
         is VerbTheme.Form -> {
@@ -85,7 +87,7 @@ fun VerbLessonScreen(
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(g.cardRadius),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
@@ -107,7 +109,7 @@ fun VerbLessonScreen(
             examples.forEach { example ->
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(g.smallRadius),
                     color = MaterialTheme.colorScheme.surface,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 ) {
@@ -148,7 +150,7 @@ fun VerbLessonScreen(
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 10.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(g.smallRadius),
             ) {
                 Text(
                     text = when (theme) {

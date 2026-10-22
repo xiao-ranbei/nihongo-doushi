@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 
 /** 速查页词条选择器的一行数据（动词/形容词共用）。 */
@@ -53,6 +54,7 @@ fun ReferencePickerSheet(
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val g = geometry()
     val sheetState = rememberModalBottomSheetState()
     var query by remember { mutableStateOf("") }
     val trimmed = query.trim()
@@ -89,7 +91,7 @@ fun ReferencePickerSheet(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 placeholder = { Text("搜索写法、读音或词义") },
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(g.smallRadius),
             )
             Text(
                 text = "共 ${items.size} 个词条" + if (visible.size != items.size) " · 匹配 ${visible.size} 个" else "",
@@ -126,6 +128,7 @@ private fun ReferencePickerRow(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
+    val g = geometry()
     val paper = paperColors()
     val isSelected = selected
     Surface(
@@ -136,7 +139,7 @@ private fun ReferencePickerRow(
             // 选中原来只有容器色/字重差别，读屏听不出来——补 selected 语义
             // （this.selected：函数参数 selected 会遮蔽接收者上的同名扩展属性）
             .semantics { this.selected = isSelected },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(g.smallRadius),
         color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
         border = BorderStroke(
             1.dp,

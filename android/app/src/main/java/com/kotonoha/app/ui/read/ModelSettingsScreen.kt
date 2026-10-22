@@ -47,6 +47,7 @@ import com.kotonoha.app.net.HttpAnalyzer
 import com.kotonoha.app.ui.AppState
 import com.kotonoha.app.ui.common.ModuleTopBar
 import com.kotonoha.app.ui.saveReadConfig
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -67,6 +68,7 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun ModelSettingsScreen(app: AppState, onBack: () -> Unit) {
+    val g = geometry()
     val paper = paperColors()
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -111,10 +113,10 @@ fun ModelSettingsScreen(app: AppState, onBack: () -> Unit) {
 
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(g.cardRadius),
                     color = MaterialTheme.colorScheme.surface,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    shadowElevation = 2.dp,
+                    shadowElevation = g.cardShadow,
                 ) {
                     Column(
                         modifier = Modifier
@@ -232,10 +234,10 @@ fun ModelSettingsScreen(app: AppState, onBack: () -> Unit) {
 
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(g.cardRadius),
                     color = MaterialTheme.colorScheme.surface,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    shadowElevation = 2.dp,
+                    shadowElevation = g.cardShadow,
                 ) {
                     Column(
                         modifier = Modifier
@@ -297,12 +299,13 @@ fun ModelSettingsScreen(app: AppState, onBack: () -> Unit) {
 
 @Composable
 private fun SettingsIntroCard(strong: androidx.compose.ui.graphics.Color, muted: androidx.compose.ui.graphics.Color) {
+    val g = geometry()
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(g.cardRadius),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(

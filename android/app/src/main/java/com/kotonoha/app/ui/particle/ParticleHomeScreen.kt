@@ -44,6 +44,7 @@ import com.kotonoha.app.ui.particleMasteredCount
 import com.kotonoha.app.ui.particleMasteredIn
 import com.kotonoha.app.ui.todayActivity
 import com.kotonoha.app.ui.practice.ProgressRing
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 import kotlin.math.roundToInt
 
@@ -62,6 +63,7 @@ fun ParticleHomeScreen(
     onStartAll: () -> Unit,
     onStartReview: () -> Unit,
 ) {
+    val g = geometry()
     val paper = paperColors()
     val total = ParticleData.TOTAL_QUESTIONS
     val mastered = app.particleMasteredCount()
@@ -106,7 +108,7 @@ fun ParticleHomeScreen(
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(g.cardRadius),
                 color = paper.bgPaleGreen,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
@@ -151,14 +153,14 @@ fun ParticleHomeScreen(
                         Button(
                             onClick = onStartAll,
                             modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(g.smallRadius),
                         ) {
                             Text("开始 5 题", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         }
                         OutlinedButton(
                             onClick = onStartReview,
                             enabled = mistakes > 0,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(g.smallRadius),
                         ) {
                             Text(
                                 text = if (mistakes == 0) "暂无错题" else "错题 $mistakes 道",
@@ -211,9 +213,9 @@ fun ParticleHomeScreen(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            shape = RoundedCornerShape(topStart = g.cardRadius, topEnd = g.cardRadius),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = 2.dp,
+            shadowElevation = g.cardShadow,
         ) {
             Button(
                 onClick = onStartAll,
@@ -221,7 +223,7 @@ fun ParticleHomeScreen(
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 10.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(g.smallRadius),
             ) {
                 Text(
                     text = "综合练习 · $total 题",
@@ -243,11 +245,12 @@ private fun ParticleLessonCard(
     onClick: () -> Unit,
     onDrill: () -> Unit,
 ) {
+    val g = geometry()
     val paper = paperColors()
     val fraction = if (total == 0) 0f else mastered.toFloat() / total
     Surface(
         modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(g.smallRadius))
             // 整卡一个焦点站由 combinedClickable 自带合并保证；
             // 长按带标签「直接练习」，读屏可经自定义操作触发
             .combinedClickable(
@@ -255,10 +258,10 @@ private fun ParticleLessonCard(
                 onLongClick = onDrill,
                 onLongClickLabel = "直接练习",
             ),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(g.smallRadius),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 1.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Column(
             modifier = Modifier
@@ -311,7 +314,7 @@ private fun ParticleLessonCard(
                     .fillMaxWidth()
                     .padding(top = 4.dp)
                     .height(4.dp)
-                    .clip(RoundedCornerShape(999.dp))
+                    .clip(RoundedCornerShape(g.pillRadius))
                     .background(MaterialTheme.colorScheme.outlineVariant),
             ) {
                 Box(

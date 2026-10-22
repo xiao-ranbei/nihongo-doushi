@@ -46,6 +46,7 @@ import com.kotonoha.app.ui.practice.ProgressRing
 import com.kotonoha.app.ui.practice.StudyTimeTracker
 import com.kotonoha.app.ui.practice.ToastLine
 import com.kotonoha.app.ui.addStudySeconds
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 
 /**
@@ -61,6 +62,7 @@ fun ParticlePracticeScreen(
     onBack: () -> Unit,
     onStartAll: () -> Unit,
 ) {
+    val g = geometry()
     StudyTimeTracker(onSeconds = { state.app.addStudySeconds(it) })
     val item = state.current
     val paper = paperColors()
@@ -132,7 +134,7 @@ fun ParticlePracticeScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.tertiaryContainer,
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(g.smallRadius),
                 ) {
                     Text(
                         text = "错题复习中：本轮待复习 ${state.total} 题，答对推进间隔，连续 6 次移出",
@@ -200,15 +202,16 @@ private fun ParticlePromptCard(
     kanaVisible: Boolean,
     hintOn: Boolean,
 ) {
+    val g = geometry()
     val paper = paperColors()
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .animateContentSize(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(g.cardRadius),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Column(
             modifier = Modifier
@@ -234,7 +237,11 @@ private fun ParticlePromptCard(
                 )
             } else {
                 Text(
-                    text = functionSentence(question),
+                    text = functionSentence(
+                        question = question,
+                        highlight = paper.textGreen,
+                        highlightBg = paper.greenPale,
+                    ),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
@@ -252,7 +259,7 @@ private fun ParticlePromptCard(
             if (hintOn) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(g.smallRadius),
                     color = paper.bgPaleGreen,
                 ) {
                     Column(
@@ -279,7 +286,11 @@ private fun ParticlePromptCard(
 private fun fillSentence(question: ParticleQuestion): String =
     (question.before ?: "") + "（　）" + (question.after ?: "")
 
-private fun functionSentence(question: ParticleQuestion): AnnotatedString {
+private fun functionSentence(
+    question: ParticleQuestion,
+    highlight: Color,
+    highlightBg: Color,
+): AnnotatedString {
     val before = question.before ?: ""
     val after = question.after ?: ""
     val target = question.targetParticle
@@ -294,8 +305,8 @@ private fun functionSentence(question: ParticleQuestion): AnnotatedString {
                 SpanStyle(
                     fontWeight = FontWeight.Bold,
                     textDecoration = TextDecoration.Underline,
-                    color = Color(0xFF254A3D),
-                    background = Color(0xFFEDF3EB),
+                    color = highlight,
+                    background = highlightBg,
                 ),
                 before.length,
                 before.length + target.length,
@@ -325,6 +336,7 @@ private fun ParticleDock(
     state: ParticlePracticeState,
     onStartAll: () -> Unit,
 ) {
+    val g = geometry()
     val paper = paperColors()
     val item = state.current
     val question = item?.question
@@ -332,9 +344,9 @@ private fun ParticleDock(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        shape = RoundedCornerShape(topStart = g.cardRadius, topEnd = g.cardRadius),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Column(
             modifier = Modifier
@@ -388,7 +400,7 @@ private fun ParticleDock(
                     Button(
                         onClick = { state.restart() },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(g.smallRadius),
                     ) {
                         Text("再来一轮", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     }
@@ -398,7 +410,7 @@ private fun ParticleDock(
                     Button(
                         onClick = onStartAll,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(g.smallRadius),
                     ) {
                         Text("去综合练习", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     }
@@ -438,7 +450,7 @@ private fun ParticleDock(
                         Button(
                             onClick = { state.commit() },
                             enabled = picked,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(g.smallRadius),
                         ) {
                             Text("确认提交", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         }
@@ -464,7 +476,7 @@ private fun ParticleDock(
                         )
                         if (!state.lastCorrect) {
                             Surface(
-                                shape = RoundedCornerShape(999.dp),
+                                shape = RoundedCornerShape(g.pillRadius),
                                 color = MaterialTheme.colorScheme.tertiaryContainer,
                             ) {
                                 Text(
@@ -512,7 +524,7 @@ private fun ParticleDock(
                     Button(
                         onClick = { state.next() },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(g.smallRadius),
                     ) {
                         Text(
                             text = if (state.index + 1 >= state.total) "查看本轮小结" else "下一题",

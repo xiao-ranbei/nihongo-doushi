@@ -32,6 +32,7 @@ import com.kotonoha.app.ui.common.ModuleSectionLabel
 import com.kotonoha.app.ui.common.ModuleTopBar
 import com.kotonoha.app.ui.common.ReferencePickerItem
 import com.kotonoha.app.ui.common.ReferencePickerSheet
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 
 /**
@@ -46,6 +47,7 @@ fun AdjectiveReferenceScreen(
     onBack: () -> Unit,
     onPractice: (formId: String, label: String) -> Unit,
 ) {
+    val g = geometry()
     val paper = paperColors()
     var adjectiveId by rememberSaveable { mutableStateOf(AdjectiveData.ADJECTIVES.first().id) }
     var showPicker by remember { mutableStateOf(false) }
@@ -69,7 +71,7 @@ fun AdjectiveReferenceScreen(
                     .fillMaxWidth()
                     // 读屏口径（IK-18）：clickable 自带合并子语义，整卡一个焦点站
                     .clickable(role = Role.Button) { showPicker = true },
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(g.cardRadius),
                 color = paper.bgPaleGreen,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
@@ -110,7 +112,7 @@ fun AdjectiveReferenceScreen(
                     val result = AdjectiveEngine.conjugate(adjective, form.id)
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(g.smallRadius),
                         color = MaterialTheme.colorScheme.surface,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     ) {

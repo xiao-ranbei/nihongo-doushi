@@ -32,6 +32,7 @@ import com.kotonoha.app.ui.common.ModuleBottomSurface
 import com.kotonoha.app.ui.common.ModuleSectionLabel
 import com.kotonoha.app.ui.common.ModuleTopBar
 import com.kotonoha.app.ui.practice.ProgressRing
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 
 /**
@@ -48,6 +49,7 @@ fun VerbHomeScreen(
     onStartReview: () -> Unit,
     onOpenReference: () -> Unit,
 ) {
+    val g = geometry()
     val paper = paperColors()
     val total = VerbData.VERBS.size
     val percent = app.verbModulePercent()
@@ -92,7 +94,7 @@ fun VerbHomeScreen(
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(g.cardRadius),
                 color = paper.bgPaleGreen,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
@@ -135,14 +137,14 @@ fun VerbHomeScreen(
                         Button(
                             onClick = onStartAll,
                             modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(g.smallRadius),
                         ) {
                             Text("随机 5 题", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         }
                         OutlinedButton(
                             onClick = onStartReview,
                             enabled = mistakes > 0,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(g.smallRadius),
                         ) {
                             Text(
                                 text = if (mistakes == 0) "暂无错题" else "错题 $mistakes 道",
@@ -156,7 +158,7 @@ fun VerbHomeScreen(
             OutlinedButton(
                 onClick = onOpenReference,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(g.smallRadius),
             ) {
                 Text(
                     text = "活用速查：按词条查全部变形",
@@ -233,7 +235,7 @@ fun VerbHomeScreen(
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 10.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(g.smallRadius),
             ) {
                 Text(
                     text = "综合练习 · 全部组合",

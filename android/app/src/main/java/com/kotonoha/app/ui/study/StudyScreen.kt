@@ -33,6 +33,7 @@ import com.kotonoha.app.ui.common.EntryCard
 import com.kotonoha.app.ui.common.ModuleHeader
 import com.kotonoha.app.ui.common.ModuleSectionLabel
 import com.kotonoha.app.ui.common.PlannedRow
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.moduleTone
 import java.time.LocalDate
 import kotlin.math.roundToInt
@@ -49,6 +50,7 @@ fun StudyScreen(
     app: AppState,
     onOpen: (StudyDestination) -> Unit,
 ) {
+    val g = geometry()
     val tone = moduleTone()
     val today = LocalDate.now()
 
@@ -129,10 +131,10 @@ fun StudyScreen(
         )
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(g.cardRadius),
             color = MaterialTheme.colorScheme.surface,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = 2.dp,
+            shadowElevation = g.cardShadow,
         ) {
             PlannedRow(
                 icon = Icons.Filled.Search,

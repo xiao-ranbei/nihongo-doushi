@@ -32,13 +32,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kotonoha.app.ui.theme.ModuleTone
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.moduleTone
 import com.kotonoha.app.ui.theme.paperColors
 
 /**
  * 三层模块（动词/形容词/助词）共用的视觉组件，规格与助词模块一致：
  * - 顶栏：返回 + 标题 + 右侧自定义区
- * - 底部操作条：16dp 顶圆角 + 1dp 细边 + 2dp 阴影，背景铺到屏幕底
+ * - 底部操作条：cardRadius 顶圆角 + 1dp 细边 + cardShadow 阴影，背景铺到屏幕底
  *
  * 改动这里会同时影响三个模块，需对照 docs/design/particle-ui/ 的截图做视觉回归。
  */
@@ -85,7 +86,7 @@ fun ModuleTopBar(
 }
 
 /**
- * 模块底部操作条：16dp 顶圆角 + 1dp 细边 + 2dp 阴影，与纸卡同层级。
+ * 模块底部操作条：cardRadius 顶圆角 + 1dp 细边 + cardShadow 阴影，与纸卡同层级。
  * 背景铺到屏幕底，由调用方在内容里加 [androidx.compose.foundation.layout.navigationBarsPadding]。
  */
 @Composable
@@ -93,12 +94,13 @@ fun ModuleBottomSurface(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val g = geometry()
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        shape = RoundedCornerShape(topStart = g.cardRadius, topEnd = g.cardRadius),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Column(content = content)
     }
@@ -110,10 +112,11 @@ fun ModuleProgressBar(
     fraction: Float,
     modifier: Modifier = Modifier,
 ) {
+    val g = geometry()
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(999.dp))
+            .clip(RoundedCornerShape(g.pillRadius))
             .background(MaterialTheme.colorScheme.outlineVariant),
     ) {
         Box(
@@ -194,22 +197,24 @@ fun ModuleHeader(
 /**
  * 模块图标底盒：主色浅底 + 主色图标，是「色块规则」的最小单元，
  * 入口卡、可点行、设置行、空态圆标共用同一个尺寸梯度。
- * 尺寸梯度沿用既有视觉：卡片内 40dp/12dp 圆角、行内 36dp/10dp、圆标走 [corner] 传 Dp。
+ * 尺寸沿用既有视觉：卡片内 40dp、行内 36dp、圆标；圆角走 [geometry] 的 smallRadius，个别圆标用 [corner] 覆盖。
  */
 @Composable
 fun ModuleGlyphBox(
     icon: ImageVector,
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
-    corner: Dp = 12.dp,
+    corner: Dp? = null,
     iconSize: Dp = 22.dp,
     tone: ModuleTone = moduleTone(),
     contentDescription: String? = null,
 ) {
+    val g = geometry()
+    val c = corner ?: g.smallRadius
     Box(
         modifier = modifier
             .size(size)
-            .clip(RoundedCornerShape(corner))
+            .clip(RoundedCornerShape(c))
             .background(tone.pale),
         contentAlignment = Alignment.Center,
     ) {
@@ -224,7 +229,7 @@ fun ModuleGlyphBox(
 
 /**
  * 模块入口卡（原主页样式迁入，主页/学习页共用）：
- * 16dp 圆角纸白卡 + 40dp 图标盒 + 标题/副信息 + 右箭头，整行可点。
+ * cardRadius 圆角纸白卡 + 40dp 图标盒 + 标题/副信息 + 右箭头，整行可点。
  * 读屏口径：clickable 自带合并子语义（AbstractClickableNode
  * .getShouldMergeDescendantSemantics=true，字节码实测），整卡即一个焦点站；
  * role=Button 让读屏报「按钮」而非只有可双击提示（IK-18）。
@@ -237,16 +242,17 @@ fun EntryCard(
     onClick: () -> Unit,
     tone: ModuleTone = moduleTone(),
 ) {
+    val g = geometry()
     val paper = paperColors()
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(g.cardRadius))
             .clickable(onClick = onClick, role = Role.Button),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(g.cardRadius),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 2.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Row(
             modifier = Modifier
@@ -278,11 +284,12 @@ fun EntryCard(
     }
 }
 
-/** 「规划中」徽标：6dp 圆角（非 pill），模块浅底 + 1dp 模块描边，与选中胶囊明确区隔。 */
+/** 「规划中」徽标：smallRadius 圆角（非 pill），模块浅底 + 1dp 模块描边，与选中胶囊明确区隔。 */
 @Composable
 fun PlannedBadge(tone: ModuleTone = moduleTone()) {
+    val g = geometry()
     Surface(
-        shape = RoundedCornerShape(6.dp),
+        shape = RoundedCornerShape(g.smallRadius),
         color = tone.pale,
         border = BorderStroke(1.dp, tone.line),
     ) {

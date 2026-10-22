@@ -75,6 +75,7 @@ import com.kotonoha.app.ui.cacheStoreDetail
 import com.kotonoha.app.ui.clearSentenceCache
 import com.kotonoha.app.ui.common.ModuleTopBar
 import com.kotonoha.app.ui.removeBookmark
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 import com.kotonoha.app.ui.theme.posBackgroundColor
 import java.time.Instant
@@ -499,6 +500,7 @@ private fun ReadParagraphCard(
     // 默认空实现：卡片在非选择模式下没有长按语义，不让每个调用点都被迫关心它
     onWordLongClick: (AnalyzeToken) -> Unit = {},
 ) {
+    val g = geometry()
     val paper = paperColors()
     // 选择模式下整卡点击 = 把这一整段当终点（用户点了卡片空白处而不是某个词时，
     // 意图显然也是「到这一段为止」，此时不该再去抢 Idle 卡的「解析」点击）
@@ -510,8 +512,8 @@ private fun ReadParagraphCard(
     }
 
     Surface(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).then(cardClick),
-        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(g.cardRadius)).then(cardClick),
+        shape = RoundedCornerShape(g.cardRadius),
         color = MaterialTheme.colorScheme.surface,
         // 选中的起点用主色加粗描边：底部条只说了选了哪个词，用户还得在列表里一眼找到它落在哪一段
         border = if (selected) {
@@ -519,7 +521,7 @@ private fun ReadParagraphCard(
         } else {
             BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         },
-        shadowElevation = 1.dp,
+        shadowElevation = g.cardShadow,
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 10.dp)) {
             // 解析成功后整行原句不再渲染（用户 2026-10 反馈：原句 + 译文 + 逐词块三段太乱）：
@@ -726,6 +728,7 @@ private fun TokenCell(
     // combinedClickable 在空长按时会多占一份手势识别，弹层里没有理由付出这个代价
     onLongClick: (() -> Unit)? = null,
 ) {
+    val g = geometry()
     val background = posBackgroundColor(token.pos)
     // 长按必须走 combinedClickable：clickable 没有 onLongClick 参数，
     // 把长按写进 clickable 的 lambda 里只会静默失效（点击永远先到）
@@ -736,7 +739,7 @@ private fun TokenCell(
     }
     Column(
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(g.smallRadius))
             .then(if (background != null) Modifier.background(background) else Modifier)
             .then(gestures)
             .padding(horizontal = 3.dp, vertical = 2.dp),

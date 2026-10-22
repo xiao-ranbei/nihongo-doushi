@@ -22,6 +22,7 @@ import com.kotonoha.app.engine.adjective.AdjectiveData
 import com.kotonoha.app.engine.adjective.AdjectiveEngine
 import com.kotonoha.app.ui.common.ModuleBottomSurface
 import com.kotonoha.app.ui.common.ModuleTopBar
+import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 
 /**
@@ -34,6 +35,7 @@ fun AdjectiveLessonScreen(
     onBack: () -> Unit,
     onStart: () -> Unit,
 ) {
+    val g = geometry()
     val form = AdjectiveData.FORM_BY_ID[formId] ?: return
     val paper = paperColors()
     val total = AdjectiveData.ADJECTIVES.size
@@ -67,7 +69,7 @@ fun AdjectiveLessonScreen(
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(g.cardRadius),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
@@ -90,7 +92,7 @@ fun AdjectiveLessonScreen(
                 val result = AdjectiveEngine.conjugate(adjective, formId)
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(g.smallRadius),
                     color = MaterialTheme.colorScheme.surface,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 ) {
@@ -127,7 +129,7 @@ fun AdjectiveLessonScreen(
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 10.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(g.smallRadius),
             ) {
                 Text(
                     text = "练这个形式（$total 个词条）",
