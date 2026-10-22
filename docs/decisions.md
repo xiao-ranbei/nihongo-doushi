@@ -17,7 +17,7 @@
 | D-011 | 未来模块可以按需联网，但必须明确权限、隐私、数据流和离线边界 | 已确认原则；具体服务待定 |
 | D-012 | 目标仓库为 `web/` 与 `android/` 并列；Android 工程开始时直接新增到 `android/` | 已落地（`web/` 与 `android/` 并列） |
 | D-013 | 当前不做插件注册框架，先用统一模块约定显式接入 | 已确认 |
-| D-014 | Android 保留品牌纸感配色，同时遵循原生系统交互；Android 导航样式留待原型决定 | 已确认原则；部分细节待定 |
+| D-014 | Android 保留品牌纸感配色，同时遵循原生系统交互；Android 导航样式留待原型决定 | ~~已确认原则；部分细节待定~~ → 配色部分被 D-041 修订（2026-10-22 改为糖果卡/墨夜双皮肤跟随系统）；「遵循原生系统交互」仍然有效 |
 | D-015 | Android MVP 工程选型：minSdk 26（Android 8.0+）、UI 用 Jetpack Compose（Material 3）、本地存储用 kotlinx-serialization 版本化 JSON 文件（结构对齐 Web localStorage 键）、applicationId ~~`com.nihongodoushi.app`~~ → `com.kotonoha.app`（见 D-039）；工具链 AGP 8.13.2 + Gradle 8.14.3 + Kotlin 2.2.21 + Compose BOM 2025.08.01（与本机 SDK platform 35 同代） | 已确认 |
 | D-016 | Android 助词模块接入形态：主页第三张入口卡 → 助词二级模块（专题地图首页 → 专题讲解 → 练习屏）；不新增底栏标签 | 已实现（2026-10-17，8b9d040；D-022 补错题排期，四标签改版后入口迁至「学习」页） |
 | D-017 | ~~助词错题沿用纯题目 ID 数组、不做排期~~ → 被 D-022 修订 | 已被 D-022 取代 |
@@ -45,6 +45,10 @@
 
 | D-039 | Android 包名从 `com.nihongodoushi.app` 改为 `com.kotonoha.app`（`namespace` 与 `applicationId` 一起换），主题符号 `NihongoDoushiTheme` → `KotonohaTheme`、`Theme.NihongoDoushi` → `Theme.Kotonoha`；**不做旧数据迁移**——用户侧只装过 debug 包，重装即重建 `files/` 目录下的版本化 JSON，迁移代码的复杂度与风险不划算 | 已完成（2026-10-21）：`build.gradle.kts` `:17`/`:22`、`src/{main,test,androidTest}/java/com/kotonoha` 三层目录、全仓 96 个文件文本替换、Manifest 主题引用 |
 | D-040 | 阅读器解析单元从「一句」改为「一个段落」（整行空白为段界，段内不再切句）；`SentenceSplitter.split` 保留给文章标题等既有调用方，新增 `splitParagraphs` 与 `ReadParagraph`。理由：用户反馈「一句话分了三部分太乱」「段落太分开」，逐句一卡会把一段话拆成互不相邻的三四张卡片，读起来失去语流；整段解析还能让模型在句间上下文里判词性。代价：单次请求输出变长（500 字符段落要输出上百 token，逼近 `finish_reason=length` 截断），`ChatCompletionClient` 已把 length 映射成「返回被截断」错误，不会误存脏缓存 | 已完成（2026-10-21）；缓存键随之由句变段，旧句子缓存自然 miss 并按 `trimCache` 淘汰 |
+| D-041 | Android 主题改为**双皮肤完全跟随系统深浅色**，App 内不提供手动开关：浅色=「糖果卡」（白卡 / 20dp 圆角 / 柔投影 / 悬浮药丸底栏），深色=「墨夜」（墨黑 / 13dp 圆角 / 零阴影 / 细线平铺底栏）。来自 2026-10-22 用户从五版界面风格原型里选定的两版 | 已实现（2026-10-22） |
+| D-042 | 圆角与阴影**必须令牌化**，否则只有配色跟随系统、几何仍停在糖果卡一套，深色下会出现「墨夜配色 + 糖果卡大圆角柔影」的混搭。新增 `ModuleGeometry(cardRadius, smallRadius, cardShadow, pillRadius, navFloating)` 与 `@Composable fun geometry()` | 已实现（2026-10-22） |
+| D-043 | 字体**不跟着换**：继续用霞鹜臻楷子集。换无衬线就等于退掉 `web/font/subset-chars.txt` + `web/tests/font.test.js` 整条子集管线，而楷体是本项目唯一的品牌记忆点 | 已确认（2026-10-22） |
+| D-044 | `ModuleTones` 四个实例是 `object` 里的 `val`（写死浅色值），深色映射改由 `ProvideModuleTone` 与新增的 `themedTone(tone)` 承担。**按 tab／按模块循环渲染处必须走 `themedTone()`**，直接引用 `ModuleTones.X` 会拿到浅色常量（曾导致深色底栏选中胶囊仍是 `#E9F7EF`） | 已实现（2026-10-22，规范见 [android-theme-spec.md](android-theme-spec.md)） |
 
 ## 明确延后的决定
 

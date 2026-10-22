@@ -35,6 +35,8 @@
 
 ### 1.2 令牌使用清单（唯一颜色来源：`Theme.kt`）
 
+> **2026-10-22 起本表色值已过期。** `Theme.kt` 的 `object PaperTokens` 已被 `Palette`（40 项语义色，浅/深两张表）取代，纸感旧值（`#F6F5F0` 等）全部换成了糖果卡/墨夜两套；圆角与阴影也从散落的字面量收进 `ModuleGeometry`。本文件保留为**当时的四标签框架设计记录**，现行令牌以 [android-theme-spec.md](../android-theme-spec.md) 与 `Theme.kt` 为准，`PaperTokens.xxx` 这样的括号注记已无对应代码。下表「本设计用途 / 出现页」两列仍然有效。
+
 | 令牌（Theme.kt） | 色值 | 本设计用途 | 出现页 |
 | --- | --- | --- | --- |
 | `colorScheme.background`（`PaperTokens.Paper`） | #F6F5F0 | 页面底色 | 四页 |

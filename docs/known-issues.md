@@ -24,7 +24,7 @@
 | IK-03 | 跨端样例生成器陷阱（ adjectives 105→150 断言崩） | web/tools/generate-cross-samples.js + CrossSampleConsistencyTest.kt:100 | P0 |
 | IK-05 | 编译警告 7 条（图标 AutoMirrored ×6、LocalLifecycleOwner ×1） | 见明细 | P1 |
 | IK-07 | 文档滞后：D-016 与 particle spec 状态仍写「待实现」 | docs/decisions.md、docs/README.md | P1 |
-| IK-09 | Android 应用图标未接入自绘资产 | AndroidManifest.xml:6 + docs/design/icon-concepts/ | P1 |
+| ~~IK-09~~ | Android 应用图标未接入自绘资产 | — | 已关闭（2026-10-22） |
 | IK-10 | Web romaji 归一化失败静默回退 | web/verb-engine.js:641 | P1 |
 | IK-11 | 查词入口为规划中位 | ui/study/StudyScreen.kt:142 | P2 |
 | IK-13 | 我的页两个预留设置位（模型/API 已转正） | ui/mine/MineScreen.kt:92 | P2 |
@@ -82,12 +82,6 @@
 - 影响：文档与实现不同步会误导后续协作（人或 AI）以为助词模块待建
 - 建议时机：本登记册建立时同批修正
 
-#### IK-09 应用图标未接入
-
-- 位置：`android/app/src/main/AndroidManifest.xml:6` 仍指向 `@mipmap/ic_launcher`（AS 默认模板资产）；自绘资产在 `docs/design/icon-concepts/`（方向 1「あ・纸页」，已轮廓化含 VectorDrawable）
-- 影响：发布包装使用默认图标，与品牌视觉不符
-- 建议时机：下一个发版周期；接入时需重生成 mipmap 各密度并保留 monochrome（Android 13 主题图标）
-
 ### C. Web 端功能缺口（P1/P2）
 
 #### IK-10 romaji 归一化失败静默回退
@@ -132,6 +126,12 @@
 - 建议时机：低优先级
 
 ## 已关闭
+
+#### IK-09 应用图标未接入（关闭：已自绘并接入）
+
+- 处理：不是接入 `docs/design/icon-concepts/` 里的「あ・纸页」旧方向，而是随「言の葉」改名重画了一枚**「言」字印**自适应图标：`res/drawable/ic_launcher_background.xml`（墨绿印底）+ `ic_launcher_foreground.xml`（纸白「言」+ 右下叶脉缺口，viewport 108x108，全部内容落在系统保证的 72x72 安全区里：印章 44x44 居中、四角外接圆半径 31.1 < 安全圆半径 33）+ `ic_launcher_monochrome.xml`；`res/mipmap-anydpi-v26/ic_launcher.xml` 与 `ic_launcher_round.xml` 用 `<adaptive-icon>` 三层串起来。Manifest 已是 `android:icon="@mipmap/ic_launcher"` `android:roundIcon="@mipmap/ic_launcher_round"` `android:label="言の葉"`。
+- 影响：无（minSdk=26，所有支持设备都走 adaptive-icon 这一套，不再需要各密度 PNG）
+- 遗留：`docs/design/icon-concepts/` 目录里的「あ・纸页」资产已不是现行方向，保留作过程记录
 
 #### IK-12 阅读工具四项全为规划中位（关闭：AI 阅读已落地）
 

@@ -138,6 +138,8 @@
 | 6 | **动效令牌** | 卡片入场 `translateY(6px)→0 / 220ms`；选项着色 130ms；抽屉上滑 220ms；统一 `cubic-bezier(0.22, 0.61, 0.36, 1)`；**禁弹跳曲线**（P0-3） |
 | 7 | **图标统一** | 全项目 Material Icons 填充风格（现状已锁），尺寸 20（按钮）/ 24（导航）；**零 emoji**（P0-1） |
 
+> **2026-10-22 起本段已过期。** `PaperTokens` 已不存在，现为 `Palette` 双表 + `ModuleGeometry`；`ReadingText`/`MeaningText`/`BgPaleStrong`/`LineAccent` 四项在 `Palette` 里都有对应字段，但色值已随糖果卡/墨夜重估。本方案**未被采纳**（现行界面来自另一轮全 App 重设计），保留为过程记录。
+
 新增令牌（需加进 `Theme.kt` 的 `PaperTokens`，全部取自 web `:root`，不新造色）：
 `ReadingText #839087`、`MeaningText #627967`、`BgPaleStrong #E9EEE7`、`LineAccent #C6D4C7`（已有）、阴影两档（`--shadow` 双层）。
 

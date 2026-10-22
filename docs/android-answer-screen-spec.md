@@ -277,6 +277,8 @@ onOptionClick(i):
 
 ### 5.1 复用现有令牌（`web/styles.css` :root 与 `Theme.kt` PaperTokens）
 
+> **2026-10-22 起本节的 Android 侧名称已过期。** `Theme.kt` 的 `object PaperTokens` 已删除，改为 `Palette` 双表（浅色糖果卡 / 深色墨夜）+ `ModuleGeometry` 几何令牌；下文 `PaperTokens.xxx` 与旧色值仅作当时的设计依据，现行令牌见 [android-theme-spec.md](android-theme-spec.md)。本规格本身（答题界面结构与布局）**尚未实现**，仍待排期。
+
 | 用途 | 令牌 | 值 |
 |------|------|----|
 | 页面底 | `--paper` | `#f6f5f0` |

@@ -28,6 +28,7 @@
 | [design/four-tab-design.md](design/four-tab-design.md) | 四标签四页界面设计说明：分区结构、令牌清单、图标选型、状态矩阵与动效 | 已实现 |
 | [android-read-analyzer-spec.md](android-read-analyzer-spec.md) | Android 阅读模块首个联网能力「AI 文章解析」：联网边界（D-011 落地）、三次调用契约、存储三键、UI 与导航改造、五批实施、EARS 验收 | 已实现（批 1–3 落地：领域层、网络层、设置页、阅读 UI 与导航；批 4 收口文档与字体子集） |
 | [android-read-analyzer-next-steps.html](android-read-analyzer-next-steps.html) | 「AI 文章解析」交付后待办清单：准备模型服务、Gradle 构建与单测、真机 13 条走查、字体管线复核、4 个提交 | 交付后待办（需在本机终端执行） |
+| [android-theme-spec.md](android-theme-spec.md) | Android 双皮肤主题规范：为什么两套（浅色糖果卡／深色墨夜）、四个取色入口、配色与几何令牌表、平台层 windowBackground、与原型的关系、验收口径 | 已实现（2026-10-22） |
 | [workflow-review-two-increments.md](workflow-review-two-increments.md) | 两次追加功能的工作流复盘：目标、步骤、模块依赖、异同与演进、注意事项与可复用模板 | 参考文档 |
 | [design/home-mine-prototypes.html](design/home-mine-prototypes.html) | 主页/我的 三版可交互原型（框内底栏可切换） | 讨论用原型，不是正式页面 |
 | [design/icon-concepts/](design/icon-concepts/) | 应用图标方向 1「あ・纸页」资产（已轮廓化，含 VectorDrawable）与生成/自检脚本 | 可接入 |

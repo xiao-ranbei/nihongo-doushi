@@ -130,7 +130,7 @@ web/index.html ── 页面结构与交互节点
 - **离线与隐私：** 运行时资源随项目提供，不依赖外部服务；学习记录保存在当前浏览器。
 - **可访问性：** 使用语义化表单和视图；反馈、提示及状态使用适当的 `aria-live`／状态属性，支持键盘操作与输入法组字。
 - **响应式与动效：** 练习双栏布局在较窄屏幕堆叠；焦点状态清晰，并尊重减少动态效果的系统设置。
-- **样式一致性：** 动词、形容词和助词模块共用页签、说明卡、练习控制面板与答题统计布局；颜色通过 `web/styles.css` 的语义令牌维护，`web/tests/styles.test.js` 检查组件契约。
+- **样式一致性：** 动词、形容词和助词模块共用页签、说明卡、练习控制面板与答题统计布局；颜色通过 `web/styles.css` 的语义令牌维护，`web/tests/styles.test.js` 检查组件契约。Android 端同理：配色与几何（圆角、阴影）全部收在 `ui/theme/Theme.kt` 的 `Palette` 与 `ModuleGeometry` 两张令牌表里，页面只经 `MaterialTheme.colorScheme`／`paperColors()`／`moduleTone()`／`posBackgroundColor()` 四个入口取色，**不写硬编码色值**；主题跟随系统深浅色自动切换两套皮肤，见 [android-theme-spec.md](android-theme-spec.md)。
 - **字体完整性：** `web/font/fonts.js` 声明运行时字体；新增词条或界面文字后，按网页端说明重建字体子集，并运行字体契约测试。
 - **测试：** 引擎测试覆盖变形和答案处理；UI 冒烟测试验证页面接线与主要闭环；字体、样式测试守护静态资源契约。运行完整测试：
 
@@ -138,7 +138,7 @@ web/index.html ── 页面结构与交互节点
   node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
   ```
 
-当前基线（2026-10-18 实测）：网页端 6 个测试文件共 121 项全绿；Android 端 `./gradlew :app:testDebugUnitTest` 111 项全绿，仪器化 `TalkBackMergeTest` 4 项全绿（qa36 模拟器，读屏语义树口径，见 D-030/D-031）。
+当前基线（2026-10-22 实测）：网页端 6 个测试文件共 121 项全绿；Android 端 `./gradlew :app:testDebugUnitTest` 264 项全绿（聚合 `test-results/testDebugUnitTest/*.xml`：files=25 tests=264 failures=0 errors=0），仪器化 `TalkBackMergeTest` 4 项全绿（qa36 模拟器，读屏语义树口径，见 D-030/D-031）。
 
 未解决的遗留问题（预留位转正清单、跨端数据缺口、技术债务等）统一登记在 [known-issues.md](known-issues.md)，不要在本文件重复罗列。
 

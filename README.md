@@ -131,7 +131,7 @@ node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/parti
 ./gradlew :app:testDebugUnitTest
 ```
 
-当前基线（2026-10-21 实测）：网页端 **121/121** 通过（须显式列 6 个测试文件，`node --test tests/` 在 Windows 会报 MODULE_NOT_FOUND，见 §7）；Android **261 项、0 失败**（聚合 `android/app/build/test-results/testDebugUnitTest/*.xml`：files=24 tests=261 failures=0 errors=0）。改动后不得低于该基线。
+当前基线（2026-10-22 实测）：网页端 **121/121** 通过（须显式列 6 个测试文件，`node --test tests/` 在 Windows 会报 MODULE_NOT_FOUND，见 §7）；Android **264 项、0 失败**（聚合 `android/app/build/test-results/testDebugUnitTest/*.xml`：files=25 tests=264 failures=0 errors=0）。改动后不得低于该基线。
 
 ## 5. 关键配置说明
 
