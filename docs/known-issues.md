@@ -5,7 +5,7 @@
 - 盘点时间：2026-10-17（commit 72d9377，工作区干净）
 - 测试基线（盘点当时实测复跑）：Web 113/113 全绿；Android 101/101 全绿（0 失败）
 - 盘点方式：全库标记扫描（TODO/FIXME/XXX/HACK 零命中）、跨端数据比对、编译警告收集、文档与实现交叉核对、单文件行数审计
-- 复核：2026-10-18 批次收口（Web 121/121、Android 111/111 单测 + 仪器化 4/4 全绿）；IK-04/06/08/16/20 关闭
+- 复核：2026-10-19 AI 阅读落地后（Web 121/121、Android 214 单测全绿、仪器化 4/4 未变）；IK-04/06/08/12/16/20 关闭
 
 ## 优先级定义
 
@@ -27,9 +27,8 @@
 | IK-09 | Android 应用图标未接入自绘资产 | AndroidManifest.xml:6 + docs/design/icon-concepts/ | P1 |
 | IK-10 | Web romaji 归一化失败静默回退 | web/verb-engine.js:641 | P1 |
 | IK-11 | 查词入口为规划中位 | ui/study/StudyScreen.kt:142 | P2 |
-| IK-12 | 阅读工具四项全为规划中位 | ui/read/ReadScreen.kt:66 | P2 |
-| IK-13 | 我的页三个预留设置位 | ui/mine/MineScreen.kt:92 | P2 |
-| IK-14 | 书签只有存储骨架，无写入入口 | storage/Models.kt:146 + ui/mine | P2 |
+| IK-13 | 我的页两个预留设置位（模型/API 已转正） | ui/mine/MineScreen.kt:92 | P2 |
+| IK-14 | 书签已有写入入口，缺浏览页 | storage/Models.kt:146 + ui/mine | P2 |
 | IK-15 | Android 缺活用速查与错题导入/导出（D-008 暂缓） | —（Web 已有） | P2 |
 | IK-17 | Web PWA 与打印样式缺失 | web/（无 manifest/sw、无 @media print） | P2 |
 | IK-18 | Web aria-live 与焦点管理漏点 | web/index.html（10 处已覆盖，切换场景漏） | P2 |
@@ -102,9 +101,10 @@
 | 编号 | 位置 | 当前形态 | 转正条件 |
 | --- | --- | --- | --- |
 | IK-11 查词 | ui/study/StudyScreen.kt:142 | PlannedRow 不可点 | 词典数据源确定后翻 AVAILABLE + 二级页 StudyDestination.DICTIONARY |
-| IK-12 阅读工具 | ui/read/ReadScreen.kt:66（ai-reading/layout/writing/analysis 四项） | PLANNED 状态行 | 按 android-four-tab-spec.md §8 逐项翻 AVAILABLE 并补路由 |
-| IK-13 设置预留位 | ui/mine/MineScreen.kt:92（模型/API、发音音色、词库导入导出） | PlannedRow 不可点 | 各项依赖外部能力（API key、TTS 引擎）确定后逐个转正 |
-| IK-14 书签写入入口 | storage/Models.kt:146（BookmarkRules 已备）+ ui/mine 空态 | 有存储无入口 | 阅读模块落地后在内容页挂「收藏」动作 |
+| IK-13 设置预留位 | ui/mine/MineScreen.kt:92（发音音色、词库导入导出） | PlannedRow 不可点 | 「模型/API 设置」已转正（可点入口，接通 MainActivity 的 MODEL_SETTINGS）；剩两项：发音音色依赖 TTS 引擎、词库导入导出依赖词库数据源，仍待定 |
+| ~~IK-14 书签浏览页~~ | — | 已关闭（2026-10-21） | 见「已关闭」节 |
+
+> 更新：IK-12/IK-13 的代码已落地（批 1–3），IK-12 已关闭（见「已关闭」节）；IK-13 从 3 个预留位收窄为 2 个（「模型/API 设置」已转正为可点入口）。**IK-14 已关闭**（2026-10-21）：收藏入口搬进词详情弹层（「收藏这个词」/「收藏这一段」），我的页书签区按数据渲染真实列表并支持删除。
 
 #### IK-15 Android 速查与错题导入导出
 
@@ -132,6 +132,19 @@
 - 建议时机：低优先级
 
 ## 已关闭
+
+#### IK-12 阅读工具四项全为规划中位（关闭：AI 阅读已落地）
+
+- 处理：`ui/read/ReadScreen.kt` 由四项收为三项——`ai-reading` 翻 AVAILABLE 渲染为可点行（右侧箭头 + 水波 + contentDescription「打开 AI 阅读」），`analysis`（语法单词解析）并入后删除（句子解析即 AI 阅读核心能力，单列会形成两个入口指向同一能力），`layout`/`writing` 保持 PLANNED。链路：ReadScreen → MainActivity `SubPage.READ_AI` → `ReadFlow`（输入页/阅读器页/设置页三路由）→ `net/HttpAnalyzer` → 用户自填的 OpenAI 兼容地址。
+- 依据：`docs/android-read-analyzer-spec.md` §9–§10、§15（批 3）；决策 D-033～D-037
+- 验证：`engine/read` + `net` + `ui/read/ReadUiState` 单测全绿（全量纯 JVM 回归 OK(214)）；`ReadUiStateTest` 17 条含并发与取消断言。**真机手工验收未做**（本机无模拟器与 Gradle），留给用户侧。
+
+#### IK-14 书签浏览页（2026-10-21 关闭）
+
+- 处理：写作侧——阅读卡片右下角的星标已删除，两个收藏入口移进词详情弹层底部：「收藏这个词」（`type="word"`，refId 为「段落缓存键|词面」）与「收藏这一段」（`type="sentence"`，refId 为段落缓存键，沿用 `sentence::` 前缀以兼容既有数据），已收藏时文案变「已收藏 · 取消」再点移除。浏览侧——`ui/mine/MineScreen.kt` 段三由「无条件渲染空态卡」改为按 `app.bookmarks.items` 分流：为空才渲染空态卡（文案指向词详情弹层，不再提已删除的星标），非空则 `BookmarkListSection` 按 `createdAt` 倒序渲染真实列表，每条带类型标记（单词/段落）+ title + note + 删除入口（`AppState.removeBookmark`），删除后计数与列表同源刷新。
+- 依据：`docs/android-read-analyzer-spec.md` §9.4/§9.5、F-10、AC-18
+- 验证：新增 `ui/mine/MineBookmarkListTest.kt`（排序 + 类型映射 4 例），Android 单测 **files=24 tests=248 failures=0 errors=0**；真机 emulator-5554 实测「1 条 → 列表显示『单词 · 私 · 私は毎朝七時に起きます。』→ 点✕删除 → 『0 条』+ 空态卡，落盘 `{"items":[]}`」，空态与列表互斥、计数同步。
+- 未做（另立）：点书签条目跳回原文（需处理缓存已清、段落定位、阅读会话判断，属跨页面导航改造）。
 
 #### IK-04 练习屏无状态保存（2026-10-18 关闭）
 

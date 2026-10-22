@@ -1,6 +1,6 @@
 # 项目文档索引
 
-本目录同时记录产品目标、目标设计和当前代码状态。目标文档描述“准备建设什么”，当前状态文档描述“代码现在是什么”；不要把尚未实现的设计当成现有功能。
+本目录同时记录「言の葉」（ことのは）的产品目标、目标设计和当前代码状态。目标文档描述“准备建设什么”，当前状态文档描述“代码现在是什么”；不要把尚未实现的设计当成现有功能。
 
 ## 文档地图
 
@@ -26,6 +26,8 @@
 | [android-module-three-tier-refactor.md](android-module-three-tier-refactor.md) | 动词／形容词模块三层改造：模块首页 + 讲解页 + 练习屏，含内容划分、跳转、视觉规范与关键点 | 已实现（2026-10-17） |
 | [android-four-tab-spec.md](android-four-tab-spec.md) | 底栏四标签框架（主页/学习/阅读/我的）：IA、各页规格、扩展点、存储、验收标准 | 已实现（2026-10-17） |
 | [design/four-tab-design.md](design/four-tab-design.md) | 四标签四页界面设计说明：分区结构、令牌清单、图标选型、状态矩阵与动效 | 已实现 |
+| [android-read-analyzer-spec.md](android-read-analyzer-spec.md) | Android 阅读模块首个联网能力「AI 文章解析」：联网边界（D-011 落地）、三次调用契约、存储三键、UI 与导航改造、五批实施、EARS 验收 | 已实现（批 1–3 落地：领域层、网络层、设置页、阅读 UI 与导航；批 4 收口文档与字体子集） |
+| [android-read-analyzer-next-steps.html](android-read-analyzer-next-steps.html) | 「AI 文章解析」交付后待办清单：准备模型服务、Gradle 构建与单测、真机 13 条走查、字体管线复核、4 个提交 | 交付后待办（需在本机终端执行） |
 | [workflow-review-two-increments.md](workflow-review-two-increments.md) | 两次追加功能的工作流复盘：目标、步骤、模块依赖、异同与演进、注意事项与可复用模板 | 参考文档 |
 | [design/home-mine-prototypes.html](design/home-mine-prototypes.html) | 主页/我的 三版可交互原型（框内底栏可切换） | 讨论用原型，不是正式页面 |
 | [design/icon-concepts/](design/icon-concepts/) | 应用图标方向 1「あ・纸页」资产（已轮廓化，含 VectorDrawable）与生成/自检脚本 | 可接入 |

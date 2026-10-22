@@ -1,1 +1,11 @@
 .workbuddy/
+
+# 本地构建/临时目录（Gradle 离线试编译、pip 临时目录）
+.gradle-home/
+.tmp-pip/
+
+# harness 读文件时生成的临时锁，非源码改动
+.dsh-ops-update-*.lock
+
+# 真机走查用的临时脚本、mock 服务与截图，不属于源码
+.tmp-walk/

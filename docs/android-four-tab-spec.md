@@ -181,7 +181,7 @@
 | 新增底栏标签（第 5 个） | `AppTab` 加一项 → `AppRoot` 的 `when` 加分支 → 新建 Screen 文件 | `MainActivity.kt` |
 | 新增学习模块 | `StudyDestination` 加一项 → `StudyScreen` 加入口卡 → `SubPage` 加常量 → `MainActivity` 加映射；随后按 [module-guide.md](module-guide.md) 清单补引擎/存储/测试 | `ui/study/` + `MainActivity.kt` |
 | 查词落地 | 学习页预留行转正：`StudyDestination.DICTIONARY` + 新 Flow（按 module-guide 走模块接入清单） | `ui/study/` |
-| 阅读工具落地 | `ReadTool` 清单状态翻 `AVAILABLE` + `AppRoot` 加路由 + 按 module-guide 接入（含联网边界说明，D-011） | `ui/read/` + `MainActivity.kt` |
+| 阅读工具落地 | `ReadTool` 清单状态翻 `AVAILABLE` + `AppRoot` 加路由 + 按 module-guide 接入（含联网边界说明，D-011）**→ 具体方案见 [android-read-analyzer-spec.md](android-read-analyzer-spec.md)**（D-033～D-037） | `ui/read/` + `MainActivity.kt` |
 | 新增预留设置位 | 我的页预留列表加一条数据 | `ui/mine/MineScreen.kt` |
 | 新增本地存储 | `StorageKeys` + `Models` + `LocalStore` 读写 + `AppState` 状态，四件套齐全 | `storage/` |
 | 谚语扩充 | `ProverbData` 加条目 → **重跑字体子集**（见 §9） | `engine/proverb/` |
@@ -265,10 +265,10 @@ node --test tests/font.test.js       # 断言：通过
 
 # 5. 模拟器实测（若设备在线）
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell am force-stop com.nihongodoushi.app
+adb shell am force-stop com.kotonoha.app
 # 人工/截图断言：四标签切换；谚语与换一句；建议点击跳转；学习页四入口；
 # 阅读/我的规划中位不可点；昵称编辑重启保留；
-adb shell run-as com.nihongodoushi.app cat files/japanese-verb-practice-profile-v1.json
+adb shell run-as com.kotonoha.app cat files/japanese-verb-practice-profile-v1.json
 ```
 
 ---

@@ -1,6 +1,6 @@
-# 日语学习工具集（nihongo-doushi）
+# 言の葉 · 日语学习工具集（nihongo-doushi）
 
-离线优先的日语学习工具集。同一仓库下并列两个客户端：纯静态网页端（`web/`）与 Kotlin 原生 Android 客户端（`android/`）。运行时不需要服务器、构建工具、外部 API 或第三方题库，学习记录只存在本机。
+「言の葉」（ことのは）是离线优先的日语学习工具集。同一仓库下并列两个客户端：纯静态网页端（`web/`）与 Kotlin 原生 Android 客户端（`android/`）。运行时不需要服务器、构建工具、外部 API 或第三方题库，学习记录只存在本机。
 
 > 文中标注 **待补** 的条目是尚未定稿的命令参数、本机路径或线上地址，等确认后填写；其余命令、路径与测试结果均按当前仓库实际执行核实。
 
@@ -61,7 +61,7 @@ pip install fonttools brotli
 python font/subset.py     # 在 web/ 目录下执行
 ```
 
-依赖 `web/font/LXGWZhenKaiGB-Regular.ttf`（全量字体，约 16.7MB）与 `web/font/collect-chars.js`；脚本同时更新 `web/font/fonts.js` 清单与 Android 端子集 TTF（`android/app/src/main/res/font/lxgw_zhenkai_subset.ttf`，两端共用同一份 1077 字符表）。
+依赖 `web/font/LXGWZhenKaiGB-Regular.ttf`（全量字体，约 16.7MB）与 `web/font/collect-chars.js`；脚本同时更新 `web/font/fonts.js` 清单与 Android 端子集 TTF（`android/app/src/main/res/font/lxgw_zhenkai_subset.ttf`，两端共用同一份 1299 字符表）。
 
 ## 3. 运行方式
 
@@ -131,7 +131,7 @@ node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/parti
 ./gradlew :app:testDebugUnitTest
 ```
 
-当前基线（2026-10-17 实测）：网页端 113/113 通过；Android 101 项、0 失败（VerbEngine 10、AdjectiveEngine 9、QuizBuilder 9、ActivityAggregation 5、CrossSampleConsistency 3、ParticleEngine 19、ParticleCrossSample 5、Mastery 4、ParticleReview 6、ProverbPicker 8、SuggestionEngine 9、ProfileBookmark 14）。改动后不得低于该基线。
+当前基线（2026-10-21 实测）：网页端 **121/121** 通过（须显式列 6 个测试文件，`node --test tests/` 在 Windows 会报 MODULE_NOT_FOUND，见 §7）；Android **261 项、0 失败**（聚合 `android/app/build/test-results/testDebugUnitTest/*.xml`：files=24 tests=261 failures=0 errors=0）。改动后不得低于该基线。
 
 ## 5. 关键配置说明
 
@@ -154,7 +154,10 @@ node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/parti
 | `japanese-verb-practice-history-v1` | 近期每日学习行为（仅 Android，供主页周历与统计） |
 | `japanese-verb-practice-progress-v1` | 已练词条集合，用于词库覆盖进度（仅 Android） |
 | `japanese-verb-practice-profile-v1` | 本地资料（昵称，仅 Android） |
-| `japanese-verb-practice-bookmarks-v1` | 书签收藏（仅 Android；本期为空骨架，阅读模块上线后启用写入） |
+| `japanese-verb-practice-bookmarks-v1` | 书签收藏（仅 Android；AI 阅读的「单词 / 段落」收藏写入此键） |
+| `japanese-read-analyzer-config-v1` | AI 阅读的模型配置（服务地址、模型名、API Key、温度；仅 Android） |
+| `japanese-read-analyzer-articles-v1` | AI 阅读的最近文章（最多 50 篇，按更新时间删旧；仅 Android） |
+| `japanese-read-analyzer-cache-v1` | 逐段解析缓存与词详情子表（最多 500 条，按创建时间删旧；仅 Android） |
 
 ### 5.3 Android 构建参数
 
@@ -162,7 +165,8 @@ node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/parti
 
 | 项 | 值 |
 | --- | --- |
-| applicationId / namespace | `com.nihongodoushi.app` |
+| applicationId / namespace | `com.kotonoha.app`（D-039） |
+| 应用名（`android:label`） | 言の葉（D-038） |
 | minSdk / targetSdk / compileSdk | 26 / 35 / 35 |
 | versionCode / versionName | 1 / 0.1.0 |
 | Java / Kotlin target | 17 |
@@ -184,7 +188,7 @@ keyPassword=<待补>
 
 ### 5.5 字体清单
 
-`web/font/fonts.js` 声明运行时字体，由 `subset.py` 自动改写。当前子集 1068 个字符（woff2 约 312KB）。新增任何界面文案（含源码注释里的汉字也会被收集）都要重跑子集，否则回退字体行高不同会导致整页位移。
+`web/font/fonts.js` 声明运行时字体，由 `subset.py` 自动改写。当前子集 1299 个字符（woff2 约 382KB，Android 端 TTF 约 694KB）。新增任何界面文案（含源码注释里的汉字也会被收集）都要重跑子集，否则回退字体行高不同会导致整页位移。
 
 ### 5.6 开发约定（改动前必读）
 
@@ -210,7 +214,8 @@ keyPassword=<待补>
 
 - **无同步与备份**：不做账号、云同步、自动备份；只能手动导出 JSON（Android 端暂不支持导入导出，D-008 延后）。
 - **两端数据不通**：Web 与 Android 存储结构对齐但不自动迁移，换端等于从零开始。
-- **功能不对齐**：活用速查、错题导入导出目前仅 Web 端；Android 为四标签框架（主页/学习/阅读/我的），「阅读」与「查词」是规划中占位、无真实能力，模型/API 设置、发音音色、词库导入导出为预留功能位。
+- **功能不对齐**：活用速查、错题导入导出目前仅 Web 端；Android 为四标签框架（主页/学习/阅读/我的），「阅读」已上线 AI 阅读（贴入文章逐句解析），「排版」「撰写」与「查词」仍是规划中占位，发音音色、词库导入导出为预留功能位。
+- **联网需自备 Key 且仅 Android 端**：AI 阅读是阅读模块首个联网能力，走「客户端直连用户自填的 OpenAI 兼容地址」，无后端、无内置 Key，正文会发往你填写的服务地址（D-033）。不配置时该功能整体不可用，其余模块仍完全离线（D-009 不变）。规格见 [docs/android-read-analyzer-spec.md](docs/android-read-analyzer-spec.md)。
 - **设备范围窄**：Android 只按手机竖屏设计（D-010），平板、横屏、折叠屏未适配；Web 桌面端有侧栏、窄屏有抽屉，未做平板专门布局。
 - **无 PWA**：没有 Service Worker 与应用清单，网页端无法「安装」到桌面，离线依赖本地文件；Android 端本身离线可用。
 - **词库规模有限**：79 动词、15 形容词、9 个助词专题 48 题；不是完整 JLPT 词表。
