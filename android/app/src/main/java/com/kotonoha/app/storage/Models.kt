@@ -143,7 +143,7 @@ object ProfileRules {
     }
 }
 
-/** 单条书签：type 限定 sentence / word（为阅读模块预留），id 稳定唯一 */
+/** 单条书签：type 限定 sentence / word（AI 阅读已启用 sentence），id 稳定唯一 */
 @Serializable
 data class Bookmark(
     val id: String,

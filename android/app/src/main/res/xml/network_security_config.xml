@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  仅本机与模拟器回环地址允许明文 HTTP（spec §2.1）：
+  - 全局 base-config 关掉明文，线上服务必须是 https；
+  - 单独放行 localhost / 127.0.0.1 / 10.0.2.2，方便本地跑 Ollama、vLLM 之类。
+  不用 android:usesCleartextTraffic="true"：那等于全局放行，覆盖范围太大。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

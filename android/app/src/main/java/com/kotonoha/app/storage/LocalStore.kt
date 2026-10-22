@@ -1,5 +1,11 @@
 package com.kotonoha.app.storage
 
+import com.kotonoha.app.engine.read.AnalysisCache
+import com.kotonoha.app.engine.read.AnalysisCacheEntry
+import com.kotonoha.app.engine.read.ArticleList
+import com.kotonoha.app.engine.read.ModelConfig
+import com.kotonoha.app.engine.read.ReadArticle
+import com.kotonoha.app.engine.read.ReadRules
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.time.Instant
@@ -206,6 +212,78 @@ class LocalStore(private val dir: File) {
 
     private fun saveStats(key: String, stats: ModuleStats): Boolean =
         writeRaw(key, json.encodeToString(stats))
+
+    /**
+     * 阅读模块·模型配置：读失败一律回退缺省 [ModelConfig]（空地址/空密钥 =>
+     * 网络层直接返回 NotConfigured，不会误发请求），并沿用 readRaw 的 lastLoadInvalid 语义。
+     */
+    fun loadReadConfig(): ModelConfig {
+        val raw = readRaw(StorageKeys.READ_ANALYZER_CONFIG) ?: return ModelConfig()
+        return try {
+            json.decodeFromString<ModelConfig>(raw)
+        } catch (error: Exception) {
+            lastLoadInvalid = true
+            ModelConfig()
+        }
+    }
+
+    /**
+     * 保存前再校验一次：[ReadRules.validateConfig] 不通过直接返回 false，不落盘。
+     * 与 AppState 层的校验重复，但存储层被别处直接调用时（例如未来的迁移脚本）也不会写进废配置。
+     */
+    fun saveReadConfig(config: ModelConfig): Boolean {
+        if (ReadRules.validateConfig(config).isNotEmpty()) {
+            return false
+        }
+        return writeRaw(StorageKeys.READ_ANALYZER_CONFIG, json.encodeToString(config))
+    }
+
+    /** 阅读模块·最近文章：丢弃 id/text 为空的坏条目、id 去重、按 updatedAt 裁剪到上限 */
+    fun loadReadArticles(): ArticleList {
+        val raw = readRaw(StorageKeys.READ_ANALYZER_ARTICLES) ?: return ArticleList()
+        return try {
+            val list = json.decodeFromString<ArticleList>(raw)
+            ArticleList(usableArticles(list.items))
+        } catch (error: Exception) {
+            lastLoadInvalid = true
+            ArticleList()
+        }
+    }
+
+    /** 写入前先裁剪：上限由 [ReadRules.MAX_ARTICLES] 决定，不在存储层硬编码 */
+    fun saveReadArticles(articles: ArticleList): Boolean =
+        writeRaw(
+            StorageKeys.READ_ANALYZER_ARTICLES,
+            json.encodeToString(ArticleList(usableArticles(articles.items))),
+        )
+
+    /** 阅读模块·按句缓存：丢弃 key/model 为空的坏条目、key 去重、按 createdAt 裁剪到上限 */
+    fun loadReadCache(): AnalysisCache {
+        val raw = readRaw(StorageKeys.READ_ANALYZER_CACHE) ?: return AnalysisCache()
+        return try {
+            val cache = json.decodeFromString<AnalysisCache>(raw)
+            AnalysisCache(usableCacheEntries(cache.entries))
+        } catch (error: Exception) {
+            lastLoadInvalid = true
+            AnalysisCache()
+        }
+    }
+
+    fun saveReadCache(cache: AnalysisCache): Boolean =
+        writeRaw(
+            StorageKeys.READ_ANALYZER_CACHE,
+            json.encodeToString(AnalysisCache(usableCacheEntries(cache.entries))),
+        )
+
+    private fun usableArticles(items: List<ReadArticle>): List<ReadArticle> =
+        ReadRules.trimArticles(
+            items.filter { it.id.isNotBlank() && it.text.isNotBlank() }.distinctBy { it.id },
+        )
+
+    private fun usableCacheEntries(entries: List<AnalysisCacheEntry>): List<AnalysisCacheEntry> =
+        ReadRules.trimCache(
+            entries.filter { it.key.isNotBlank() && it.model.isNotBlank() }.distinctBy { it.key },
+        )
 
     private fun readRaw(key: String): String? {
         val file = File(dir, "$key.json")

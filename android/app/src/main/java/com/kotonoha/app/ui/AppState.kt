@@ -9,6 +9,7 @@ import com.kotonoha.app.engine.particle.ParticleData
 import com.kotonoha.app.engine.verb.VerbData
 import com.kotonoha.app.engine.verb.VerbEntry
 import com.kotonoha.app.storage.ActivityAggregation
+import com.kotonoha.app.storage.BookmarkList
 import com.kotonoha.app.storage.DayActivity
 import com.kotonoha.app.storage.LocalStore
 import com.kotonoha.app.storage.NicknameCheck
@@ -71,6 +72,30 @@ class AppState(internal val store: LocalStore) {
     /** 书签收藏（bookmarks-v1）：本期仅存储骨架与计数，无写入入口（阅读模块上线后启用） */
     var bookmarks by mutableStateOf(store.loadBookmarks())
         private set
+
+    /** 阅读模块·模型/API 配置（read-analyzer-config-v1）：空配置即未配置 */
+    var readConfig by mutableStateOf(store.loadReadConfig())
+        internal set
+
+    /** 阅读模块·最近文章（read-analyzer-articles-v1）：上限 50 篇 */
+    var readArticles by mutableStateOf(store.loadReadArticles())
+        internal set
+
+    /** 阅读模块·按句解析缓存（read-analyzer-cache-v1）：上限 500 条 */
+    var readCache by mutableStateOf(store.loadReadCache())
+        internal set
+
+    /**
+     * 书签落盘 + 状态同步的唯一入口。
+     *
+     * 为什么放在这里而不是把 [bookmarks] 的 setter 放宽成 internal：setter 一放宽，
+     * 任何扩展文件都能绕过 [BookmarkRules] 直接塞值；留一个方法，规则就只有一处可走。
+     * 返回落盘结果，UI 据此决定是否提示。
+     */
+    internal fun applyBookmarks(list: BookmarkList): Boolean {
+        bookmarks = list
+        return store.saveBookmarks(list)
+    }
 
     /**
      * 昵称编辑：校验通过才写入并落盘，返回 true；非法输入原值不变、返回 false。

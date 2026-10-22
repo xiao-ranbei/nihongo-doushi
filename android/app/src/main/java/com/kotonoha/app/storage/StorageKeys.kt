@@ -30,6 +30,15 @@ object StorageKeys {
 
     /** 书签收藏（bookmarks-v1）：阅读模块上线前只有存储骨架，无写入入口 */
     const val BOOKMARKS = "japanese-verb-practice-bookmarks-v1"
+
+    /** 阅读模块·模型/API 配置（read-analyzer-config-v1）：单条 ModelConfig，密钥明文 */
+    const val READ_ANALYZER_CONFIG = "japanese-read-analyzer-config-v1"
+
+    /** 阅读模块·最近文章（read-analyzer-articles-v1）：上限 50 篇，按 updatedAt 淘汰 */
+    const val READ_ANALYZER_ARTICLES = "japanese-read-analyzer-articles-v1"
+
+    /** 阅读模块·按句解析缓存（read-analyzer-cache-v1）：上限 500 条，按 createdAt 淘汰 */
+    const val READ_ANALYZER_CACHE = "japanese-read-analyzer-cache-v1"
 }
 
 /** 间隔复习常量（与 Web 端 app.js 一致） */
