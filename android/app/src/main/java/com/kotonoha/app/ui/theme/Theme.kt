@@ -41,6 +41,44 @@ object PaperTokens {
     val BgPaleGreen = Color(0xFFF4F8F2)  // --bg-pale-green
     val BgPaleStrong = Color(0xFFE9EEE7) // --bg-pale-strong
     val LineControl = Color(0xFFDFE5DC)  // --line-control
+
+    // 逐词区品詞底色块：13 项品詞归成 9 组，同组共用一色。
+    // 名詞/動詞 的值与 --green-pale/--orange-pale 相同，但语义独立，不复用变量。
+    val PosNounPale = Color(0xFFEDF3EB)
+    val PosPronounPale = Color(0xFFEAF2EF)
+    val PosVerbPale = Color(0xFFF8EFE6)
+    val PosAdjectivePale = Color(0xFFECF1F6)
+    val PosNaAdjectivePale = Color(0xFFF0EDF6)
+    val PosAdverbPale = Color(0xFFF5F2E1)
+    val PosOtherPale = Color(0xFFEEF0EB)
+    val PosParticlePale = Color(0xFFE9F1F2)
+    val PosAuxiliaryPale = Color(0xFFEDEFF4)
+
+    // 四标签模块色块簿（视觉重设计）：阅读的描边色、我的（灰蓝）整组。
+    // 学习沿用 Green / GreenPale / GreenDark / LineAccent；主页与学习同族，不另设色。
+    val OrangeLine = Color(0xFFE6D3C3)
+    val SlateBlue = Color(0xFF5A6E86)
+    val SlateBluePale = Color(0xFFEDF1F6)
+    val SlateBlueDeep = Color(0xFF3F5065)
+    val SlateBlueLine = Color(0xFFC9D5E1)
+}
+
+/**
+ * 品詞 → 逐词区底色；未收录的品詞返回 null（不铺色块）。
+ * 逐词区不再渲染品詞文字，色块是唯一的品詞线索，因此只给模型须守的 13 项封闭集合配色：
+ * 模型偶尔吐出的其它值保持无底色，免得把不认识的东西染成看起来有意义的颜色。
+ */
+fun posBackgroundColor(pos: String): Color? = when (pos) {
+    "名詞" -> PaperTokens.PosNounPale
+    "代名詞" -> PaperTokens.PosPronounPale
+    "動詞" -> PaperTokens.PosVerbPale
+    "形容詞" -> PaperTokens.PosAdjectivePale
+    "形容動詞" -> PaperTokens.PosNaAdjectivePale
+    "副詞" -> PaperTokens.PosAdverbPale
+    "連体詞", "接続詞", "感動詞" -> PaperTokens.PosOtherPale
+    "助詞" -> PaperTokens.PosParticlePale
+    "助動詞" -> PaperTokens.PosAuxiliaryPale
+    else -> null
 }
 
 /** 细粒度语义色：Material 3 ColorScheme 覆盖不到的 Web 令牌，经 CompositionLocal 下发 */
@@ -143,8 +181,66 @@ private val PaperColorScheme: ColorScheme = lightColorScheme(
 @Composable
 fun paperColors(): PaperColors = LocalPaperColors.current
 
+/**
+ * 一个模块的一组色块：主色 / 浅底 / 深字 / 描边。
+ * 四条色各自有固定用途，UI 不得跨用：
+ * - [main]  图标、选中强调、进度
+ * - [pale]  图标底盒、选中胶囊底
+ * - [deep]  落在纸白上的小字（labelMedium 及以下），主色对小字对比度不足时用它
+ * - [line]  该模块色系的描边
+ */
+data class ModuleTone(
+    val main: Color,
+    val pale: Color,
+    val deep: Color,
+    val line: Color,
+)
+
+/** 四标签 + 主页的模块色块实例。主页是总览页，与学习同族（品牌墨绿）。 */
+object ModuleTones {
+    val Home = ModuleTone(
+        main = PaperTokens.Green,
+        pale = PaperTokens.GreenPale,
+        deep = PaperTokens.GreenDark,
+        line = PaperTokens.LineAccent,
+    )
+    val Study = ModuleTone(
+        main = PaperTokens.Green,
+        pale = PaperTokens.GreenPale,
+        deep = PaperTokens.GreenDark,
+        line = PaperTokens.LineAccent,
+    )
+    val Read = ModuleTone(
+        main = PaperTokens.Orange,
+        pale = PaperTokens.OrangePale,
+        deep = PaperTokens.OrangeTextDeep,
+        line = PaperTokens.OrangeLine,
+    )
+    val Mine = ModuleTone(
+        main = PaperTokens.SlateBlue,
+        pale = PaperTokens.SlateBluePale,
+        deep = PaperTokens.SlateBlueDeep,
+        line = PaperTokens.SlateBlueLine,
+    )
+}
+
+/** 当前模块色块访问入口：moduleTone().main 等（仅限 Composable 上下文） */
+private val LocalModuleTone = staticCompositionLocalOf { ModuleTones.Home }
+
 @Composable
-fun NihongoDoushiTheme(content: @Composable () -> Unit) {
+fun moduleTone(): ModuleTone = LocalModuleTone.current
+
+/**
+ * 给一段 UI 指定模块色块。一级页在 AppRoot 里按当前标签包一层，
+ * 页面内的页头/色块/底栏因此自动取到本模块的颜色，不必层层传参。
+ */
+@Composable
+fun ProvideModuleTone(tone: ModuleTone, content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalModuleTone provides tone, content = content)
+}
+
+@Composable
+fun KotonohaTheme(content: @Composable () -> Unit) {
     CompositionLocalProvider(LocalPaperColors provides defaultPaperColors()) {
         MaterialTheme(
             colorScheme = PaperColorScheme,

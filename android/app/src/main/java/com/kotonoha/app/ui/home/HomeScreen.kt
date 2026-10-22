@@ -38,6 +38,7 @@ import com.kotonoha.app.engine.verb.VerbData
 import com.kotonoha.app.storage.ActivityAggregation
 import com.kotonoha.app.ui.AppState
 import com.kotonoha.app.ui.adjectiveModulePercent
+import com.kotonoha.app.ui.common.ModuleHeader
 import com.kotonoha.app.ui.currentStreak
 import com.kotonoha.app.ui.isReviewDue
 import com.kotonoha.app.ui.particleDueCount
@@ -86,20 +87,13 @@ fun HomeScreen(
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // 段① 页头（沿用）
-        Column(modifier = Modifier.padding(start = 2.dp, top = 4.dp, bottom = 2.dp)) {
-            Text(
-                text = today.year.toString() + "年" + today.monthValue + "月" + today.dayOfMonth + "日",
-                style = MaterialTheme.typography.labelMedium,
-                color = paper.muted,
-            )
-            Text(
-                text = "今天继续",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-        }
+        // 段① 页头：大标题 + 副信息（日期与本周进度），模块色取墨绿
+        ModuleHeader(
+            title = "今天继续",
+            subtitle = today.year.toString() + "年" + today.monthValue + "月" +
+                today.dayOfMonth + "日 · 本周 $weekTotal 题",
+            modifier = Modifier.padding(start = 2.dp, top = 4.dp, bottom = 2.dp),
+        )
 
         // 段② 谚语卡：进入随机一条，「换一句」不与当前重复
         ProverbCard(

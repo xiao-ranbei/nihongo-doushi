@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  自适应图标背景层：纸底（PaperTokens.Surface #FFFEFA）。
+  整张 108x108 铺满、不透明，没有任何缝隙——背景层会连同安全区外的环带一起被
+  厂商形罩（圆/方圆/水滴/squircle）裁切，边缘露出系统底色就是一圈黑边。
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -6,20 +11,5 @@
     android:viewportHeight="108">
     <path
         android:fillColor="#FFFEFA"
-        android:pathData="M0 0h108v108H0z" />
-    <path
-        android:strokeColor="#EDF3EB"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:pathData="M20 34H88" />
-    <path
-        android:strokeColor="#EDF3EB"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:pathData="M20 52H88" />
-    <path
-        android:strokeColor="#EDF3EB"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:pathData="M20 70H88" />
+        android:pathData="M0,0h108v108H0z" />
 </vector>

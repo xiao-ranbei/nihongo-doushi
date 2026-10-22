@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -27,11 +26,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.theme.ModuleTone
+import com.kotonoha.app.ui.theme.moduleTone
 import com.kotonoha.app.ui.theme.paperColors
 
 /**
@@ -124,12 +125,17 @@ fun ModuleProgressBar(
     }
 }
 
-/** 分段标题：左标题 + 右侧说明（如「18 个」「基础 11」）。 */
+/**
+ * 分段标题：左标题 + 右侧说明（如「18 个」「基础 11」）。
+ * 默认 muted；一级页传入本模块色块（tone = moduleTone()）时标题染成模块深字色，
+ * 让区块标题成为页面上的第二处模块色落点。二级模块页保持 muted，视觉不变。
+ */
 @Composable
 fun ModuleSectionLabel(
     title: String,
     caption: String? = null,
     modifier: Modifier = Modifier,
+    tone: ModuleTone? = null,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -139,11 +145,80 @@ fun ModuleSectionLabel(
         Text(
             text = title,
             style = MaterialTheme.typography.labelMedium,
-            color = paperColors().muted,
+            color = tone?.deep ?: paperColors().muted,
         )
         caption?.let {
             Text(text = it, style = MaterialTheme.typography.labelSmall, color = paperColors().muted)
         }
+    }
+}
+
+/**
+ * 一级页页头：大标题 + 一行副信息 + 可选右侧动作。
+ *
+ * 与 [ModuleTopBar] 的分工：TopBar 是二级页的返回条（48dp 高、带返回键），
+ * 本组件是四个一级标签页的页头（无返回键、标题更大、跟随滚动）。
+ * 标题取当前模块的深字色 [ModuleTone.deep]——模块色因此在每一页页头都出现一次。
+ */
+@Composable
+fun ModuleHeader(
+    title: String,
+    subtitle: String? = null,
+    modifier: Modifier = Modifier,
+    trailing: @Composable (() -> Unit)? = null,
+) {
+    val tone = moduleTone()
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = tone.deep,
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = paperColors().muted,
+                )
+            }
+        }
+        trailing?.invoke()
+    }
+}
+
+/**
+ * 模块图标底盒：主色浅底 + 主色图标，是「色块规则」的最小单元，
+ * 入口卡、可点行、设置行、空态圆标共用同一个尺寸梯度。
+ * 尺寸梯度沿用既有视觉：卡片内 40dp/12dp 圆角、行内 36dp/10dp、圆标走 [corner] 传 Dp。
+ */
+@Composable
+fun ModuleGlyphBox(
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    size: Dp = 40.dp,
+    corner: Dp = 12.dp,
+    iconSize: Dp = 22.dp,
+    tone: ModuleTone = moduleTone(),
+    contentDescription: String? = null,
+) {
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(RoundedCornerShape(corner))
+            .background(tone.pale),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = tone.main,
+            modifier = Modifier.size(iconSize),
+        )
     }
 }
 
@@ -159,9 +234,8 @@ fun EntryCard(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    tint: Color,
-    iconTint: Color,
     onClick: () -> Unit,
+    tone: ModuleTone = moduleTone(),
 ) {
     val paper = paperColors()
     Surface(
@@ -181,16 +255,7 @@ fun EntryCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(13.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .width(40.dp)
-                    .height(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(tint),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(imageVector = icon, contentDescription = null, tint = iconTint)
-            }
+            ModuleGlyphBox(icon = icon, tone = tone)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
@@ -213,18 +278,18 @@ fun EntryCard(
     }
 }
 
-/** 「规划中」徽标：6dp 圆角（非 pill），surface 底 + 1dp 描边，与选中 pill 明确区隔。 */
+/** 「规划中」徽标：6dp 圆角（非 pill），模块浅底 + 1dp 模块描边，与选中胶囊明确区隔。 */
 @Composable
-fun PlannedBadge() {
+fun PlannedBadge(tone: ModuleTone = moduleTone()) {
     Surface(
         shape = RoundedCornerShape(6.dp),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = tone.pale,
+        border = BorderStroke(1.dp, tone.line),
     ) {
         Text(
             text = "规划中",
             style = MaterialTheme.typography.labelSmall,
-            color = paperColors().textStrong,
+            color = tone.deep,
             modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
         )
     }
@@ -248,21 +313,7 @@ fun PlannedRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(13.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .width(36.dp)
-                .height(36.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = paper.textStrong,
-                modifier = Modifier.size(20.dp),
-            )
-        }
+        ModuleGlyphBox(icon = icon, size = 36.dp, corner = 10.dp, iconSize = 20.dp)
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,

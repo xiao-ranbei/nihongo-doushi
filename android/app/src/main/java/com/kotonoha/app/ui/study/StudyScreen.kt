@@ -3,10 +3,8 @@ package com.kotonoha.app.ui.study
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,10 +18,8 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kotonoha.app.engine.adjective.AdjectiveData
 import com.kotonoha.app.engine.particle.ParticleData
@@ -34,8 +30,10 @@ import com.kotonoha.app.ui.isReviewDue
 import com.kotonoha.app.ui.particleMasteredCount
 import com.kotonoha.app.ui.verbModulePercent
 import com.kotonoha.app.ui.common.EntryCard
+import com.kotonoha.app.ui.common.ModuleHeader
+import com.kotonoha.app.ui.common.ModuleSectionLabel
 import com.kotonoha.app.ui.common.PlannedRow
-import com.kotonoha.app.ui.theme.paperColors
+import com.kotonoha.app.ui.theme.moduleTone
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
@@ -51,7 +49,7 @@ fun StudyScreen(
     app: AppState,
     onOpen: (StudyDestination) -> Unit,
 ) {
-    val paper = paperColors()
+    val tone = moduleTone()
     val today = LocalDate.now()
 
     val verbTotal = VerbData.VERBS.size
@@ -69,6 +67,7 @@ fun StudyScreen(
     }
     val particleMistakeCount = app.particleMistakes.size
     val mistakeTotal = mistakeCount + particleMistakeCount
+    val practicedTotal = verbPracticed + adjectivePracticed
 
     Column(
         modifier = Modifier
@@ -77,56 +76,36 @@ fun StudyScreen(
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // 段① 页头：主标题 + 日期 + 副标题（四页页头一致律）
-        Column(modifier = Modifier.padding(start = 2.dp, top = 4.dp, bottom = 2.dp)) {
-            Text(
-                text = today.year.toString() + "年" + today.monthValue + "月" + today.dayOfMonth + "日",
-                style = MaterialTheme.typography.labelMedium,
-                color = paper.muted,
-            )
-            Text(
-                text = "学习",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = "按模块练习，错题会按间隔复习",
-                style = MaterialTheme.typography.labelMedium,
-                color = paper.muted,
-            )
-        }
+        // 段① 页头：大标题 + 副信息（四页页头一致律）
+        ModuleHeader(
+            title = "学习",
+            subtitle = today.year.toString() + "年" + today.monthValue + "月" +
+                today.dayOfMonth + "日 · 已练 $practicedTotal 项",
+            modifier = Modifier.padding(start = 2.dp, top = 4.dp, bottom = 2.dp),
+        )
 
-        // 段② 练习模块：四张入口卡（样式与副信息口径和原主页完全一致）
-        Text(
-            text = "练习模块",
-            style = MaterialTheme.typography.labelMedium,
-            color = paper.muted,
+        // 段② 练习模块：四张入口卡，图标底盒与区块标题取墨绿
+        ModuleSectionLabel(
+            title = "练习模块",
             modifier = Modifier.padding(start = 2.dp, top = 2.dp),
+            tone = tone,
         )
         EntryCard(
             icon = Icons.Filled.Create,
             title = "动词练习",
             subtitle = "$verbTotal 个词条 · 已练 $verbPracticed · 掌握度 ${app.verbModulePercent()}%",
-            tint = MaterialTheme.colorScheme.primaryContainer,
-            iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
             onClick = { onOpen(StudyDestination.VERB) },
         )
         EntryCard(
             icon = Icons.AutoMirrored.Filled.List,
             title = "形容词练习",
             subtitle = "$adjectiveTotal 个词条 · 已练 $adjectivePracticed · 掌握度 ${app.adjectiveModulePercent()}%",
-            tint = MaterialTheme.colorScheme.primaryContainer,
-            iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
             onClick = { onOpen(StudyDestination.ADJECTIVE) },
         )
         EntryCard(
             icon = Icons.Filled.Info,
             title = "助词学习",
             subtitle = "${ParticleData.LESSONS.size} 个专题 · 已掌握 $particlePercent% · 错题 $particleMistakeCount 道",
-            tint = MaterialTheme.colorScheme.primaryContainer,
-            iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
             onClick = { onOpen(StudyDestination.PARTICLE) },
         )
         EntryCard(
@@ -139,17 +118,14 @@ fun StudyScreen(
                     (if (dueCount > 0) " · $dueCount 道今天到期" else " · 今天无到期") +
                     (if (particleMistakeCount > 0) " · 助词 $particleMistakeCount 道" else "")
             },
-            tint = MaterialTheme.colorScheme.tertiaryContainer,
-            iconTint = MaterialTheme.colorScheme.onTertiaryContainer,
             onClick = { onOpen(StudyDestination.MISTAKES) },
         )
 
         // 段③ 更多工具：查词规划中位（可见、标注「规划中」、不可点击）
-        Text(
-            text = "更多工具",
-            style = MaterialTheme.typography.labelMedium,
-            color = paper.muted,
+        ModuleSectionLabel(
+            title = "更多工具",
             modifier = Modifier.padding(start = 2.dp, top = 2.dp),
+            tone = tone,
         )
         Surface(
             modifier = Modifier.fillMaxWidth(),

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 自适应图标：方向 1「あ・纸页」。字形取自 LXGW 楷体轮廓，已烘焙为固定路径 -->
+<!-- 自适应图标：「言」字印。墨绿印章 + 纸白「言」+ 右下叶脉缺口，三层均为纯 VectorDrawable -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/ic_launcher_background" />
     <foreground android:drawable="@drawable/ic_launcher_foreground" />

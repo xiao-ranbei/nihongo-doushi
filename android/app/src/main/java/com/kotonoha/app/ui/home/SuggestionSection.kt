@@ -38,12 +38,15 @@ import androidx.compose.ui.unit.dp
 import com.kotonoha.app.AppTab
 import com.kotonoha.app.engine.suggest.Suggestion
 import com.kotonoha.app.engine.suggest.SuggestionAction
+import com.kotonoha.app.ui.common.ModuleGlyphBox
+import com.kotonoha.app.ui.common.ModuleSectionLabel
 import com.kotonoha.app.ui.study.StudyDestination
+import com.kotonoha.app.ui.theme.moduleTone
 import com.kotonoha.app.ui.theme.paperColors
 
 /**
  * 主页「知识点建议」区（设计定稿 §3.4）：一张卡内 ≤3 行建议，行间 1dp 分隔。
- * 可执行项（action != null）：暖色图标盒 + 副文案 + 右箭头 + 整行可点；
+ * 可执行项（action != null）：模块主色图标盒 + 副文案 + 右箭头 + 整行可点；
  * 鼓励项：中性图标盒、无副文案、无箭头、不可点。引擎返回空列表时整节隐藏（由调用方控制）。
  */
 @Composable
@@ -52,11 +55,10 @@ fun SuggestionSection(
     onOpen: (StudyDestination) -> Unit,
     onSelectTab: (AppTab) -> Unit,
 ) {
-    Text(
-        text = "知识点建议",
-        style = MaterialTheme.typography.labelMedium,
-        color = paperColors().muted,
+    ModuleSectionLabel(
+        title = "知识点建议",
         modifier = Modifier.padding(start = 2.dp, top = 2.dp),
+        tone = moduleTone(),
     )
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -136,23 +138,25 @@ private fun SuggestionRow(suggestion: Suggestion, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(13.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .width(36.dp)
-                .height(36.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(
-                    if (warm) MaterialTheme.colorScheme.tertiaryContainer
-                    else MaterialTheme.colorScheme.surfaceVariant,
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (warm) MaterialTheme.colorScheme.onTertiaryContainer else paper.textStrong,
-                modifier = Modifier.size(20.dp),
-            )
+        if (warm) {
+            ModuleGlyphBox(icon = icon, size = 36.dp, corner = 10.dp, iconSize = 20.dp)
+        } else {
+            // 鼓励项是纯展示：不上模块主色，用中性底盒，免得看成一枚可执行按钮
+            Box(
+                modifier = Modifier
+                    .width(36.dp)
+                    .height(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = paper.textStrong,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
