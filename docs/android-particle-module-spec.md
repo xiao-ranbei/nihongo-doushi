@@ -541,7 +541,7 @@ flowchart TD
 - [x] 答错时解析同时给入门与进阶；提示取专题入门摘要
 - [x] `level` 只影响解析深度，不参与筛选
 
-待实现（UI 与存储层）：
+Android 端 UI 与存储层（已全部实现，验收见下）：
 
 已在模拟器 qa36 实测（2026-10-17，截图见 [design/particle-ui/](design/particle-ui/)）：
 
