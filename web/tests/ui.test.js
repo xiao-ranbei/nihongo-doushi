@@ -1422,6 +1422,21 @@ test("有子视图的模块播报更具体的模块与子视图", function () {
   assert.equal(app.$("view-announcer").textContent, "助词 · 先看语境，再选助词");
 });
 
+test("清空错题的结果经 toast live region 播报", function () {
+  const seed = JSON.stringify([
+    dueMistakeSeed({ verbId: engine.VERBS[0].id, voiceId: "base", inflectionId: "te", count: 1 }),
+    adjectiveMistakeSeed()
+  ]);
+  const app = createApp({ storage: { [MISTAKES_KEY]: seed } });
+  tab(app, "mistakes");
+  assert.equal(app.$("mistake-count").textContent, "2");
+
+  // dom-stub 的 window.confirm 桩恒返回 true，走完整清空路径
+  app.click(app.$("clear-mistakes"));
+  assert.match(app.$("toast").textContent, /错题已清空/, "清空结果应经 role=status 的 toast 播报");
+  assert.equal(app.$("mistake-count").textContent, "0");
+});
+
 // —— 错题加权与每日打卡 ——
 
 function localDateKey(offsetDays) {
