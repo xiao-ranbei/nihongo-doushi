@@ -497,6 +497,133 @@ test("analyzeParagraph 缓存命中零请求", function () {
   });
 });
 
+test("analyzeParagraph 出口带 durationMs 且经 onOutcome 上报（B8-f 埋点）", function () {
+  const transport = paragraphTransport();
+  const api = client.createReadClient(transport.fn, DEPS);
+  const seen = [];
+  return client.analyzeParagraph(api, CONFIG, "今日は。", paragraphOptions(transport, {
+    onOutcome: function (outcome) { seen.push(outcome); }
+  })).then(function (outcome) {
+    assert.equal(typeof outcome.durationMs, "number", "网络出口应带耗时");
+    assert.equal(seen.length, 1, "出口恰好上报一次");
+    assert.equal(seen[0].fromCache, false);
+    // 缓存命中同样上报，但耗时为 0。
+    return client.analyzeParagraph(api, CONFIG, "今日は。", paragraphOptions(transport, {
+      cacheLookup: function () {
+        return { result: { tokens: [], alignment: { aligned: true }, translation: "c" } };
+      },
+      onOutcome: function (outcome) { seen.push(outcome); }
+    }));
+  }).then(function (outcome) {
+    assert.equal(outcome.fromCache, true);
+    assert.equal(outcome.durationMs, 0);
+    assert.equal(seen.length, 2);
+    assert.equal(seen[1].fromCache, true);
+  });
+});
+
+function ocrTransport(overrides) {
+  const values = overrides || {};
+  const calls = [];
+  return {
+    calls: calls,
+    fn: function (request) {
+      calls.push(request);
+      return Promise.resolve(values.response !== undefined ? values.response : okResponse("晴れの日です。"));
+    }
+  };
+}
+
+test("buildRequest ocr：多模态 user 消息 + 视觉模型回退（B8-d）", function () {
+  const plain = client.buildRequest("ocr", { dataUrl: "data:image/jpeg;base64,AAAA" }, CONFIG, DEPS);
+  assert.equal(plain.kind, "ocr");
+  assert.equal(plain.body.model, CONFIG.model, "未配视觉模型时沿用主模型");
+  assert.equal(plain.body.stream, false);
+  assert.ok(!plain.body.response_format, "转写不走 JSON 模式");
+  const content = plain.body.messages[1].content;
+  assert.ok(Array.isArray(content), "user 消息应为多模态数组");
+  assert.equal(content[1].type, "image_url");
+  assert.equal(content[1].image_url.url, "data:image/jpeg;base64,AAAA");
+  const withVision = client.buildRequest("ocr", { dataUrl: "d" }, Object.assign({}, CONFIG, {
+    visionModel: "vision-x"
+  }), DEPS);
+  assert.equal(withVision.body.model, "vision-x", "配了视觉模型则用视觉模型");
+});
+
+test("recognizeImage：成功返回转写文本并计预算 1", function () {
+  const transport = ocrTransport();
+  const api = client.createReadClient(transport.fn, DEPS);
+  let charged = 0;
+  return client.recognizeImage(api, CONFIG, "data:image/jpeg;base64,AAAA", {
+    budgetAllow: function () { return true; },
+    budgetCharge: function (count) { charged += count; },
+    offline: false
+  }).then(function (outcome) {
+    assert.equal(outcome.ok, true);
+    assert.equal(outcome.data.text, "晴れの日です。");
+    assert.equal(charged, 1);
+    assert.equal(transport.calls.length, 1);
+    assert.equal(transport.calls[0].kind, "ocr");
+  });
+});
+
+test("recognizeImage：空转写按解析失败，离线与预算不足不发请求", function () {
+  const emptyTransport = ocrTransport({ response: okResponse("   ") });
+  const api = client.createReadClient(emptyTransport.fn, DEPS);
+  return client.recognizeImage(api, CONFIG, "d", {
+    budgetAllow: function () { return true; },
+    offline: false
+  }).then(function (outcome) {
+    assert.equal(outcome.ok, false);
+    assert.equal(outcome.error, "PARSE_FAILED");
+    const offline = client.createReadClient(ocrTransport().fn, DEPS);
+    return client.recognizeImage(offline, CONFIG, "d", { offline: true, budgetAllow: function () { return true; } });
+  }).then(function (outcome) {
+    assert.equal(outcome.local, "OFFLINE");
+    const poor = client.createReadClient(ocrTransport().fn, DEPS);
+    return client.recognizeImage(poor, CONFIG, "d", {
+      offline: false,
+      budgetAllow: function () { return false; }
+    });
+  }).then(function (outcome) {
+    assert.equal(outcome.local, "BUDGET");
+  });
+});
+
+test("buildRequest assistant：多轮历史透传、system 置顶（B8-e）", function () {
+  const request = client.buildRequest("assistant", {
+    messages: [
+      { role: "user", content: "【当前段落】原文：今日は。\n\n【提问】这句话什么意思？" },
+      { role: "assistant", content: "今天。" },
+      { role: "user", content: "语法呢？" }
+    ]
+  }, CONFIG, DEPS);
+  assert.equal(request.kind, "assistant");
+  assert.equal(request.body.messages[0].role, "system");
+  assert.equal(request.body.messages.length, 4);
+  assert.equal(request.body.messages[3].content, "语法呢？");
+  assert.ok(!request.body.response_format, "助手不走 JSON 模式");
+});
+
+test("askAssistant：回复入账并计预算 1", function () {
+  const calls = [];
+  const api = client.createReadClient(function (request) {
+    calls.push(request);
+    return Promise.resolve(okResponse("这是助手的回复。"));
+  }, DEPS);
+  let charged = 0;
+  return client.askAssistant(api, CONFIG, [{ role: "user", content: "问题" }], {
+    budgetAllow: function () { return true; },
+    budgetCharge: function (count) { charged += count; },
+    offline: false
+  }).then(function (outcome) {
+    assert.equal(outcome.ok, true);
+    assert.equal(outcome.data.reply, "这是助手的回复。");
+    assert.equal(charged, 1);
+    assert.equal(calls.length, 1);
+  });
+});
+
 test("analyzeParagraph 成功后按段落文本与模型写缓存", function () {
   const transport = paragraphTransport();
   const api = client.createReadClient(transport.fn, DEPS);

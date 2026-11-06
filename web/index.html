@@ -15,6 +15,9 @@
   <script src="read-prompts.js" defer></script>
   <script src="read-view.js" defer></script>
   <script src="read-client.js" defer></script>
+  <script src="read-stats.js" defer></script>
+  <script src="read-tts.js" defer></script>
+  <script src="read-ocr.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -1015,9 +1018,11 @@
             <textarea class="read-textarea" id="read-input-textarea" rows="10" placeholder="在这里粘贴日语文章…"></textarea>
             <div class="read-input-foot">
               <span class="read-char-count" id="read-char-count">0 字</span>
+              <button class="text-button" id="read-ocr-import" type="button">识图导入</button>
               <button class="primary-button" id="read-start-button" type="button" disabled>开始阅读</button>
             </div>
           </div>
+          <input type="file" id="read-ocr-file" accept="image/*" hidden>
           <div class="read-card read-recent">
             <h3 id="read-input-title">最近文章</h3>
             <p class="read-empty" id="read-recent-empty">还没有保存的文章。文章与解析结果只会保存在当前浏览器。</p>
@@ -1030,17 +1035,19 @@
             <h3 id="read-reader-title">原文</h3>
             <div class="read-reader-meta">
               <span class="read-paragraph-count" id="read-paragraph-count"></span>
+              <button class="text-button" id="read-open-assistant" type="button" hidden>问助手</button>
+              <button class="text-button" id="read-open-display" type="button">显示</button>
               <button class="outline-button" id="read-analyze-all" type="button">解析全文</button>
             </div>
           </div>
-          <div class="read-display-bar" role="group" aria-label="解析结果显示设置">
-            <label><input type="checkbox" id="read-toggle-furigana" checked> 注音</label>
-            <label><input type="checkbox" id="read-toggle-romaji"> 罗马音</label>
-            <label><input type="checkbox" id="read-toggle-translation" checked> 译文</label>
-          </div>
-          <div class="read-legend" id="read-legend" aria-label="词性图例" hidden></div>
           <div class="read-paragraph-list" id="read-paragraph-list"></div>
           <p class="read-empty" id="read-paragraph-empty" hidden>没有可显示的段落。</p>
+          <div class="read-play-bar" id="read-play-bar" role="group" aria-label="朗读控制" hidden>
+            <button class="outline-button" id="read-play-prev" type="button">上一段</button>
+            <button class="primary-button" id="read-play-toggle" type="button">播放</button>
+            <button class="outline-button" id="read-play-next" type="button">下一段</button>
+            <span class="read-play-status" id="read-play-status" role="status"></span>
+          </div>
         </section>
 
         <section class="read-subview read-settings-view" id="read-view-settings" aria-labelledby="read-settings-title" hidden>
@@ -1060,6 +1067,10 @@
               <input id="read-config-model" type="text" placeholder="填写服务商的模型名" autocomplete="off">
             </div>
             <div class="read-field">
+              <label for="read-config-vision-model">视觉模型（识图用，可留空）</label>
+              <input id="read-config-vision-model" type="text" placeholder="留空表示沿用上面的模型名" autocomplete="off">
+            </div>
+            <div class="read-field">
               <label for="read-config-key">API 密钥</label>
               <input id="read-config-key" type="password" placeholder="留空表示沿用已保存的密钥" autocomplete="off">
               <p class="read-field-hint" id="read-config-key-hint" hidden></p>
@@ -1068,6 +1079,9 @@
               <label for="read-config-temperature">温度</label>
               <input id="read-config-temperature" type="number" min="0" max="1" step="0.1" value="0.2">
             </div>
+            <div class="read-field read-field-toggle">
+              <label><input type="checkbox" id="read-config-assistant"> 启用 AI 助手（每问一次计 1 次请求）</label>
+            </div>
             <p class="read-config-url">实际请求地址：<span id="read-config-resolved-url">—</span></p>
             <div class="read-config-errors" id="read-config-errors" role="alert" hidden></div>
             <div class="read-config-actions">
@@ -1075,6 +1089,20 @@
               <button class="outline-button" id="read-config-test" type="button">测试连接</button>
             </div>
             <p class="read-config-result" id="read-config-test-result" role="status" hidden></p>
+          </div>
+          <div class="read-card read-stats-card">
+            <div class="read-settings-head">
+              <h3>本地统计</h3>
+              <button class="text-button" id="read-stats-clear" type="button">清零</button>
+            </div>
+            <p class="read-settings-privacy">只记解析次数、缓存命中、耗时与错误分类；不出网，不含原文与密钥。</p>
+            <dl class="read-stats-list">
+              <div class="read-stats-row"><dt>解析次数</dt><dd id="read-stats-parse">0 次</dd></div>
+              <div class="read-stats-row"><dt>缓存命中</dt><dd id="read-stats-cache">0 次</dd></div>
+              <div class="read-stats-row"><dt>平均耗时</dt><dd id="read-stats-avg">—</dd></div>
+              <div class="read-stats-row"><dt>错误分类</dt><dd id="read-stats-errors">无</dd></div>
+            </dl>
+            <p class="read-stats-updated" id="read-stats-updated" hidden></p>
           </div>
         </section>
 
@@ -1100,6 +1128,46 @@
       </div>
       <div class="read-sheet-body" id="read-sheet-body"></div>
       <div class="read-sheet-actions" id="read-sheet-actions"></div>
+    </div>
+  </div>
+
+  <!-- B8-b 显示设置弹层：三开关 + 朗读语速 + 词性图例（原显示栏收纳） -->
+  <div class="read-sheet read-display-sheet" id="read-display-sheet" role="dialog" aria-modal="true" aria-labelledby="read-display-title" hidden>
+    <div class="read-sheet-backdrop" id="read-display-backdrop"></div>
+    <div class="read-sheet-panel">
+      <div class="read-sheet-head">
+        <h3 id="read-display-title">显示设置</h3>
+        <button class="text-button" id="read-display-close" type="button">关闭</button>
+      </div>
+      <div class="read-sheet-body">
+        <div class="read-display-bar" role="group" aria-label="解析结果显示设置">
+          <label><input type="checkbox" id="read-toggle-furigana" checked> 注音</label>
+          <label><input type="checkbox" id="read-toggle-romaji"> 罗马音</label>
+          <label><input type="checkbox" id="read-toggle-translation" checked> 译文</label>
+        </div>
+        <div class="read-rate-row">
+          <label for="read-tts-rate">朗读语速</label>
+          <input type="range" id="read-tts-rate" min="0.5" max="2" step="0.1" value="1">
+          <span id="read-tts-rate-value">1.0×</span>
+        </div>
+        <div class="read-legend" id="read-legend" aria-label="词性图例" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B8-e AI 助手弹层：多轮对话仅内存，首轮注入当前段落上下文（默认关） -->
+  <div class="read-sheet read-assistant-sheet" id="read-assistant-sheet" role="dialog" aria-modal="true" aria-labelledby="read-assistant-title" hidden>
+    <div class="read-sheet-backdrop" id="read-assistant-backdrop"></div>
+    <div class="read-sheet-panel">
+      <div class="read-sheet-head">
+        <h3 id="read-assistant-title">日语助手</h3>
+        <button class="text-button" id="read-assistant-close" type="button">关闭</button>
+      </div>
+      <div class="read-sheet-body read-assistant-log" id="read-assistant-log"></div>
+      <div class="read-assistant-input-row">
+        <input id="read-assistant-input" type="text" placeholder="就当前句子提问…" autocomplete="off">
+        <button class="primary-button" id="read-assistant-send" type="button">发送</button>
+      </div>
     </div>
   </div>
 

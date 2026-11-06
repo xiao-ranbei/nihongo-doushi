@@ -354,6 +354,21 @@ web/tools/visual-check.js 改 · 补阅读页状态截图
 
 验收：每项可独立开关，任一失败降级不影响阅读。依赖：B4/B7。
 
+**实施记录（2026-11-06，已完成，五项交互形态按关子选定：OCR 双入口 / TTS 单段+播放条都要 / 助手底部弹层 / 弹层收纳+全站主题 / 埋点设置页统计区）**：
+
+- **B8-a 深浅色双主题**：`styles.css` 用 `@media (prefers-color-scheme: dark) { :root { … } }` 只覆盖颜色令牌值，组件层零改动（全经 `var()` 取色）；对齐 Android D-041 墨夜「暗底/柔化/减阴影」原则但 Web 令牌自成体系。先收编后覆盖：组件层 30 处硬编码 `rgba` 精确值收编为 22 个语义令牌（`--glow-*`/`--surface-glass-*`/`--hairline*`/`--shadow-*-tint` 等），浅色像素零变化后再叠深色值。`styles.test.js` 守卫升级：多 `:root` 块（含 @media 覆盖块）视为令牌定义区；硬编码拦截收掉 `#fff/#000` 例外并加 rgb/rgba/hsl/hsla；新增深色契约测试（覆盖块存在且换核心令牌 + `color-scheme: dark`）。
+- **B8-a 抓到真 bug**：`.answer-row input` 与 `.mistake-card-actions button` 硬编码 `background: #fff`（旧守卫对 `#fff` 开例外而漏检），深色下白底残留 → 引入 `--field-bg` 令牌，守卫同步收掉例外。
+- **B8-b 显示弹层**：三开关（注音/罗马音/译文）+ 语速滑杆（0.5–2.0×）+ 词性图例整体收进 `#read-display-sheet` 底部弹层（显示按钮在阅读头部）；`.read-paragraph-card` 加 `position: relative` 承载喇叭。
+- **B8-c 朗读 TTS**：`read-tts.js` `createSpeaker(win)` 优先 `speechSynthesis`（零密钥零成本零出网），`lang: "ja-JP"`、语速取显示弹层滑杆；单段喇叭（内联 SVG，红线禁 emoji）+ 全文播放条（播放/暂停/上一段/下一段，三态按钮「播放→暂停→继续」）。代际号 `readSpeakGeneration` 让 cancel/替换后旧 utterance 的 `onend` 失效；顺序接续只在 `readPlaySequential` 下推进。
+- **B8-c 抓到真 bug**：`stop()` 原来无条件 `synth.cancel()`，空闲 stop 会白打 cancel 且计数脏 → 改为只在确有在读 utterance 时 cancel。
+- **B8-d 图片 OCR**：`read-ocr.js`（`MAX_EDGE = 1600`、`JPEG_QUALITY = 0.7`，无 canvas/解码失败降级原始 dataURL）；双入口共用流程（输入页「识图导入」按钮 + 阅读器拖拽/粘贴）；识别结果走确认弹层（转写文本预览 +「导入并切段/取消」），确认后才入文本解析流；`visionModel` 配置项留空回退主模型；多模态 user 消息（text + image_url），图片文字声明为待转写内容（注入防护延续）。空转写按 `PARSE_FAILED` 报（没识别到文字不静默导入空文章）。
+- **B8-e AI 助手**：`assistantEnabled` 配置项默认关，设置页开关启用后头部才显示「问助手」；底部弹层多轮对话，消息仅内存不落盘；首轮注入【当前段落】原文+译文上下文（wire 里带、气泡只显示纯提问），之后多轮续聊（`[{role:"system"}].concat(完整历史)`）；每次提问计预算 1。`read-prompts.js` 加 `OCR_SYSTEM`/`ASSISTANT_SYSTEM`。
+- **B8-f 本地埋点（D-037 无遥测）**：`read-stats.js`（`japanese-read-analyzer-stats-v1`，schema v1 带版本号、坏数据逐项回退）只记解析次数/缓存命中/耗时/错误分类，不出网、不含原文与密钥（红线单测钉住）；错误码归并 7 组（network/auth/server/parse/budget/config/other）；`analyzeParagraph` 所有出口（缓存/离线/预算/网络/失败/catch）经统一 `report()` 上报 `onOutcome`，`durationMs` 只测网络段墙钟；设置页「本地统计」卡展示 + 清零。
+- 全量 **395/395**（348 → 349 深色契约 → 365 → 378 → 390 → 395），字体子集 1425 字符 / woff2 422KB / Android TTF 766KB（`collect-chars.js` 白名单补上此前漏扫的全部 `read-*.js`）。
+- **冒烟抓到桩泄漏真 bug（已修 + 静态守卫锁回归）**：`confirm-ocr` 分支调用 `textarea.dispatch("input")`——`dispatch` 是 dom-stub 测试桩专属 API，真浏览器会 TypeError 导致 OCR 导入整体失败，单测因桩也有该 API 而漏检。改标准 `dispatchEvent(new window.Event("input"))`，dom-stub 补 `Event`/`dispatchEvent`；`ui.test.js` 新增静态守卫（生产代码禁 `.dispatch(`，变异验证拦截有效）。
+- Playwright 真浏览器冒烟（file:// + addInitScript 全假 fetch + 全假 speechSynthesis）：六场景 42 断言全过——A 显示弹层（开关/滑杆联动）、B 朗读（单段 ja-JP/语速透传、播放中同段再点停止、顺序接续段 1→2→3、暂停/继续）、C OCR（按钮桥接 file input、确认弹层、导入切段、只发 1 次转写、走 visionModel、多模态消息）、D 助手（首轮上下文注入且气泡不泄漏、多轮 system+3、Enter 发送）、E 埋点（解析次数入账、清零）、F 深色（无缺字、零报错）；零 console/pageerror、零真实出网；6 张截图存 `C:/Users/xiao_/AppData/Local/Temp/nihongo-read-b8/`。
+- 浏览器桩经验：`window.speechSynthesis` 是原生只读 getter，假 synth 必须 `Object.defineProperty` 覆盖（赋值静默失败）；headless 下隐藏 file input 的程序化 `click()` 不产生 Playwright `filechooser` 事件，按钮链路用 hook 计数断言、文件用 `setInputFiles` 注入；假 synth 的 `onend` 不要定时自动触发（与点击开销赛跑），手动 `__ttsFinish()` 收尾才确定。
+
 ### B9 · 收口
 
 全量测试（Web 122+N、Android 264 不劣化）；视觉验收 12+ 态与像素差（≤500 像素且平均通道差 ≤0.5）；字体子集两端一致；文档同步（§8 表）；两种运行形态走查（`file://` 双击与 GitHub Pages `https://` 的 Origin / CORS / mixed-content / 缓存）；GitHub Pages 部署验证；成本报告（每篇调用次数、缓存命中率、预算触发次数）。

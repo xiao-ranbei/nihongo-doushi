@@ -3,6 +3,8 @@
 // 样式契约守卫：把「令牌必须先定义」「组件内禁止硬编码色值」两条项目红线
 // 变成可执行断言。此前令牌块被误插到 :root 之外导致 59 个变量失效、整站
 // 配色退化，本测试即为此类事故的静态护栏（无需浏览器）。
+// B8 起深浅色双主题：@media 内的 :root 覆盖块同样是令牌定义区，不计组件层；
+// 组件层硬编码色拦截同时覆盖 hex 与 rgb/rgba/hsl/hsla（rgba 此前漏检过）。
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -18,15 +20,27 @@ function extractRootBlock() {
   return match[1];
 }
 
-function rootBlockEnd() {
-  return css.indexOf("}", css.indexOf(":root"));
+// 所有 :root 令牌块（含 @media 深浅色覆盖块）；令牌块内无嵌套花括号。
+function allRootBlocks() {
+  return Array.from(css.matchAll(/:root\s*\{([^}]*)\}/g), function (m) {
+    return m[1];
+  });
+}
+
+// 把所有 :root 令牌块的内容挖空但保留换行，组件层扫描用（行号不漂移）。
+function cssWithoutRootBlocks() {
+  return css.replace(/:root\s*\{[^}]*\}/g, function (block) {
+    return block.replace(/[^\n]/g, " ");
+  });
 }
 
 test("所有 var(--x) 引用都在 :root 中定义", function () {
-  const root = extractRootBlock();
-  const defined = new Set(Array.from(root.matchAll(/(--[a-z0-9-]+)\s*:/g), function (m) {
-    return m[1];
-  }));
+  const defined = new Set();
+  allRootBlocks().forEach(function (root) {
+    for (const m of root.matchAll(/(--[a-z0-9-]+)\s*:/g)) {
+      defined.add(m[1]);
+    }
+  });
   const used = new Set(Array.from(css.matchAll(/var\((--[a-z0-9-]+)\)/g), function (m) {
     return m[1];
   }));
@@ -37,8 +51,8 @@ test("所有 var(--x) 引用都在 :root 中定义", function () {
   assert.ok(used.size > 0, "应至少有一个变量引用");
 });
 
-test("组件样式内不出现硬编码色值（#fff/#000 例外）", function () {
-  const body = css.slice(rootBlockEnd() + 1);
+test("组件样式内不出现硬编码色值（含 #fff/#000）", function () {
+  const body = cssWithoutRootBlocks();
   const offenders = [];
   body.split("\n").forEach(function (line, index) {
     const trimmed = line.trim();
@@ -46,13 +60,23 @@ test("组件样式内不出现硬编码色值（#fff/#000 例外）", function (
       return;
     }
     for (const match of line.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) {
-      const value = match[0].toLowerCase();
-      if (value !== "#fff" && value !== "#000") {
-        offenders.push("第 " + (index + 1) + " 行附近: " + value);
-      }
+      offenders.push("第 " + (index + 1) + " 行附近: " + match[0]);
+    }
+    for (const match of line.matchAll(/\b(rgb|rgba|hsl|hsla)\([^)]*\)/g)) {
+      offenders.push("第 " + (index + 1) + " 行附近: " + match[0]);
     }
   });
   assert.deepEqual(offenders, [], "组件内出现硬编码色值:\n" + offenders.join("\n"));
+});
+
+test("深浅色双主题：@media 覆盖块存在且换核心令牌", function () {
+  const dark = /@media\s*\(prefers-color-scheme:\s*dark\)\s*\{[\s\S]*?:root\s*\{([^}]*)\}/.exec(css);
+  assert.ok(dark, "应有 @media (prefers-color-scheme: dark) 令牌覆盖块");
+  ["--paper", "--surface", "--ink", "--line", "--green", "--shadow", "--pos-n"].forEach(function (name) {
+    assert.match(dark[1], new RegExp(name + "\\s*:"), "深色覆盖块缺少 " + name);
+  });
+  assert.match(dark[1], /color-scheme:\s*dark/, "深色覆盖块应声明 color-scheme: dark");
+  assert.match(extractRootBlock(), /color-scheme:\s*light/);
 });
 
 test("题干、规则与形容词词尾统一使用关键词高亮样式", function () {

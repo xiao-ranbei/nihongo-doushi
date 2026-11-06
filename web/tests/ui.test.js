@@ -2309,6 +2309,8 @@ function installReadFetch(app, options) {
     const system = body.messages[0].content;
     let kind = "translate";
     if (system.indexOf("词法标注器") >= 0) kind = "analyze";
+    else if (system.indexOf("转写器") >= 0) kind = "ocr";
+    else if (system.indexOf("日语学习助手") >= 0) kind = "assistant";
     else if (system.indexOf("双语词典编辑") >= 0) kind = "detail";
     else if (system.indexOf("日语教育语法分析器") >= 0) kind = "grammar";
     calls.push({ url: url, body: body, kind: kind });
@@ -2321,6 +2323,12 @@ function installReadFetch(app, options) {
     } else if (kind === "grammar") {
       content = opts.grammarContent !== undefined ? opts.grammarContent : GRAMMAR_JSON;
       if (opts.grammarStatus) { ok = false; status = opts.grammarStatus; content = "{}"; }
+    } else if (kind === "ocr") {
+      content = opts.ocrContent !== undefined ? opts.ocrContent : "今日はいい天気です。\n\n散歩に行きました。";
+      if (opts.ocrStatus) { ok = false; status = opts.ocrStatus; content = "{}"; }
+    } else if (kind === "assistant") {
+      content = opts.assistantContent !== undefined ? opts.assistantContent : "这是助手的回复。";
+      if (opts.assistantStatus) { ok = false; status = opts.assistantStatus; content = "{}"; }
     } else if (body.response_format) {
       const match = /原文（JSON 字符串）：("(?:[^"\\]|\\.)*")/.exec(body.messages[1].content);
       const text = match ? JSON.parse(match[1]) : "";
@@ -2914,4 +2922,353 @@ test("文章阅读 B7：选区按钮 mousedown 阻止默认以保住选区", fun
   openReaderWith(app, "今日はいい天気ですね。");
   const event = app.$("read-selection-action").dispatch("mousedown");
   assert.equal(event.defaultPrevented, true, "preventDefault 保住选区，避免 click 落空");
+});
+
+// ── B8-f · 本地埋点（设置页统计区） ─────────────────────────────────────
+
+const READ_STATS_KEY_B8 = "japanese-read-analyzer-stats-v1";
+
+test("文章阅读 B8：解析成功计入次数与耗时，设置页展示统计", function () {
+  const app = configuredApp();
+  installReadFetch(app);
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    app.click(app.$("read-open-settings"));
+    assert.equal(app.$("read-stats-parse").textContent, "1 次");
+    assert.equal(app.$("read-stats-cache").textContent, "0 次");
+    assert.ok(/^\d+ 毫秒$/.test(app.$("read-stats-avg").textContent), "平均耗时应带单位");
+    assert.equal(app.$("read-stats-errors").textContent, "无");
+    const stored = JSON.parse(app.window.localStorage.getItem(READ_STATS_KEY_B8));
+    assert.equal(stored.parseCount, 1, "落盘只记次数不记原文");
+    assert.ok(JSON.stringify(stored).indexOf("今日") < 0, "统计不含原文");
+  });
+});
+
+test("文章阅读 B8：缓存命中入账为命中，不计解析次数", function () {
+  const app = configuredApp();
+  installReadFetch(app);
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    app.click(firstCard(app));
+    return flushPromises();
+  }).then(function () {
+    app.click(app.$("read-open-settings"));
+    assert.equal(app.$("read-stats-parse").textContent, "1 次");
+    assert.equal(app.$("read-stats-cache").textContent, "1 次");
+  });
+});
+
+test("文章阅读 B8：解析失败按错误分类入账", function () {
+  const app = configuredApp();
+  installReadFetch(app, { analyzeStatus: 500 });
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    app.click(app.$("read-open-settings"));
+    assert.equal(app.$("read-stats-parse").textContent, "0 次");
+    assert.ok(
+      app.$("read-stats-errors").textContent.indexOf("服务 1") >= 0,
+      "500 应归入服务类错误：" + app.$("read-stats-errors").textContent
+    );
+  });
+});
+
+test("文章阅读 B8：统计清零复位展示与存储", function () {
+  const app = configuredApp();
+  installReadFetch(app);
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    app.click(app.$("read-open-settings"));
+    assert.equal(app.$("read-stats-parse").textContent, "1 次");
+    app.click(app.$("read-stats-clear"));
+    assert.equal(app.$("read-stats-parse").textContent, "0 次");
+    assert.equal(app.$("read-stats-avg").textContent, "—");
+    assert.equal(app.$("read-stats-errors").textContent, "无");
+    const stored = JSON.parse(app.window.localStorage.getItem(READ_STATS_KEY_B8));
+    assert.equal(stored.parseCount, 0);
+    assert.equal(stored.cacheHits, 0);
+  });
+});
+
+// ── B8-b · 显示弹层收纳 ─────────────────────────────────────────────────
+
+test("文章阅读 B8：显示弹层收纳三开关、语速与图例，原显示栏撤出阅读流", function () {
+  const app = configuredApp();
+  installReadFetch(app);
+  openReaderWith(app);
+  assert.equal(app.document.querySelectorAll("#read-view-reader .read-display-bar").length, 0,
+    "阅读流里不应再有显示栏");
+  assert.equal(app.$("read-display-sheet").hidden, true);
+  app.click(app.$("read-open-display"));
+  assert.equal(app.$("read-display-sheet").hidden, false, "点「显示」弹出设置层");
+  assert.ok(app.$("read-toggle-furigana"), "弹层内保留注音开关（id 稳定）");
+  assert.ok(app.$("read-tts-rate"), "弹层内含语速滑杆");
+  app.click(app.$("read-display-close"));
+  assert.equal(app.$("read-display-sheet").hidden, true);
+});
+
+test("文章阅读 B8：语速滑杆联动读数", function () {
+  const app = configuredApp();
+  openReaderWith(app);
+  app.$("read-tts-rate").value = "1.5";
+  app.$("read-tts-rate").dispatch("input");
+  assert.equal(app.$("read-tts-rate-value").textContent, "1.5×");
+});
+
+// ── B8-c · 朗读（单段喇叭 + 全文播放条） ─────────────────────────────────
+
+function installFakeTts(app) {
+  const calls = { speak: [], cancel: 0, pause: 0, resume: 0 };
+  function Utterance(text) { this.text = text; }
+  app.window.SpeechSynthesisUtterance = Utterance;
+  app.window.speechSynthesis = {
+    speaking: false,
+    speak: function (u) {
+      calls.speak.push(u);
+      this.speaking = true;
+    },
+    cancel: function () {
+      calls.cancel += 1;
+      this.speaking = false;
+    },
+    pause: function () { calls.pause += 1; },
+    resume: function () { calls.resume += 1; }
+  };
+  return calls;
+}
+
+test("文章阅读 B8：无 speechSynthesis 时隐藏朗读入口", function () {
+  const app = configuredApp();
+  installReadFetch(app);
+  openReaderWith(app);
+  assert.equal(app.$("read-play-bar").hidden, true, "播放条应隐藏");
+  const button = firstCard(app).querySelectorAll(".read-speak-button")[0];
+  assert.equal(button.hidden, true, "喇叭按钮应隐藏");
+});
+
+test("文章阅读 B8：单段喇叭点读该段原文，再点停止且不触发解析", function () {
+  const app = configuredApp();
+  const calls = installReadFetch(app);
+  const tts = installFakeTts(app);
+  openReaderWith(app, "今日はいい天気ですね。");
+  const button = firstCard(app).querySelectorAll(".read-speak-button")[0];
+  assert.equal(button.hidden, false);
+  app.click(button);
+  assert.equal(tts.speak.length, 1);
+  assert.equal(tts.speak[0].text, "今日はいい天気ですね。");
+  assert.equal(tts.speak[0].lang, "ja-JP");
+  assert.equal(button.dataset.speaking, "true");
+  app.click(button);
+  assert.equal(tts.cancel, 1, "再点应停止");
+  assert.equal(button.dataset.speaking, "false");
+  assert.equal(calls.length, 0, "朗读不发解析请求");
+});
+
+test("文章阅读 B8：播放条顺序接续，读完自动收口", function () {
+  const app = configuredApp();
+  installReadFetch(app);
+  const tts = installFakeTts(app);
+  openReaderWith(app, B7_THREE_PARAGRAPHS);
+  assert.equal(app.$("read-play-bar").hidden, false);
+  app.click(app.$("read-play-toggle"));
+  assert.equal(tts.speak.length, 1, "从第 1 段开始");
+  assert.equal(app.$("read-play-toggle").textContent, "暂停");
+  // 模拟第 1 段读完 → 自动接第 2 段。
+  tts.speak[0].onend();
+  assert.equal(tts.speak.length, 2);
+  assert.equal(tts.speak[1].text, "散歩に行きました。");
+  tts.speak[1].onend();
+  assert.equal(tts.speak.length, 3);
+  tts.speak[2].onend();
+  assert.equal(app.$("read-play-toggle").textContent, "播放", "读完复位");
+  assert.equal(tts.speak.length, 3, "共 3 段不再接续");
+});
+
+test("文章阅读 B8：暂停与继续走 synth 的 pause/resume", function () {
+  const app = configuredApp();
+  installReadFetch(app);
+  const tts = installFakeTts(app);
+  openReaderWith(app, B7_THREE_PARAGRAPHS);
+  app.click(app.$("read-play-toggle"));
+  app.click(app.$("read-play-toggle"));
+  assert.equal(tts.pause, 1, "播放中再点应暂停");
+  assert.equal(app.$("read-play-toggle").textContent, "继续");
+  app.click(app.$("read-play-toggle"));
+  assert.equal(tts.resume, 1, "继续应 resume");
+  assert.equal(app.$("read-play-toggle").textContent, "暂停");
+});
+
+test("文章阅读 B8：下一段按钮切段朗读", function () {
+  const app = configuredApp();
+  installReadFetch(app);
+  const tts = installFakeTts(app);
+  openReaderWith(app, B7_THREE_PARAGRAPHS);
+  app.click(app.$("read-play-toggle"));
+  assert.equal(tts.speak[0].text, "今日はいい天気ですね。");
+  app.click(app.$("read-play-next"));
+  assert.equal(tts.speak.length, 2);
+  assert.equal(tts.speak[1].text, "散歩に行きました。");
+  assert.equal(app.$("read-play-status").textContent.indexOf("2 / 3") >= 0, true);
+});
+
+// ── B8-d · 图片 OCR（双入口 + 压缩 + 确认） ─────────────────────────────
+
+function stubOcrCompress(app) {
+  const state = { files: [] };
+  app.window.ReadOcr = {
+    compressImage: function (win, file) {
+      state.files.push(file);
+      return Promise.resolve("data:image/jpeg;base64,STUB");
+    }
+  };
+  return state;
+}
+
+test("文章阅读 B8：未配置时识图入口隐藏，配置后显示", function () {
+  const bare = createApp();
+  assert.equal(bare.$("read-ocr-import").hidden, true, "未配置应隐藏识图入口");
+  const app = configuredApp();
+  assert.equal(app.$("read-ocr-import").hidden, false);
+});
+
+test("文章阅读 B8：识图导入走确认弹层，确认后填入输入框并切段", function () {
+  const app = configuredApp();
+  const calls = installReadFetch(app);
+  const stub = stubOcrCompress(app);
+  tab(app, "read");
+  const fileInput = app.$("read-ocr-file");
+  fileInput.files = [{ name: "photo.jpg" }];
+  fileInput.dispatch("change");
+  return flushPromises().then(function () {
+    assert.equal(stub.files.length, 1, "应先走压缩");
+    assert.equal(calls.length, 1, "只发 1 次转写请求");
+    assert.equal(calls[0].kind, "ocr");
+    assert.equal(calls[0].body.messages[1].content[1].image_url.url, "data:image/jpeg;base64,STUB");
+    assert.equal(app.$("read-sheet").hidden, false, "应弹出识别结果确认层");
+    assert.ok(app.$("read-sheet-body").textContent.indexOf("今日はいい天気です。") >= 0);
+    app.click(mustSheetAction(app, "导入并切段"));
+    assert.equal(app.$("read-input-textarea").value, "今日はいい天気です。\n\n散歩に行きました。");
+    assert.equal(app.$("read-view-reader").hidden, false, "确认后进入阅读器");
+    assert.equal(app.document.querySelectorAll(".read-paragraph-card").length, 2);
+  });
+});
+
+test("文章阅读 B8：阅读器拖拽图片与按钮共用同一确认流程", function () {
+  const app = configuredApp();
+  const calls = installReadFetch(app);
+  const stub = stubOcrCompress(app);
+  openReaderWith(app, "今日はいい天気ですね。");
+  app.$("read-view-reader").dispatch("drop", {
+    dataTransfer: { files: [{ name: "shot.png" }] }
+  });
+  return flushPromises().then(function () {
+    assert.equal(stub.files.length, 1);
+    assert.equal(calls[0].kind, "ocr");
+    assert.equal(app.$("read-sheet").hidden, false);
+    app.click(mustSheetAction(app, "取消"));
+    assert.equal(app.$("read-sheet").hidden, true, "取消不导入");
+    assert.equal(app.$("read-input-textarea").value, "今日はいい天気ですね。", "原文不动");
+  });
+});
+
+test("文章阅读 B8：转写失败提示且不填输入框", function () {
+  const app = configuredApp();
+  installReadFetch(app, { ocrStatus: 500 });
+  stubOcrCompress(app);
+  tab(app, "read");
+  const fileInput = app.$("read-ocr-file");
+  fileInput.files = [{ name: "bad.jpg" }];
+  fileInput.dispatch("change");
+  return flushPromises().then(function () {
+    assert.equal(app.$("read-sheet").hidden, true, "失败不弹确认层");
+    assert.equal(app.$("read-input-textarea").value, "", "输入框保持为空");
+  });
+});
+
+// ── B8-e · AI 助手（底部弹层，默认关） ───────────────────────────────────
+
+function assistantApp(enabled) {
+  return createApp({
+    storage: {
+      [READ_CONFIG_KEY]: JSON.stringify({
+        baseUrl: "https://api.example.com",
+        model: "m1",
+        apiKey: "sk-test",
+        temperature: 0.2,
+        assistantEnabled: enabled === true
+      })
+    }
+  });
+}
+
+test("文章阅读 B8：助手默认关，设置开关启用后头部显示入口", function () {
+  const off = assistantApp(false);
+  assert.equal(off.$("read-open-assistant").hidden, true, "默认关应隐藏入口");
+  const on = assistantApp(true);
+  assert.equal(on.$("read-open-assistant").hidden, false, "启用后显示入口");
+});
+
+test("文章阅读 B8：助手提问注入当前段落上下文并显示对话", function () {
+  const app = assistantApp(true);
+  const calls = installReadFetch(app);
+  openReaderWith(app, "今日はいい天気ですね。");
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    app.click(app.$("read-open-assistant"));
+    assert.equal(app.$("read-assistant-sheet").hidden, false);
+    app.$("read-assistant-input").value = "这句话什么意思？";
+    app.click(app.$("read-assistant-send"));
+    return flushPromises();
+  }).then(function () {
+    const assistantCalls = calls.filter(function (c) { return c.kind === "assistant"; });
+    assert.equal(assistantCalls.length, 1, "一次提问一次助手请求");
+    const request = assistantCalls[0];
+    const userContent = request.body.messages[1].content;
+    assert.ok(userContent.indexOf("【当前段落】") >= 0, "首轮应注入段落上下文");
+    assert.ok(userContent.indexOf("今日はいい天気ですね。") >= 0, "上下文含原文");
+    assert.ok(userContent.indexOf("这句话什么意思？") >= 0, "含用户提问");
+    const bubbles = app.$("read-assistant-log").querySelectorAll(".read-assistant-bubble");
+    const texts = Array.prototype.map.call(bubbles, function (b) { return b.textContent; });
+    assert.ok(texts.indexOf("这句话什么意思？") >= 0, "应显示用户气泡");
+    assert.ok(texts.indexOf("这是助手的回复。") >= 0, "应回显助手回复");
+    assert.equal(app.$("read-assistant-input").value, "", "发送后清空输入");
+  });
+});
+
+test("文章阅读 B8：助手消息仅内存不落盘", function () {
+  const app = assistantApp(true);
+  installReadFetch(app);
+  openReaderWith(app, "今日はいい天気ですね。");
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    const writes = [];
+    const originalSet = app.window.localStorage.setItem;
+    app.window.localStorage.setItem = function (key, value) {
+      writes.push(String(key));
+      return originalSet.call(this, key, value);
+    };
+    app.window.localStorage.setItem("probe-spy", "1");
+    assert.equal(writes.length, 1, "写入记账桩在位");
+    app.click(app.$("read-open-assistant"));
+    app.$("read-assistant-input").value = "问题一";
+    app.click(app.$("read-assistant-send"));
+    return flushPromises().then(function () {
+      assert.ok(!writes.some(function (k) { return /assistant|助手/i.test(k); }),
+        "localStorage 不应有助手消息键：" + writes.join(","));
+    });
+  });
+});
+
+test("静态守卫：生产代码禁用 dom-stub 专属 API（dispatch），只走标准 dispatchEvent", function () {
+  const productionFiles = ["app.js", "read-view.js", "read-client.js", "read-engine.js",
+    "read-prompts.js", "read-stats.js", "read-tts.js", "read-ocr.js"];
+  productionFiles.forEach(function (name) {
+    const source = fs.readFileSync(path.join(__dirname, "..", name), "utf8");
+    const hits = source.match(/\.dispatch\(/g) || [];
+    assert.equal(hits.length, 0,
+      name + " 含 dom-stub 专属 .dispatch() 调用（真浏览器不存在该 API，应改用 dispatchEvent）");
+  });
 });

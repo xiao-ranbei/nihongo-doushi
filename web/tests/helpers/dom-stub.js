@@ -238,6 +238,7 @@ function createElement(tag) {
     return found;
   };
   // 测试驱动：同步触发监听器，不做冒泡（app.js 目前没有依赖冒泡的委托）。
+  // dispatchEvent 对齐真实 DOM（生产代码用），dispatch 供测试内部灵活传 extra。
   element.dispatch = function (type, extra) {
     const event = Object.assign({
       type: type,
@@ -253,6 +254,9 @@ function createElement(tag) {
       handler.call(element, event);
     });
     return event;
+  };
+  element.dispatchEvent = function (event) {
+    return element.dispatch(event && event.type ? event.type : String(event), event);
   };
   // 真实 DOM 的程序化点击（如导出时临时 anchor.click()）。
   element.click = function () {
@@ -380,6 +384,10 @@ function createWindow() {
     document: document,
     timers: timers,
     __mistakeDownloads: downloads,
+    // 生产代码用 new window.Event(...) 派发事件（对齐真实 DOM）。
+    Event: function Event(type) {
+      this.type = type;
+    },
     localStorage: {
       getItem: function (key) {
         return store.has(String(key)) ? store.get(String(key)) : null;
@@ -431,6 +439,9 @@ function createWindow() {
     ReadPrompts: require(path.join(PROJECT_ROOT, "read-prompts.js")),
     ReadView: require(path.join(PROJECT_ROOT, "read-view.js")),
     ReadClient: require(path.join(PROJECT_ROOT, "read-client.js")),
+    ReadStats: require(path.join(PROJECT_ROOT, "read-stats.js")),
+    ReadTts: require(path.join(PROJECT_ROOT, "read-tts.js")),
+    ReadOcr: require(path.join(PROJECT_ROOT, "read-ocr.js")),
     // 网络层桩：默认返回可解析的 analyze 成功响应，测试可覆盖 window.fetch 造错误态。
     AbortController: function () {
       this.signal = {};

@@ -8,6 +8,9 @@
 
   const MIN_CHARS = 10;
   const POS_ORDER = ["n", "v", "adj", "adjv", "adv", "misc", "p", "aux"];
+  // 单段朗读小喇叭（B8-c）：内联 SVG，红线禁 emoji 图标；无变换定位。
+  const SPEAKER_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false">' +
+    '<path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>';
 
   function countChars(text) {
     return Array.from(String(text == null ? "" : text).replace(/\s/g, "")).length;
@@ -21,6 +24,7 @@
     let cards = [];
     let states = [];
     let previousView = "input";
+    let ttsEnabled = true;
 
     function updateCount() {
       const count = countChars(refs.textarea.value);
@@ -81,6 +85,19 @@
         if (actions.onGrammarClick) actions.onGrammarClick(index);
       });
       card.append(grammarButton);
+
+      // B8-c 单段朗读：小喇叭固定卡片右上角，点读该段、再点停止（不触发解析）。
+      const speakButton = doc.createElement("button");
+      speakButton.className = "read-speak-button";
+      speakButton.type = "button";
+      speakButton.hidden = !ttsEnabled;
+      speakButton.setAttribute("aria-label", (text.speakLabel) || "朗读该段");
+      speakButton.innerHTML = SPEAKER_SVG;
+      speakButton.addEventListener("click", function (event) {
+        event.stopPropagation();
+        if (actions.onSpeakClick) actions.onSpeakClick(index);
+      });
+      card.append(speakButton);
 
       if (paragraph.hardCut) {
         const cut = doc.createElement("span");
@@ -236,6 +253,27 @@
       return Object.assign({}, display);
     }
 
+    // B8-c：TTS 不可用时整体隐藏喇叭入口；朗读中卡片高亮发声态。
+    function setTtsEnabled(enabled) {
+      ttsEnabled = Boolean(enabled);
+      cards.forEach(function (card) {
+        const button = card.querySelectorAll(".read-speak-button")[0];
+        if (button) button.hidden = !ttsEnabled;
+      });
+    }
+
+    function setSpeakState(index, speaking) {
+      cards.forEach(function (card, i) {
+        const button = card.querySelectorAll(".read-speak-button")[0];
+        if (!button) return;
+        const active = Boolean(speaking) && i === index;
+        button.dataset.speaking = active ? "true" : "false";
+        button.setAttribute("aria-label", active
+          ? ((text.stopLabel) || "停止朗读")
+          : ((text.speakLabel) || "朗读该段"));
+      });
+    }
+
     function renderSheetRows(rows) {
       refs.sheetBody.replaceChildren();
       (rows || []).forEach(function (row) {
@@ -386,6 +424,8 @@
       setParagraphState: setParagraphState,
       setDisplay: setDisplay,
       getDisplay: function () { return Object.assign({}, display); },
+      setTtsEnabled: setTtsEnabled,
+      setSpeakState: setSpeakState,
       showSheet: showSheet,
       hideSheet: hideSheet,
       showSheetAnalysis: showSheetAnalysis,

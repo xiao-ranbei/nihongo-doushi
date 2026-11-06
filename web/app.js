@@ -306,14 +306,22 @@
       settingsBackButton: document.getElementById("read-settings-back"),
       configBaseUrl: document.getElementById("read-config-base-url"),
       configModel: document.getElementById("read-config-model"),
+      configVisionModel: document.getElementById("read-config-vision-model"),
       configKey: document.getElementById("read-config-key"),
       configKeyHint: document.getElementById("read-config-key-hint"),
       configTemperature: document.getElementById("read-config-temperature"),
+      configAssistant: document.getElementById("read-config-assistant"),
       configResolvedUrl: document.getElementById("read-config-resolved-url"),
       configErrors: document.getElementById("read-config-errors"),
       configSave: document.getElementById("read-config-save"),
       configTest: document.getElementById("read-config-test"),
       configTestResult: document.getElementById("read-config-test-result"),
+      statsParse: document.getElementById("read-stats-parse"),
+      statsCache: document.getElementById("read-stats-cache"),
+      statsAvg: document.getElementById("read-stats-avg"),
+      statsErrors: document.getElementById("read-stats-errors"),
+      statsUpdated: document.getElementById("read-stats-updated"),
+      statsClear: document.getElementById("read-stats-clear"),
       legend: document.getElementById("read-legend"),
       toggleFurigana: document.getElementById("read-toggle-furigana"),
       toggleRomaji: document.getElementById("read-toggle-romaji"),
@@ -328,7 +336,27 @@
       runStatus: document.getElementById("read-run-status"),
       runStatusText: document.getElementById("read-run-status-text"),
       runCancel: document.getElementById("read-run-cancel"),
-      selectionAction: document.getElementById("read-selection-action")
+      selectionAction: document.getElementById("read-selection-action"),
+      openDisplayButton: document.getElementById("read-open-display"),
+      displaySheet: document.getElementById("read-display-sheet"),
+      displayBackdrop: document.getElementById("read-display-backdrop"),
+      displayClose: document.getElementById("read-display-close"),
+      ttsRate: document.getElementById("read-tts-rate"),
+      ttsRateValue: document.getElementById("read-tts-rate-value"),
+      playBar: document.getElementById("read-play-bar"),
+      playPrev: document.getElementById("read-play-prev"),
+      playToggle: document.getElementById("read-play-toggle"),
+      playNext: document.getElementById("read-play-next"),
+      playStatus: document.getElementById("read-play-status"),
+      ocrImport: document.getElementById("read-ocr-import"),
+      ocrFile: document.getElementById("read-ocr-file"),
+      openAssistantButton: document.getElementById("read-open-assistant"),
+      assistantSheet: document.getElementById("read-assistant-sheet"),
+      assistantBackdrop: document.getElementById("read-assistant-backdrop"),
+      assistantClose: document.getElementById("read-assistant-close"),
+      assistantLog: document.getElementById("read-assistant-log"),
+      assistantInput: document.getElementById("read-assistant-input"),
+      assistantSend: document.getElementById("read-assistant-send")
     },
     homeReadStatus: document.getElementById("home-read-status"),
     homeReadCount: document.getElementById("home-read-count"),
@@ -567,6 +595,17 @@
   let readDetailLru = null;
   let readCatalogs = [];
   let readSheetContext = null;
+  let readStats = null;
+  let readDisplayRate = 1;
+  let readTts = null;
+  let readPlayIndex = -1;
+  let readPlayPhase = "idle";
+  let readSpeakGeneration = 0;
+  let readPlaySequential = true;
+  let readOcrPendingText = "";
+  let readAssistantMessages = [];
+  let readAssistantBusy = false;
+  let readFocusIndex = -1;
   let readAllRun = null;
   let readSelectionIndices = [];
   let readBookmarks = { items: [] };
@@ -679,7 +718,7 @@
   const READ_ACTIVITY_KEY = "japanese-read-analyzer-activity-v1";
 
   function defaultReadConfig() {
-    return { baseUrl: "", model: "", apiKey: "", temperature: 0.2 };
+    return { baseUrl: "", model: "", visionModel: "", apiKey: "", temperature: 0.2, assistantEnabled: false };
   }
 
   function loadReadConfig() {
@@ -692,8 +731,10 @@
       return {
         baseUrl: typeof parsed.baseUrl === "string" ? parsed.baseUrl : "",
         model: typeof parsed.model === "string" ? parsed.model : "",
+        visionModel: typeof parsed.visionModel === "string" ? parsed.visionModel : "",
         apiKey: typeof parsed.apiKey === "string" ? parsed.apiKey : "",
-        temperature: isNaN(temperature) ? 0.2 : temperature
+        temperature: isNaN(temperature) ? 0.2 : temperature,
+        assistantEnabled: parsed.assistantEnabled === true
       };
     } catch (error) {
       return defaultReadConfig();
@@ -719,8 +760,10 @@
     return {
       baseUrl: elements.read.configBaseUrl.value.trim(),
       model: elements.read.configModel.value.trim(),
+      visionModel: elements.read.configVisionModel.value.trim(),
       apiKey: typedKey || (readConfig ? readConfig.apiKey : ""),
-      temperature: Number(elements.read.configTemperature.value)
+      temperature: Number(elements.read.configTemperature.value),
+      assistantEnabled: Boolean(elements.read.configAssistant.checked)
     };
   }
 
@@ -749,6 +792,8 @@
   function fillReadConfigForm() {
     elements.read.configBaseUrl.value = readConfig.baseUrl;
     elements.read.configModel.value = readConfig.model;
+    elements.read.configVisionModel.value = readConfig.visionModel || "";
+    elements.read.configAssistant.checked = readConfig.assistantEnabled === true;
     elements.read.configKey.value = "";
     elements.read.configKeyHint.hidden = !readConfig.apiKey;
     elements.read.configKeyHint.textContent = readConfig.apiKey
@@ -762,6 +807,7 @@
 
   function openReadSettings() {
     fillReadConfigForm();
+    refreshReadStats();
     readView.showSettings();
   }
 
@@ -776,6 +822,8 @@
     }
     readConfig = config;
     fillReadConfigForm();
+    refreshReadOcrEntry();
+    refreshAssistantEntry();
     elements.read.configTestResult.hidden = false;
     elements.read.configTestResult.textContent = "已保存。";
     return true;
@@ -841,6 +889,56 @@
     saveReadCache();
   }
 
+  // B8-f 本地埋点：onOutcome 由 read-client 各出口上报，这里只记账与渲染。
+  // 不出网、不存原文、不存密钥（read-stats 有红线单测钉住字段面）。
+  function recordReadStats(outcome) {
+    if (!readStats) readStats = window.ReadStats.load("");
+    readStats = window.ReadStats.recordOutcome(
+      readStats,
+      outcome,
+      outcome && outcome.durationMs,
+      new Date().toISOString()
+    );
+    window.ReadStats.persist(readStats, window.localStorage);
+  }
+
+  const READ_ERROR_GROUP_LABELS = {
+    network: "网络",
+    auth: "鉴权",
+    server: "服务",
+    parse: "解析",
+    budget: "预算",
+    config: "配置",
+    other: "其他"
+  };
+
+  function refreshReadStats() {
+    if (!readStats) readStats = window.ReadStats.load("");
+    const view = window.ReadStats.summarize(readStats);
+    elements.read.statsParse.textContent = view.parseCount + " 次";
+    elements.read.statsCache.textContent = view.cacheHits + " 次";
+    elements.read.statsAvg.textContent = view.parseCount > 0 ? view.avgMs + " 毫秒" : "—";
+    const parts = [];
+    window.ReadStats.ERROR_GROUP_NAMES.forEach(function (name) {
+      if (view.errors[name] > 0) {
+        parts.push(READ_ERROR_GROUP_LABELS[name] + " " + view.errors[name]);
+      }
+    });
+    elements.read.statsErrors.textContent = parts.length ? parts.join(" · ") : "无";
+    if (view.updatedAt) {
+      elements.read.statsUpdated.textContent = "最后更新：" + view.updatedAt.replace("T", " ").slice(0, 19);
+      elements.read.statsUpdated.hidden = false;
+    } else {
+      elements.read.statsUpdated.hidden = true;
+    }
+  }
+
+  function clearReadStats() {
+    readStats = window.ReadStats.emptyRecord();
+    window.ReadStats.persist(readStats, window.localStorage);
+    refreshReadStats();
+  }
+
   // Q4 成本控制：每篇 / 每日请求上限，达上限后只出缓存、不发请求。
   function loadReadBudget() {
     const today = localDateString(new Date());
@@ -872,6 +970,7 @@
   function startReadAnalysis(index) {
     const paragraph = readView.getParagraphs()[index];
     if (!paragraph) return;
+    readFocusIndex = index;
     readView.hideSelectionAction();
     if (window.ReadEngine.validateConfig(readConfig).length) {
       readView.setParagraphState(index, "error", {
@@ -889,6 +988,7 @@
       cacheStore: readCacheStore,
       budgetAllow: readBudgetAllow,
       budgetCharge: readBudgetCharge,
+      onOutcome: recordReadStats,
       now: function () { return new Date().toISOString(); }
     }).then(function (outcome) {
       if (outcome.ok) {
@@ -971,6 +1071,7 @@
       cacheStore: readCacheStore,
       budgetAllow: readBudgetAllow,
       budgetCharge: readBudgetCharge,
+      onOutcome: recordReadStats,
       now: function () { return new Date().toISOString(); },
       // 长文块走 SSE：截断时宽松兜底可救回完整 token（D-035）。
       stream: true,
@@ -1094,6 +1195,7 @@
       cacheStore: readCacheStore,
       budgetAllow: readBudgetAllow,
       budgetCharge: readBudgetCharge,
+      onOutcome: recordReadStats,
       now: function () { return new Date().toISOString(); },
       onBatch: function (info) {
         readView.showRunStatus("分析选区 " + info.batch + " / " + info.total + " 批…", true);
@@ -1124,6 +1226,215 @@
       furigana: elements.read.toggleFurigana.checked,
       romaji: elements.read.toggleRomaji.checked,
       translation: elements.read.toggleTranslation.checked
+    });
+  }
+
+  // B8-c 朗读编排：单段喇叭（不接续）+ 全文播放条（顺序接续）。
+  // cancel/替换朗读会误触旧 utterance 的 onend——用代际号让旧回调失效。
+  // 语速取显示弹层的 readDisplayRate；不支持 speechSynthesis 时整体隐藏入口。
+  function getReadTts() {
+    if (!readTts) readTts = window.ReadTts.createSpeaker(window);
+    return readTts;
+  }
+
+  function updateReadPlayUI() {
+    const total = readView ? readView.getParagraphs().length : 0;
+    const supported = Boolean(getReadTts().supported);
+    elements.read.playBar.hidden = !(supported && total > 0);
+    elements.read.playToggle.textContent = readPlayPhase === "playing"
+      ? "暂停"
+      : (readPlayPhase === "paused" ? "继续" : "播放");
+    elements.read.playStatus.textContent = readPlayIndex >= 0 && total > 0
+      ? "第 " + (readPlayIndex + 1) + " / " + total + " 段"
+      : (total > 0 ? "共 " + total + " 段" : "");
+    if (readView) {
+      readView.setSpeakState(readPlayPhase === "playing" ? readPlayIndex : -1, readPlayPhase === "playing");
+    }
+  }
+
+  function haltReadSpeak() {
+    readSpeakGeneration += 1;
+    getReadTts().stop();
+  }
+
+  function startReadSpeak(index, sequential) {
+    const paragraphs = readView.getParagraphs();
+    const speaker = getReadTts();
+    if (!speaker.supported || !paragraphs[index]) return;
+    haltReadSpeak();
+    readPlayIndex = index;
+    readPlaySequential = Boolean(sequential);
+    readPlayPhase = "playing";
+    const generation = readSpeakGeneration;
+    speaker.speak(paragraphs[index].text, readDisplayRate, function () {
+      if (generation !== readSpeakGeneration) return;
+      if (readPlaySequential && readPlayIndex + 1 < paragraphs.length) {
+        startReadSpeak(readPlayIndex + 1, true);
+      } else {
+        readPlayPhase = "idle";
+        updateReadPlayUI();
+      }
+    });
+    updateReadPlayUI();
+  }
+
+  function pauseReadSpeak() {
+    if (readPlayPhase !== "playing") return;
+    if (!getReadTts().pause()) {
+      haltReadSpeak();
+    }
+    readPlayPhase = "paused";
+    updateReadPlayUI();
+  }
+
+  function resumeReadSpeak() {
+    if (readPlayPhase !== "paused") return;
+    const speaker = getReadTts();
+    if (speaker.resume() && speaker.speaking()) {
+      readPlayPhase = "playing";
+      updateReadPlayUI();
+    } else {
+      startReadSpeak(readPlayIndex >= 0 ? readPlayIndex : 0, readPlaySequential);
+    }
+  }
+
+  function stopReadSpeak() {
+    haltReadSpeak();
+    readPlayPhase = "idle";
+    updateReadPlayUI();
+  }
+
+  // B8-d 图片 OCR：输入页按钮与阅读器拖拽/粘贴共用「压缩 → 视觉模型 → 确认弹层」。
+  // 未配置时隐藏入口；转写只记错误不计解析次数（转写 ≠ 解析，口径见 read-stats）。
+  function refreshReadOcrEntry() {
+    elements.read.ocrImport.hidden = window.ReadEngine.validateConfig(readConfig).length > 0;
+  }
+
+  function startReadOcrWithDataUrl(dataUrl) {
+    if (window.ReadEngine.validateConfig(readConfig).length) {
+      showToast("先在模型设置里配置服务地址与模型，再使用识图。", true);
+      return;
+    }
+    if (!readBudgetAllow(1)) {
+      showToast(READ_STATE_MESSAGES.budget, true);
+      return;
+    }
+    readView.showRunStatus("识别图片…", true);
+    window.ReadClient.recognizeImage(readClient, readConfig, dataUrl, {
+      offline: Boolean(window.navigator && window.navigator.onLine === false),
+      budgetAllow: readBudgetAllow,
+      budgetCharge: readBudgetCharge
+    }).then(function (outcome) {
+      readView.hideRunStatus();
+      if (outcome.ok) {
+        readOcrPendingText = outcome.data.text;
+        readSheetContext = { ocr: true };
+        readView.showSheet("识别结果", [
+          { label: "转写文本", value: readOcrPendingText }
+        ], [
+          { label: "导入并切段", kind: "confirm-ocr" },
+          { label: "取消", kind: "dismiss-sheet" }
+        ]);
+        return;
+      }
+      recordReadStats(outcome);
+      if (outcome.cancelled) return;
+      showToast(outcome.local === window.ReadClient.LOCAL_REASONS.OFFLINE
+        ? READ_STATE_MESSAGES.offline
+        : outcome.local === window.ReadClient.LOCAL_REASONS.BUDGET
+          ? READ_STATE_MESSAGES.budget
+          : "识图失败，请换一张图片或稍后重试。", true);
+    });
+  }
+
+  function handleReadOcrFile(file) {
+    if (!file) return;
+    window.ReadOcr.compressImage(window, file).then(function (dataUrl) {
+      startReadOcrWithDataUrl(dataUrl);
+    }, function () {
+      showToast("无法读取该文件，请换一张图片。", true);
+    });
+  }
+
+  // B8-e AI 助手：默认关（设置开关启用后头部才显示入口），消息仅内存不落盘。
+  // 首轮把当前段落（原文 + 已有译文）注入提问前缀；之后多轮续聊。
+  function refreshAssistantEntry() {
+    elements.read.openAssistantButton.hidden = !(readConfig.assistantEnabled &&
+      window.ReadEngine.validateConfig(readConfig).length === 0);
+  }
+
+  function buildAssistantContext(index) {
+    const paragraphs = readView.getParagraphs();
+    const paragraph = paragraphs[index];
+    if (!paragraph) return "";
+    const key = window.ReadEngine.cacheKey(paragraph.text, readConfig.model);
+    const entry = readCacheLookup(key);
+    const translation = entry && entry.result && entry.result.translation
+      ? entry.result.translation
+      : "";
+    return "【当前段落】\n原文：" + paragraph.text + (translation ? "\n译文：" + translation : "");
+  }
+
+  function renderAssistantLog() {
+    elements.read.assistantLog.replaceChildren();
+    if (!readAssistantMessages.length && !readAssistantBusy) {
+      const empty = document.createElement("p");
+      empty.className = "read-assistant-bubble is-assistant is-pending";
+      empty.textContent = "就当前段落提问：词义、语法、读音或译法都可以。";
+      elements.read.assistantLog.append(empty);
+      return;
+    }
+    readAssistantMessages.forEach(function (message) {
+      const bubble = document.createElement("div");
+      bubble.className = "read-assistant-bubble " +
+        (message.role === "user" ? "is-user" : "is-assistant");
+      bubble.textContent = message.display || message.content;
+      elements.read.assistantLog.append(bubble);
+    });
+    if (readAssistantBusy) {
+      const pending = document.createElement("div");
+      pending.className = "read-assistant-bubble is-assistant is-pending";
+      pending.textContent = "思考中…";
+      elements.read.assistantLog.append(pending);
+    }
+  }
+
+  function sendAssistant() {
+    const question = elements.read.assistantInput.value.trim();
+    if (!question || readAssistantBusy) return;
+    if (!readBudgetAllow(1)) {
+      showToast(READ_STATE_MESSAGES.budget, true);
+      return;
+    }
+    readAssistantBusy = true;
+    const isFirst = readAssistantMessages.length === 0;
+    const contextBlock = isFirst ? buildAssistantContext(readFocusIndex) : "";
+    const wireContent = contextBlock ? contextBlock + "\n\n【提问】" + question : question;
+    const wireMessages = readAssistantMessages.map(function (message) {
+      return { role: message.role, content: message.content };
+    });
+    wireMessages.push({ role: "user", content: wireContent });
+    renderAssistantLog();
+    window.ReadClient.askAssistant(readClient, readConfig, wireMessages, {
+      offline: Boolean(window.navigator && window.navigator.onLine === false),
+      budgetAllow: readBudgetAllow,
+      budgetCharge: readBudgetCharge,
+      requestId: "a" + readAssistantMessages.length
+    }).then(function (outcome) {
+      readAssistantBusy = false;
+      if (outcome.ok) {
+        readAssistantMessages.push({ role: "user", content: wireContent, display: question });
+        readAssistantMessages.push({ role: "assistant", content: outcome.data.reply });
+        elements.read.assistantInput.value = "";
+      } else {
+        recordReadStats(outcome);
+        showToast(outcome.local === window.ReadClient.LOCAL_REASONS.OFFLINE
+          ? READ_STATE_MESSAGES.offline
+          : outcome.local === window.ReadClient.LOCAL_REASONS.BUDGET
+            ? READ_STATE_MESSAGES.budget
+            : "助手暂时没回复，请稍后重试。", true);
+      }
+      renderAssistantLog();
     });
   }
 
@@ -1303,6 +1614,25 @@
     if (kind === "confirm-read-all") {
       readView.hideSheet();
       runReadAll(context.items || []);
+      return;
+    }
+    if (kind === "confirm-ocr") {
+      // 确认后走文本流程：填入输入框并本地切段（不自动发起网络解析，与手动一致）。
+      readView.hideSheet();
+      elements.read.textarea.value = readOcrPendingText;
+      // dispatchEvent 是标准 DOM；dom-stub 测试桩同样实现该方法（dispatch 仅测试内部用）。
+      elements.read.textarea.dispatchEvent(new window.Event("input"));
+      if (readView.startReading()) {
+        readArticleRequests = 0;
+        readInFlight = {};
+        updateReadDisplay();
+        readView.setTtsEnabled(getReadTts().supported);
+        updateReadPlayUI();
+        showToast("已导入转写文本，点段即可解析。", false);
+      } else {
+        showToast("转写文本已填入输入框，未满 10 字无法切段。", true);
+      }
+      refreshReadOcrEntry();
       return;
     }
     if (kind === "dismiss-sheet") {
@@ -4646,6 +4976,8 @@
     window.ReadClient.createFetchTransport(window),
     { engine: window.ReadEngine, prompts: window.ReadPrompts }
   );
+  refreshReadOcrEntry();
+  refreshAssistantEntry();
   readView = window.ReadView.createView(document, elements.read, window.ReadEngine, {
     charCount: function (count) { return count + " 字"; },
     paragraphCount: function (count) { return "共 " + count + " 段"; },
@@ -4659,23 +4991,105 @@
     onParagraphClick: startReadAnalysis,
     onTokenClick: startWordDetail,
     onGrammarClick: startGrammar,
-    onSheetAction: onReadSheetAction
+    onSheetAction: onReadSheetAction,
+    onSpeakClick: function (index) {
+      if (readPlayPhase === "playing" && readPlayIndex === index) {
+        stopReadSpeak();
+        return;
+      }
+      startReadSpeak(index, false);
+    }
   });
   elements.read.textarea.addEventListener("input", function () {
     readView.updateCount();
   });
   elements.read.startButton.addEventListener("click", function () {
     cancelReadAll();
+    stopReadSpeak();
     readView.hideRunStatus();
     readView.hideSelectionAction();
+    elements.read.displaySheet.hidden = true;
     if (readView.startReading()) {
       readArticleRequests = 0;
       readInFlight = {};
       updateReadDisplay();
+      readView.setTtsEnabled(getReadTts().supported);
+      updateReadPlayUI();
     }
   });
   ["toggleFurigana", "toggleRomaji", "toggleTranslation"].forEach(function (key) {
     elements.read[key].addEventListener("change", updateReadDisplay);
+  });
+  elements.read.openDisplayButton.addEventListener("click", function () {
+    elements.read.displaySheet.hidden = false;
+  });
+  elements.read.displayClose.addEventListener("click", function () {
+    elements.read.displaySheet.hidden = true;
+  });
+  elements.read.displayBackdrop.addEventListener("click", function () {
+    elements.read.displaySheet.hidden = true;
+  });
+  elements.read.ttsRate.addEventListener("input", function () {
+    readDisplayRate = Number(elements.read.ttsRate.value) || 1;
+    elements.read.ttsRateValue.textContent = readDisplayRate.toFixed(1) + "×";
+  });
+  elements.read.playToggle.addEventListener("click", function () {
+    if (readPlayPhase === "playing") {
+      pauseReadSpeak();
+    } else if (readPlayPhase === "paused") {
+      resumeReadSpeak();
+    } else {
+      startReadSpeak(readPlayIndex >= 0 ? readPlayIndex : 0, true);
+    }
+  });
+  elements.read.playPrev.addEventListener("click", function () {
+    const total = readView.getParagraphs().length;
+    if (!total) return;
+    const target = readPlayIndex > 0 ? readPlayIndex - 1 : 0;
+    startReadSpeak(target, true);
+  });
+  elements.read.playNext.addEventListener("click", function () {
+    const total = readView.getParagraphs().length;
+    if (!total) return;
+    const target = readPlayIndex >= 0 ? Math.min(readPlayIndex + 1, total - 1) : 0;
+    startReadSpeak(target, true);
+  });
+  elements.read.ocrImport.addEventListener("click", function () {
+    elements.read.ocrFile.click();
+  });
+  elements.read.ocrFile.addEventListener("change", function () {
+    const files = elements.read.ocrFile.files || [];
+    handleReadOcrFile(files[0]);
+    elements.read.ocrFile.value = "";
+  });
+  // 阅读器拖拽 / 粘贴图片：与识图导入同一确认流程。
+  elements.read.readerView.addEventListener("dragover", function (event) {
+    event.preventDefault();
+  });
+  elements.read.readerView.addEventListener("drop", function (event) {
+    event.preventDefault();
+    const files = (event.dataTransfer && event.dataTransfer.files) || [];
+    handleReadOcrFile(files[0]);
+  });
+  [elements.read.readerView, elements.read.textarea].forEach(function (node) {
+    node.addEventListener("paste", function (event) {
+      const files = (event.clipboardData && event.clipboardData.files) || [];
+      if (files.length) handleReadOcrFile(files[0]);
+    });
+  });
+  elements.read.openAssistantButton.addEventListener("click", function () {
+    renderAssistantLog();
+    elements.read.assistantSheet.hidden = false;
+  });
+  elements.read.assistantClose.addEventListener("click", function () {
+    elements.read.assistantSheet.hidden = true;
+  });
+  elements.read.assistantBackdrop.addEventListener("click", function () {
+    elements.read.assistantSheet.hidden = true;
+  });
+  elements.read.assistantSend.addEventListener("click", sendAssistant);
+  elements.read.assistantInput.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") sendAssistant();
   });
   elements.read.sheetClose.addEventListener("click", function () { readView.hideSheet(); });
   elements.read.sheetBackdrop.addEventListener("click", function () { readView.hideSheet(); });
@@ -4695,8 +5109,10 @@
   }
   elements.read.backButton.addEventListener("click", function () {
     cancelReadAll();
+    stopReadSpeak();
     readView.hideRunStatus();
     readView.hideSelectionAction();
+    elements.read.displaySheet.hidden = true;
     readView.showInput();
   });
   elements.read.openSettingsButton.addEventListener("click", openReadSettings);
@@ -4710,6 +5126,10 @@
     });
   });
   elements.read.configSave.addEventListener("click", saveReadSettings);
+  elements.read.statsClear.addEventListener("click", function () {
+    clearReadStats();
+    showToast("统计已清零。", false);
+  });
   elements.read.configTest.addEventListener("click", testReadConnection);
   readView.updateCount();
   showView("home", { focus: false }); // 初始装载不抢焦点

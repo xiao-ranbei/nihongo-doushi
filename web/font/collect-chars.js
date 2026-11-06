@@ -65,7 +65,11 @@ for (const adjective of adjEngine.ADJECTIVES) {
 }
 
 // 页面与脚本中的可见文本（含 toast / aria-label / CSS content）
-for (const file of ["index.html", "app.js", "adjective-engine.js", "particle-engine.js", "styles.css"]) {
+for (const file of [
+  "index.html", "app.js", "adjective-engine.js", "particle-engine.js", "styles.css",
+  "read-engine.js", "read-prompts.js", "read-view.js", "read-client.js", "read-stats.js", "read-tts.js",
+  "read-ocr.js"
+]) {
   const text = fs.readFileSync(path.join(__dirname, "..", file), "utf8");
   for (const char of text) {
     chars.add(char);
