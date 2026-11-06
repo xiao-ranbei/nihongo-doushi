@@ -153,3 +153,18 @@ test(":root 令牌按语义分组并有注释", function () {
   });
   assert.ok(customProps.length >= 12, "基础调色板令牌不应少于 12 个");
 });
+
+test("文章阅读的 9 组 pos 底色令牌都在 :root 定义", function () {
+  const root = extractRootBlock();
+  ["n", "v", "adj", "adjv", "adv", "misc", "p", "aux", "none"].forEach(function (group) {
+    assert.match(root, new RegExp("--pos-" + group + "\\s*:"), "缺少 --pos-" + group);
+  });
+});
+
+test("逐词按 pos 分组取底色，正文与输入区固定行高", function () {
+  assert.match(css, /\.read-token\[data-pos-group="n"\]\s*\{\s*background:\s*var\(--pos-n\);\s*\}/);
+  assert.match(css, /\.read-token\[data-pos-group="aux"\]\s*\{\s*background:\s*var\(--pos-aux\);\s*\}/);
+  assert.match(css, /\.read-paragraph-text\s*\{[^}]*line-height:\s*30px;/);
+  assert.match(css, /\.read-textarea\s*\{[^}]*line-height:\s*30px;/);
+  assert.match(css, /\.read-paragraph-tokens\s*\{[^}]*flex-wrap:\s*wrap;/);
+});

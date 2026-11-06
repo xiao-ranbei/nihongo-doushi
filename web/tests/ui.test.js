@@ -2025,3 +2025,893 @@ test("Web 丢弃 Android 旧版本遗留的无效题目 ID", function () {
   );
   assert.equal(app.$("particle-start-review").disabled, true);
 });
+
+// ── 文章阅读（B2 静态外壳 + 本地切段） ────────────────────────────────────
+
+function readTab(app) {
+  return app.document.querySelectorAll("[data-view]").filter(function (node) {
+    return node.dataset.view === "read";
+  });
+}
+
+function readCard(app) {
+  return app.document.querySelectorAll("[data-open-view]").filter(function (node) {
+    return node.dataset.openView === "read";
+  });
+}
+
+test("阅读引擎脚本在 app.js 之前按 defer 顺序加载", function () {
+  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  const appScript = html.indexOf('src="app.js"');
+  ["read-engine.js", "read-prompts.js", "read-view.js"].forEach(function (name) {
+    const at = html.indexOf('src="' + name + '"');
+    assert.ok(at > 0, "应加载 " + name);
+    assert.ok(at < appScript, name + " 必须在 app.js 之前");
+  });
+});
+
+test("初始化：文章阅读视图隐藏，侧栏与主页各有一个入口", function () {
+  const app = createApp();
+  assert.equal(app.$("view-read").hidden, true);
+  assert.equal(readTab(app).length, 1, "侧栏应有唯一的文章阅读入口");
+  assert.equal(readCard(app).length, 1, "主页应有唯一的文章阅读卡片");
+  assert.equal(app.$("read-config-notice").hidden, false, "未配置提示应常驻可见");
+  assert.equal(app.$("read-start-button").disabled, true);
+  assert.equal(app.$("read-view-input").hidden, false);
+  assert.equal(app.$("read-view-reader").hidden, true);
+});
+
+test("初始化：阅读模块的错误、离线与加载三态默认都不显示", function () {
+  const app = createApp();
+  assert.equal(app.$("read-state-error").hidden, true);
+  assert.equal(app.$("read-state-offline").hidden, true);
+  assert.equal(app.$("read-state-loading").hidden, true);
+});
+
+test("文章阅读：字数不足 10 字时不能开始阅读", function () {
+  const app = createApp();
+  const textarea = app.$("read-input-textarea");
+  textarea.value = "短い";
+  textarea.dispatch("input");
+  assert.equal(app.$("read-char-count").textContent, "2 字");
+  assert.equal(app.$("read-start-button").disabled, true);
+  app.click(app.$("read-start-button"));
+  assert.equal(app.$("read-view-reader").hidden, true, "门槛不足时不应切到阅读器");
+});
+
+test("文章阅读：粘贴文章后本地切段并保留逐词与译文容器", function () {
+  const app = createApp();
+  const textarea = app.$("read-input-textarea");
+  textarea.value = "今日はいい天気です。\n散歩に行きました。\n\n明日は雨だそうだ。";
+  textarea.dispatch("input");
+  assert.equal(app.$("read-start-button").disabled, false);
+  app.click(app.$("read-start-button"));
+  assert.equal(app.$("read-view-input").hidden, true);
+  assert.equal(app.$("read-view-reader").hidden, false);
+  assert.equal(app.$("read-back-input").hidden, false);
+
+  const cards = app.document.querySelectorAll(".read-paragraph-card");
+  assert.equal(cards.length, 2, "空行应把文章切成两段");
+  assert.equal(app.$("read-paragraph-count").textContent, "共 2 段");
+  assert.equal(app.$("read-paragraph-empty").hidden, true);
+  assert.equal(
+    cards[0].querySelectorAll(".read-paragraph-text")[0].textContent,
+    "今日はいい天気です。\n散歩に行きました。"
+  );
+  assert.equal(cards[0].querySelectorAll(".read-paragraph-translation")[0].hidden, true);
+  assert.equal(cards[0].querySelectorAll(".read-paragraph-tokens")[0].hidden, true);
+  assert.equal(cards[0].querySelectorAll(".read-paragraph-status")[0].textContent,
+    "点击这一段解析 · 本次约 2 次请求");
+});
+
+test("文章阅读：换一篇文章回到输入页", function () {
+  const app = createApp();
+  const textarea = app.$("read-input-textarea");
+  textarea.value = "今日はいい天気です。散歩に行きました。";
+  textarea.dispatch("input");
+  app.click(app.$("read-start-button"));
+  assert.equal(app.$("read-view-reader").hidden, false);
+  app.click(app.$("read-back-input"));
+  assert.equal(app.$("read-view-input").hidden, false);
+  assert.equal(app.$("read-view-reader").hidden, true);
+  assert.equal(app.$("read-back-input").hidden, true);
+});
+
+test("文章阅读：侧栏导航切换、播报与引导文案", function () {
+  const app = createApp();
+  tab(app, "read");
+  assert.equal(app.$("view-read").hidden, false);
+  assert.equal(app.$("view-home").hidden, true);
+  assert.equal(app.$("view-announcer").textContent, "已进入文章阅读");
+  assert.equal(app.$("intro-copy").textContent,
+    "贴入日语文章，先在本地切成段落读原文；配置模型后可逐段查看读音、词性与译文。");
+});
+
+test("文章阅读：主页卡片可直接进入阅读视图", function () {
+  const app = createApp();
+  app.click(readCard(app)[0]);
+  assert.equal(app.$("view-read").hidden, false);
+  assert.equal(app.$("view-particle").hidden, true);
+});
+
+// ── 文章阅读 · 模型 / API 设置（B3，全程 Fake transport） ──────────────────
+
+const READ_CONFIG_KEY = "japanese-read-analyzer-config-v1";
+
+function openReadSettings(app) {
+  tab(app, "read");
+  app.click(app.$("read-open-settings"));
+}
+
+function fillReadForm(app, baseUrl, model, key) {
+  app.$("read-config-base-url").value = baseUrl;
+  app.$("read-config-model").value = model;
+  app.$("read-config-key").value = key;
+  app.$("read-config-base-url").dispatch("input");
+}
+
+function flushPromises() {
+  return new Promise(function (resolve) { setTimeout(resolve, 0); });
+}
+
+test("文章阅读：三个子视图互斥，设置页默认隐藏", function () {
+  const app = createApp();
+  assert.equal(app.$("read-view-input").hidden, false);
+  assert.equal(app.$("read-view-reader").hidden, true);
+  assert.equal(app.$("read-view-settings").hidden, true);
+  openReadSettings(app);
+  assert.equal(app.$("read-view-input").hidden, true);
+  assert.equal(app.$("read-view-settings").hidden, false);
+  app.click(app.$("read-settings-back"));
+  assert.equal(app.$("read-view-input").hidden, false);
+  assert.equal(app.$("read-view-settings").hidden, true);
+});
+
+test("文章阅读：设置页实时显示规范化后的实际请求地址", function () {
+  const app = createApp();
+  openReadSettings(app);
+  assert.equal(app.$("read-config-resolved-url").textContent, "—");
+  fillReadForm(app, "https://api.example.com", "m", "k");
+  assert.equal(app.$("read-config-resolved-url").textContent,
+    "https://api.example.com/v1/chat/completions");
+  app.$("read-config-base-url").value = "https://open.example/api/paas/v4";
+  app.$("read-config-base-url").dispatch("input");
+  assert.equal(app.$("read-config-resolved-url").textContent,
+    "https://open.example/api/paas/v4/chat/completions");
+});
+
+test("文章阅读：空表单保存被拦下且不写本地存储", function () {
+  const app = createApp();
+  openReadSettings(app);
+  app.click(app.$("read-config-save"));
+  assert.equal(app.$("read-config-errors").hidden, false);
+  // 温度输入框有默认值 0.2，因此只报地址 / 模型 / 密钥三项。
+  assert.equal(app.$("read-config-errors").querySelectorAll("li").length, 3);
+  assert.equal(app.window.localStorage.getItem(READ_CONFIG_KEY), null);
+});
+
+test("文章阅读：保存配置后密钥只以末四位掩码回显", function () {
+  const app = createApp();
+  openReadSettings(app);
+  fillReadForm(app, "https://api.example.com", "test-model", "sk-abcd1234");
+  app.click(app.$("read-config-save"));
+  assert.equal(app.$("read-config-errors").hidden, true);
+  assert.equal(app.$("read-config-test-result").textContent, "已保存。");
+
+  const stored = JSON.parse(app.window.localStorage.getItem(READ_CONFIG_KEY));
+  assert.equal(stored.baseUrl, "https://api.example.com");
+  assert.equal(stored.model, "test-model");
+  assert.equal(stored.apiKey, "sk-abcd1234");
+  assert.equal(stored.temperature, 0.2);
+
+  app.click(app.$("read-settings-back"));
+  openReadSettings(app);
+  assert.equal(app.$("read-config-key").value, "", "密钥明文不得回填到输入框");
+  assert.equal(app.$("read-config-key-hint").hidden, false);
+  assert.equal(app.$("read-config-key-hint").textContent, "已保存密钥：••••••1234");
+});
+
+test("文章阅读：修改密钥可留空沿用已保存值", function () {
+  const app = createApp();
+  openReadSettings(app);
+  fillReadForm(app, "https://api.example.com", "m", "sk-first1234");
+  app.click(app.$("read-config-save"));
+  app.$("read-config-model").value = "another-model";
+  app.$("read-config-key").value = "";
+  app.click(app.$("read-config-save"));
+  const stored = JSON.parse(app.window.localStorage.getItem(READ_CONFIG_KEY));
+  assert.equal(stored.model, "another-model");
+  assert.equal(stored.apiKey, "sk-first1234");
+});
+
+test("文章阅读：坏配置 JSON 回退为空配置且不崩溃", function () {
+  const bad = {};
+  bad[READ_CONFIG_KEY] = "{not-json";
+  const app = createApp({ storage: bad });
+  openReadSettings(app);
+  assert.equal(app.$("read-config-base-url").value, "");
+  assert.equal(app.$("read-config-model").value, "");
+  assert.equal(app.$("read-config-resolved-url").textContent, "—");
+});
+
+test("文章阅读：已保存配置可跨会话读回", function () {
+  const stored = {};
+  stored[READ_CONFIG_KEY] = JSON.stringify({
+    baseUrl: "https://saved.example/v1", model: "saved-model",
+    apiKey: "sk-saved9876", temperature: 0.5
+  });
+  const app = createApp({ storage: stored });
+  openReadSettings(app);
+  assert.equal(app.$("read-config-base-url").value, "https://saved.example/v1");
+  assert.equal(app.$("read-config-model").value, "saved-model");
+  assert.equal(app.$("read-config-temperature").value, "0.5");
+  assert.equal(app.$("read-config-key-hint").textContent, "已保存密钥：••••••9876");
+});
+
+test("文章阅读：测试连接走 Fake transport 并给出中文结果", function () {
+  const app = createApp();
+  openReadSettings(app);
+  fillReadForm(app, "https://api.example.com", "m", "k");
+  app.click(app.$("read-config-test"));
+  return flushPromises().then(function () {
+    assert.equal(app.$("read-config-test-result").hidden, false);
+    assert.equal(app.$("read-config-test-result").textContent, "连接成功，模型返回可解析。");
+  });
+});
+
+// ── 文章阅读 · 核心解析闭环（B4，全程 Fake fetch） ─────────────────────────
+
+const READ_CACHE_KEY_B4 = "japanese-read-analyzer-cache-v1";
+const READ_BUDGET_KEY_B4 = "japanese-read-analyzer-budget-v1";
+
+function configuredApp(storage, model) {
+  const values = Object.assign({}, storage || {});
+  values[READ_CONFIG_KEY] = JSON.stringify({
+    baseUrl: "https://api.example.com",
+    model: model || "m1",
+    apiKey: "sk-test",
+    temperature: 0.2
+  });
+  return createApp({ storage: values });
+}
+
+function charTokens(text) {
+  const out = [];
+  Array.from(text).forEach(function (ch) {
+    let pos = "名詞";
+    let furigana = "";
+    if (ch === "は") pos = "助詞";
+    else if (ch === "です" || ch === "た") pos = "助動詞";
+    else if (ch === "\n") pos = "改行";
+    else if (/[。、，．！？]/.test(ch)) pos = "記号";
+    else if (/[\u4e00-\u9faf]/.test(ch)) furigana = "かんじ";
+    out.push({ word: ch, pos: pos, furigana: furigana });
+  });
+  return out;
+}
+
+const DETAIL_JSON = JSON.stringify({
+  meaning: "天气", dictionaryForm: "天気", usage: "与「いい」搭配表示天气好",
+  conjugation: "", example: "いい天気ですね。", exampleMeaning: "天气真好。"
+});
+const GRAMMAR_JSON = JSON.stringify({
+  patterns: [{ label: "〜ね", span: [0, 3], meaning: "确认语气", note: "句尾", level: "" }],
+  structure: { clauses: [{ span: [0, 3], role: "主节", head: "ですね" }], relations: [] },
+  style: { politeness: "敬体", register: "口语" },
+  engineRefs: [{ type: "particle", surface: "は", span: [2, 3] }]
+});
+
+function installReadFetch(app, options) {
+  const opts = options || {};
+  const calls = [];
+  app.window.fetch = function (url, init) {
+    const body = JSON.parse(init.body);
+    const system = body.messages[0].content;
+    let kind = "translate";
+    if (system.indexOf("词法标注器") >= 0) kind = "analyze";
+    else if (system.indexOf("双语词典编辑") >= 0) kind = "detail";
+    else if (system.indexOf("日语教育语法分析器") >= 0) kind = "grammar";
+    calls.push({ url: url, body: body, kind: kind });
+    let ok = true;
+    let status = 200;
+    let content;
+    if (kind === "detail") {
+      content = opts.detailContent !== undefined ? opts.detailContent : DETAIL_JSON;
+      if (opts.detailStatus) { ok = false; status = opts.detailStatus; content = "{}"; }
+    } else if (kind === "grammar") {
+      content = opts.grammarContent !== undefined ? opts.grammarContent : GRAMMAR_JSON;
+      if (opts.grammarStatus) { ok = false; status = opts.grammarStatus; content = "{}"; }
+    } else if (body.response_format) {
+      const match = /原文（JSON 字符串）：("(?:[^"\\]|\\.)*")/.exec(body.messages[1].content);
+      const text = match ? JSON.parse(match[1]) : "";
+      content = opts.analyzeContent !== undefined
+        ? opts.analyzeContent
+        : JSON.stringify({ tokens: charTokens(text) });
+      if (opts.analyzeStatus) { ok = false; status = opts.analyzeStatus; content = "{}"; }
+    } else {
+      content = opts.translationContent !== undefined ? opts.translationContent : "这是译文。";
+      if (opts.translateStatus) { ok = false; status = opts.translateStatus; content = "{}"; }
+    }
+    return Promise.resolve({
+      ok: ok,
+      status: status,
+      text: function () {
+        return Promise.resolve(JSON.stringify({
+          choices: [{ message: { content: content }, finish_reason: opts.finishReason || "stop" }]
+        }));
+      }
+    });
+  };
+  return calls;
+}
+
+function openReaderWith(app, text) {
+  tab(app, "read");
+  app.$("read-input-textarea").value = text || "今日はいい天気ですね。";
+  app.$("read-input-textarea").dispatch("input");
+  app.click(app.$("read-start-button"));
+}
+
+function firstCard(app) {
+  const cards = app.document.querySelectorAll(".read-paragraph-card");
+  assert.equal(cards.length, 1);
+  return cards[0];
+}
+
+function nodeIn(card, className) {
+  return card.querySelectorAll("." + className)[0];
+}
+
+test("文章阅读：点段解析后逐词、注音、图例与译文同卡呈现", function () {
+  const app = configuredApp();
+  const calls = installReadFetch(app);
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    const card = firstCard(app);
+    assert.equal(card.dataset.state, "parsed");
+    assert.equal(calls.length, 2, "analyze 与 translate 各一次");
+    assert.equal(nodeIn(card, "read-paragraph-text").hidden, true, "对齐后隐藏重复原句");
+    assert.equal(nodeIn(card, "read-paragraph-tokens").hidden, false);
+    assert.equal(nodeIn(card, "read-paragraph-translation").textContent, "这是译文。");
+    assert.ok(card.querySelectorAll(".read-token").length >= 4);
+    assert.ok(card.querySelectorAll("rt").length > 0, "汉字应有 ruby 注音");
+    const tokenUnits = card.querySelectorAll(".read-token");
+    assert.ok(tokenUnits.length > 0);
+    assert.ok(tokenUnits[0].dataset.posGroup, "逐词应带 pos 分组");
+    assert.ok(app.document.querySelectorAll(".read-legend-item").length > 0);
+  });
+});
+
+test("文章阅读：段内换行渲染为独立断行组", function () {
+  const app = configuredApp();
+  installReadFetch(app);
+  openReaderWith(app, "今日はいい天気ですね。\n散歩に行きました。");
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    const card = firstCard(app);
+    assert.equal(card.dataset.state, "parsed");
+    const groups = card.querySelectorAll(".read-token-group");
+    const breaks = groups.filter(function (group) {
+      return group.classList.contains("is-paragraph-break");
+    });
+    assert.equal(breaks.length, 1);
+  });
+});
+
+test("文章阅读：缓存命中零请求，且缓存按段落文本与模型落盘", function () {
+  const app = configuredApp();
+  const calls = installReadFetch(app);
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    const stored = JSON.parse(app.window.localStorage.getItem(READ_CACHE_KEY_B4));
+    assert.equal(stored.entries.length, 1);
+    assert.equal(stored.entries[0].model, "m1");
+    assert.equal(stored.entries[0].key,
+      require("../read-engine.js").cacheKey("今日はいい天気ですね。", "m1"));
+    app.click(firstCard(app));
+    return flushPromises();
+  }).then(function () {
+    assert.equal(calls.length, 2, "第二次点击不应再发请求");
+    assert.equal(firstCard(app).dataset.state, "parsed");
+  });
+});
+
+test("文章阅读：换模型名后同一段重新请求", function () {
+  const app = configuredApp();
+  const calls = installReadFetch(app);
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    app.click(app.$("read-open-settings"));
+    app.$("read-config-model").value = "m2";
+    app.click(app.$("read-config-save"));
+    app.click(app.$("read-settings-back"));
+    app.click(firstCard(app));
+    return flushPromises();
+  }).then(function () {
+    assert.equal(calls.length, 4, "换模型后缓存键改变，应重新请求");
+    const stored = JSON.parse(app.window.localStorage.getItem(READ_CACHE_KEY_B4));
+    assert.equal(stored.entries.length, 2);
+  });
+});
+
+test("文章阅读：原文重建不一致时隐藏逐词、保底显示原句", function () {
+  const app = configuredApp();
+  installReadFetch(app, { analyzeContent: '{"tokens":[{"word":"今日","pos":"名詞"}]}' });
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    const card = firstCard(app);
+    assert.equal(card.dataset.state, "parsed");
+    assert.equal(nodeIn(card, "read-paragraph-text").hidden, false);
+    assert.equal(nodeIn(card, "read-paragraph-tokens").hidden, true);
+    assert.match(nodeIn(card, "read-paragraph-status").textContent, /分词不可用/);
+  });
+});
+
+test("文章阅读：译文失败不推翻逐词结果", function () {
+  const app = configuredApp();
+  installReadFetch(app, { translateStatus: 500 });
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    const card = firstCard(app);
+    assert.equal(card.dataset.state, "parsed");
+    assert.equal(nodeIn(card, "read-paragraph-translation").textContent, "");
+    assert.match(nodeIn(card, "read-paragraph-status").textContent, /译文暂不可用/);
+  });
+});
+
+test("文章阅读：请求失败给中文提示且不写缓存", function () {
+  const app = configuredApp();
+  installReadFetch(app, { analyzeStatus: 401 });
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    const card = firstCard(app);
+    assert.equal(card.dataset.state, "error");
+    assert.match(nodeIn(card, "read-paragraph-status").textContent, /密钥无效/);
+    assert.equal(app.window.localStorage.getItem(READ_CACHE_KEY_B4), null);
+  });
+});
+
+test("文章阅读：截断返回不写缓存", function () {
+  const app = configuredApp();
+  installReadFetch(app, { finishReason: "length" });
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    assert.equal(firstCard(app).dataset.state, "error");
+    assert.equal(app.window.localStorage.getItem(READ_CACHE_KEY_B4), null);
+  });
+});
+
+test("文章阅读：三个显示开关可切换注音、罗马音与译文", function () {
+  const app = configuredApp();
+  installReadFetch(app);
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    const card = firstCard(app);
+    assert.ok(card.querySelectorAll("rt").length > 0);
+    app.$("read-toggle-furigana").checked = false;
+    app.$("read-toggle-furigana").dispatch("change");
+    assert.equal(card.querySelectorAll("rt").length, 0);
+    app.$("read-toggle-romaji").checked = true;
+    app.$("read-toggle-romaji").dispatch("change");
+    assert.ok(card.querySelectorAll(".read-token-romaji").length > 0);
+    app.$("read-toggle-translation").checked = false;
+    app.$("read-toggle-translation").dispatch("change");
+    assert.equal(nodeIn(card, "read-paragraph-translation").hidden, true);
+  });
+});
+
+test("文章阅读：未配置时点段不发请求并提示去设置", function () {
+  const app = createApp();
+  const calls = installReadFetch(app);
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    assert.equal(calls.length, 0);
+    assert.equal(firstCard(app).dataset.state, "error");
+    assert.match(nodeIn(firstCard(app), "read-paragraph-status").textContent, /先去设置页/);
+  });
+});
+
+test("文章阅读：离线时只读缓存不发请求", function () {
+  const app = configuredApp();
+  const calls = installReadFetch(app);
+  app.window.navigator = { onLine: false };
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    assert.equal(calls.length, 0);
+    assert.equal(firstCard(app).dataset.state, "offline");
+    assert.match(nodeIn(firstCard(app), "read-paragraph-status").textContent, /离线/);
+  });
+});
+
+test("文章阅读：达到每日预算上限后不再发请求", function () {
+  const storage = {};
+  const today = new Date();
+  const localDate = today.getFullYear() + "-" +
+    String(today.getMonth() + 1).padStart(2, "0") + "-" +
+    String(today.getDate()).padStart(2, "0");
+  storage[READ_BUDGET_KEY_B4] = JSON.stringify({
+    date: localDate, dailyCount: 100, articleCount: 0
+  });
+  const app = configuredApp(storage);
+  const calls = installReadFetch(app);
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    assert.equal(calls.length, 0);
+    assert.equal(firstCard(app).dataset.state, "budget");
+    assert.match(nodeIn(firstCard(app), "read-paragraph-status").textContent, /上限/);
+  });
+});
+
+// ── 文章阅读 · 词详情与语法抽屉（B5） ──────────────────────────────────────
+
+function parsedFirstCard(app) {
+  const appInstance = configuredApp();
+  const calls = installReadFetch(appInstance);
+  openReaderWith(appInstance);
+  appInstance.click(firstCard(appInstance));
+  return flushPromises().then(function () {
+    return { app: appInstance, calls: calls, card: firstCard(appInstance) };
+  });
+}
+
+test("文章阅读：点词打开底部抽屉并展示六字段词详情", function () {
+  return parsedFirstCard().then(function (context) {
+    const unit = context.card.querySelectorAll(".read-token")[0];
+    context.app.click(unit);
+    return flushPromises().then(function () {
+      assert.equal(context.app.$("read-sheet").hidden, false);
+      assert.match(context.app.$("read-sheet-title").textContent, /词详情/);
+      assert.equal(context.app.$("read-sheet-body").querySelectorAll(".read-sheet-row").length, 6);
+      assert.equal(context.calls.filter(function (c) { return c.kind === "detail"; }).length, 1);
+    });
+  });
+});
+
+test("文章阅读：同一词二次点击命中 LRU 不再请求", function () {
+  return parsedFirstCard().then(function (context) {
+    const unit = context.card.querySelectorAll(".read-token")[0];
+    context.app.click(unit);
+    return flushPromises().then(function () {
+      context.app.click(unit);
+      return flushPromises();
+    }).then(function () {
+      assert.equal(context.calls.filter(function (c) { return c.kind === "detail"; }).length, 1);
+      assert.equal(context.app.$("read-sheet").hidden, false);
+    });
+  });
+});
+
+test("文章阅读：词详情失败在抽屉里给中文提示", function () {
+  const app = configuredApp();
+  installReadFetch(app, { detailStatus: 401 });
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    app.click(firstCard(app).querySelectorAll(".read-token")[0]);
+    return flushPromises();
+  }).then(function () {
+    assert.equal(app.$("read-sheet").hidden, false);
+    assert.match(app.$("read-sheet-body").textContent, /密钥无效/);
+  });
+});
+
+test("文章阅读：点看语法展示句型结构文体并高亮原文", function () {
+  return parsedFirstCard().then(function (context) {
+    const button = context.card.querySelectorAll(".read-grammar-button")[0];
+    assert.equal(button.hidden, false, "解析成功后才显示看语法按钮");
+    context.app.click(button);
+    return flushPromises().then(function () {
+      assert.equal(context.app.$("read-sheet").hidden, false);
+      assert.equal(context.app.$("read-sheet-title").textContent, "语法分析");
+      assert.equal(context.app.$("read-sheet-body").querySelectorAll(".read-sheet-row").length, 4);
+      assert.equal(context.calls.filter(function (c) { return c.kind === "grammar"; }).length, 1);
+      const hits = context.card.querySelectorAll(".read-token").filter(function (unit) {
+        return unit.classList.contains("is-grammar-hit");
+      });
+      assert.ok(hits.length > 0, "句型 span 应高亮对应逐词");
+    });
+  });
+});
+
+test("文章阅读：语法结果按段缓存，二次点击零请求", function () {
+  return parsedFirstCard().then(function (context) {
+    const button = context.card.querySelectorAll(".read-grammar-button")[0];
+    context.app.click(button);
+    return flushPromises().then(function () {
+      context.app.click(button);
+      return flushPromises();
+    }).then(function () {
+      assert.equal(context.calls.filter(function (c) { return c.kind === "grammar"; }).length, 1);
+      const stored = JSON.parse(context.app.window.localStorage.getItem(READ_CACHE_KEY_B4));
+      assert.ok(stored.entries[0].grammar, "语法结果应挂在同一条按段缓存里");
+    });
+  });
+});
+
+test("文章阅读：抽屉可由关闭按钮与遮罩收起", function () {
+  return parsedFirstCard().then(function (context) {
+    context.app.click(context.card.querySelectorAll(".read-token")[0]);
+    return flushPromises().then(function () {
+      context.app.click(context.app.$("read-sheet-close"));
+      assert.equal(context.app.$("read-sheet").hidden, true);
+      context.app.click(context.card.querySelectorAll(".read-grammar-button")[0]);
+      return flushPromises();
+    }).then(function () {
+      assert.equal(context.app.$("read-sheet").hidden, false);
+      context.app.click(context.app.$("read-sheet-backdrop"));
+      assert.equal(context.app.$("read-sheet").hidden, true);
+    });
+  });
+});
+
+test("文章阅读：未配置时不暴露逐词与语法入口", function () {
+  const app = createApp();
+  const calls = installReadFetch(app);
+  openReaderWith(app);
+  app.click(firstCard(app));
+  return flushPromises().then(function () {
+    const card = firstCard(app);
+    assert.equal(calls.length, 0);
+    assert.equal(card.dataset.state, "error");
+    assert.equal(card.querySelectorAll(".read-token").length, 0);
+    assert.equal(card.querySelectorAll(".read-grammar-button")[0].hidden, true);
+    assert.match(nodeIn(card, "read-paragraph-status").textContent, /先去设置页/);
+  });
+});
+
+// ── 文章阅读 · 接回既有练习体系（B6） ──────────────────────────────────────
+
+const READ_BOOKMARKS_KEY_B6 = "japanese-verb-practice-bookmarks-v1";
+const READ_ACTIVITY_KEY_B6 = "japanese-read-analyzer-activity-v1";
+
+function sheetAction(app, label) {
+  return app.document.querySelectorAll(".read-sheet-action").filter(function (node) {
+    return node.textContent === label;
+  })[0];
+}
+
+function particleToken(card) {
+  return card.querySelectorAll(".read-token").filter(function (unit) {
+    return unit.textContent === "は";
+  })[0];
+}
+
+test("文章阅读：可反查的词在抽屉里提供练这题与收藏入口", function () {
+  return parsedFirstCard().then(function (context) {
+    const token = particleToken(context.card);
+    assert.ok(token, "文章里应有助词「は」");
+    context.app.click(token);
+    return flushPromises().then(function () {
+      assert.ok(sheetAction(context.app, "练这个词"));
+      assert.ok(sheetAction(context.app, "收藏这个词"));
+      assert.ok(sheetAction(context.app, "收藏这一段"));
+    });
+  });
+});
+
+test("文章阅读：普通名词不会暴露练这题入口", function () {
+  return parsedFirstCard().then(function (context) {
+    const noun = context.card.querySelectorAll(".read-token")[0];
+    context.app.click(noun);
+    return flushPromises().then(function () {
+      assert.equal(sheetAction(context.app, "练这个词"), undefined);
+      assert.ok(sheetAction(context.app, "收藏这个词"));
+    });
+  });
+});
+
+test("文章阅读：收藏词与段落复用既有书签键并可取消", function () {
+  return parsedFirstCard().then(function (context) {
+    context.app.click(particleToken(context.card));
+    return flushPromises().then(function () {
+      context.app.click(sheetAction(context.app, "收藏这个词"));
+      context.app.click(sheetAction(context.app, "收藏这一段"));
+      const stored = JSON.parse(context.app.window.localStorage.getItem(READ_BOOKMARKS_KEY_B6));
+      assert.equal(stored.items.length, 2);
+      assert.deepEqual(stored.items.map(function (item) { return item.type; }).sort(),
+        ["sentence", "word"]);
+      assert.ok(sheetAction(context.app, "已收藏 · 取消"), "按钮应变为已收藏状态");
+      const activity = JSON.parse(context.app.window.localStorage.getItem(READ_ACTIVITY_KEY_B6));
+      assert.equal(activity.words, 1);
+    });
+  });
+});
+
+test("文章阅读：点练这个词进入既有助词练习视图", function () {
+  return parsedFirstCard().then(function (context) {
+    context.app.click(particleToken(context.card));
+    return flushPromises().then(function () {
+      context.app.click(sheetAction(context.app, "练这个词"));
+      assert.equal(context.app.$("view-particle").hidden, false);
+      assert.equal(context.app.$("view-read").hidden, true);
+      assert.equal(context.app.$("read-sheet").hidden, true, "切视图应自动收起抽屉");
+      assert.equal(context.app.$("particle-view-practice").hidden, false);
+    });
+  });
+});
+
+test("文章阅读：语法抽屉提供练这组词并进入既有练习", function () {
+  return parsedFirstCard().then(function (context) {
+    context.app.click(context.card.querySelectorAll(".read-grammar-button")[0]);
+    return flushPromises().then(function () {
+      assert.ok(sheetAction(context.app, "练这组词"));
+      context.app.click(sheetAction(context.app, "练这组词"));
+      assert.equal(context.app.$("view-particle").hidden, false);
+      assert.equal(context.app.$("read-sheet").hidden, true);
+    });
+  });
+});
+
+test("文章阅读：主页显示今日阅读段落摘要", function () {
+  return parsedFirstCard().then(function (context) {
+    context.app.click(context.app.$("brand-home"));
+    assert.match(context.app.$("home-read-status").textContent, /今日已读 1 段/);
+    assert.equal(context.app.$("home-read-count").textContent, "1 段");
+  });
+});
+
+test("文章阅读：测试连接失败时按错误码给中文提示", function () {
+  const app = createApp();
+  app.window.fetch = function () {
+    return Promise.resolve({
+      ok: false,
+      status: 401,
+      text: function () { return Promise.resolve('{"error":{"message":"bad key"}}'); }
+    });
+  };
+  openReadSettings(app);
+  fillReadForm(app, "https://api.example.com", "m", "k");
+  app.click(app.$("read-config-test"));
+  return flushPromises().then(function () {
+    assert.equal(app.$("read-config-test-result").hidden, false);
+    assert.equal(app.$("read-config-test-result").textContent,
+      "密钥无效或没有该模型的权限，先检查密钥。");
+  });
+});
+
+// ── B7 · 长文与流式增强（UI 接线） ─────────────────────────────────────────
+
+function mustSheetAction(app, label) {
+  const buttons = Array.prototype.slice.call(app.document.querySelectorAll(".read-sheet-action"));
+  const found = buttons.filter(function (button) { return button.textContent === label; })[0];
+  assert.ok(found, "弹层应有「" + label + "」按钮");
+  return found;
+}
+
+const B7_THREE_PARAGRAPHS = "今日はいい天気ですね。\n\n散歩に行きました。\n\n明日も晴れです。";
+
+test("文章阅读 B7：一键全文先出费用确认弹层，不确认不发请求", function () {
+  const app = configuredApp();
+  const calls = installReadFetch(app);
+  openReaderWith(app, B7_THREE_PARAGRAPHS);
+  assert.equal(app.document.querySelectorAll(".read-paragraph-card").length, 3);
+  app.click(app.$("read-analyze-all"));
+  assert.equal(app.$("read-sheet").hidden, false, "应弹出费用确认层");
+  const body = app.$("read-sheet-body").textContent;
+  assert.ok(body.indexOf("共 3 段") >= 0, "应写明总段数");
+  assert.ok(body.indexOf("6 次请求") >= 0, "应写明请求数（每段 2 次）");
+  assert.equal(calls.length, 0, "确认前不发请求");
+  app.click(mustSheetAction(app, "取消"));
+  assert.equal(app.$("read-sheet").hidden, true);
+  assert.equal(calls.length, 0, "取消后仍不发请求");
+});
+
+test("文章阅读 B7：确认后全文按原文序解析且状态条收起", function () {
+  const app = configuredApp();
+  const calls = installReadFetch(app);
+  openReaderWith(app, B7_THREE_PARAGRAPHS);
+  app.click(app.$("read-analyze-all"));
+  app.click(mustSheetAction(app, "开始解析"));
+  assert.equal(app.$("read-sheet").hidden, true, "确认后弹层关闭");
+  return flushPromises().then(function () {
+    const cards = app.document.querySelectorAll(".read-paragraph-card");
+    assert.equal(calls.length, 6, "3 段 × 2 请求");
+    Array.prototype.slice.call(cards).forEach(function (card, index) {
+      assert.equal(card.dataset.state, "parsed", "第 " + (index + 1) + " 段应已落位");
+    });
+    assert.equal(app.$("read-run-status").hidden, true, "完成后状态条收起");
+  });
+});
+
+test("文章阅读 B7：解析中状态条可取消，取消中止全部在途块并复位卡片", function () {
+  const app = configuredApp();
+  openReaderWith(app, B7_THREE_PARAGRAPHS);
+  // 挂起的 fetch + 可中止的 AbortController：验证取消能中止在途块。
+  let fetchCount = 0;
+  app.window.AbortController = function () {
+    this.signal = { _onabort: null };
+    const self = this;
+    this.abort = function () {
+      if (self.signal._onabort) self.signal._onabort();
+    };
+  };
+  app.window.fetch = function (url, init) {
+    fetchCount++;
+    return new Promise(function (resolve, reject) {
+      if (init && init.signal) {
+        init.signal._onabort = function () {
+          const error = new Error("aborted");
+          error.name = "AbortError";
+          reject(error);
+        };
+      }
+    });
+  };
+  app.click(app.$("read-analyze-all"));
+  app.click(mustSheetAction(app, "开始解析"));
+  return flushPromises().then(function () {
+    assert.equal(app.$("read-run-status").hidden, false, "运行中显示状态条");
+    assert.equal(app.$("read-run-cancel").hidden, false, "状态条带取消按钮");
+    assert.equal(fetchCount, 4, "并发上限 2 段 = 在途 4 个请求");
+    app.click(app.$("read-run-cancel"));
+    return flushPromises();
+  }).then(function () {
+    assert.equal(app.$("read-run-status").hidden, true, "取消后状态条收起");
+    const cards = app.document.querySelectorAll(".read-paragraph-card");
+    Array.prototype.slice.call(cards).forEach(function (card) {
+      assert.equal(card.dataset.state, "idle", "取消后卡片回到待解析态");
+    });
+  });
+});
+
+test("文章阅读 B7：划选区间浮现分析按钮，结果进弹层且列表不动", function () {
+  const app = configuredApp();
+  const calls = installReadFetch(app);
+  openReaderWith(app, "今日はいい天気ですね。\n\n散歩に行きました。");
+  const cards = Array.prototype.slice.call(app.document.querySelectorAll(".read-paragraph-card"));
+  assert.equal(cards.length, 2);
+  app.window.getSelection = function () {
+    return {
+      rangeCount: 1,
+      isCollapsed: false,
+      anchorNode: cards[0],
+      focusNode: cards[1],
+      getRangeAt: function () {
+        return { getClientRects: function () { return [{ right: 20, bottom: 30 }]; } };
+      }
+    };
+  };
+  app.$("read-paragraph-list").dispatch("mouseup");
+  assert.equal(app.$("read-selection-action").hidden, false, "选区旁应浮现分析按钮");
+  app.click(app.$("read-selection-action"));
+  assert.equal(app.$("read-selection-action").hidden, true);
+  return flushPromises().then(function () {
+    assert.equal(app.$("read-sheet").hidden, false, "合并结果进弹层");
+    assert.ok(app.$("read-sheet-body").querySelectorAll(".read-token").length > 0, "弹层应有逐词");
+    assert.equal(calls.length, 2, "两段合批一次解析 + 一次翻译");
+    // 列表不动：段落卡片保持待解析态
+    assert.equal(cards[0].dataset.state, "idle");
+    assert.equal(cards[1].dataset.state, "idle");
+    assert.equal(app.$("read-run-status").hidden, true);
+  });
+});
+
+test("文章阅读 B7：未选中文字时不浮现划选按钮", function () {
+  const app = configuredApp();
+  installReadFetch(app);
+  openReaderWith(app, "今日はいい天気ですね。");
+  app.window.getSelection = function () {
+    return { rangeCount: 0, isCollapsed: true };
+  };
+  app.$("read-paragraph-list").dispatch("mouseup");
+  assert.equal(app.$("read-selection-action").hidden, true);
+});
+
+test("文章阅读 B7：选区按钮 mousedown 阻止默认以保住选区", function () {
+  const app = configuredApp();
+  installReadFetch(app);
+  openReaderWith(app, "今日はいい天気ですね。");
+  const event = app.$("read-selection-action").dispatch("mousedown");
+  assert.equal(event.defaultPrevented, true, "preventDefault 保住选区，避免 click 落空");
+});

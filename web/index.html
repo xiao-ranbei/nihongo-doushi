@@ -11,6 +11,10 @@
   <script src="verb-engine.js" defer></script>
   <script src="adjective-engine.js" defer></script>
   <script src="particle-engine.js" defer></script>
+  <script src="read-engine.js" defer></script>
+  <script src="read-prompts.js" defer></script>
+  <script src="read-view.js" defer></script>
+  <script src="read-client.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -39,6 +43,10 @@
         </button>
         <button class="nav-item" type="button" data-view="particle" aria-label="助词学习" title="助词学习">
           <span class="nav-icon" aria-hidden="true">助</span><span class="nav-label">助词学习</span>
+        </button>
+        <p class="sidebar-section-label">阅读</p>
+        <button class="nav-item" type="button" data-view="read" aria-label="文章阅读" title="文章阅读">
+          <span class="nav-icon" aria-hidden="true">読</span><span class="nav-label">文章阅读</span>
         </button>
         <p class="sidebar-section-label sidebar-section-review">复习</p>
         <button class="nav-item" type="button" data-view="mistakes" aria-label="错题本" title="错题本">
@@ -137,6 +145,16 @@
                 <span class="home-module-status" id="home-particle-status">今日尚未练习</span>
               </span>
               <span class="home-module-count" id="home-particle-today">0 题</span>
+              <span class="home-module-arrow" aria-hidden="true">→</span>
+            </button>
+            <button class="home-module-card" type="button" data-open-view="read">
+              <span class="home-module-mark" aria-hidden="true">読</span>
+              <span class="home-module-copy">
+                <strong>文章阅读</strong>
+                <small>贴入日语文章，先看分段原文，再逐段解析读音、词性与译文</small>
+                <span class="home-module-status" id="home-read-status">现在可以阅读原文</span>
+              </span>
+              <span class="home-module-count" id="home-read-count">—</span>
               <span class="home-module-arrow" aria-hidden="true">→</span>
             </button>
           </div>
@@ -964,6 +982,103 @@
           <p>开始练习，没掌握的变形会自动收集到这里。</p>
         </div>
       </section>
+
+      <section class="view read-view" id="view-read" aria-labelledby="read-title" hidden>
+        <div class="section-heading read-heading">
+          <div>
+            <p class="eyebrow">READING</p>
+            <h2 id="read-title">文章阅读</h2>
+            <p>贴入日语文章，先在本地切成段落读原文；配置模型后可逐段查看读音、词性与译文。</p>
+          </div>
+          <div class="read-heading-actions">
+            <button class="text-button" id="read-open-settings" type="button">模型设置</button>
+            <button class="text-button" id="read-back-input" type="button" hidden>换一篇文章</button>
+          </div>
+        </div>
+
+        <div class="read-notice" id="read-config-notice" role="status">
+          <span aria-hidden="true">○</span>
+          <span>文章会发送给你自己填写的服务地址；未配置时只能阅读原文，解析不会发起任何请求。</span>
+        </div>
+
+        <div class="read-state is-error" id="read-state-error" role="alert" hidden></div>
+        <div class="read-state" id="read-state-offline" hidden>当前离线；已缓存的解析仍可阅读，新段落需要联网。</div>
+        <div class="read-loading" id="read-state-loading" role="status" hidden>解析中…</div>
+        <div class="read-run-status" id="read-run-status" role="status" hidden>
+          <span class="read-run-status-text" id="read-run-status-text"></span>
+          <button class="text-button" id="read-run-cancel" type="button">取消</button>
+        </div>
+
+        <section class="read-subview read-input-view" id="read-view-input" aria-labelledby="read-input-title">
+          <div class="read-card">
+            <label class="read-label" for="read-input-textarea">粘贴日语文章</label>
+            <textarea class="read-textarea" id="read-input-textarea" rows="10" placeholder="在这里粘贴日语文章…"></textarea>
+            <div class="read-input-foot">
+              <span class="read-char-count" id="read-char-count">0 字</span>
+              <button class="primary-button" id="read-start-button" type="button" disabled>开始阅读</button>
+            </div>
+          </div>
+          <div class="read-card read-recent">
+            <h3 id="read-input-title">最近文章</h3>
+            <p class="read-empty" id="read-recent-empty">还没有保存的文章。文章与解析结果只会保存在当前浏览器。</p>
+            <div class="read-recent-list" id="read-recent-list" hidden></div>
+          </div>
+        </section>
+
+        <section class="read-subview read-reader-view" id="read-view-reader" aria-labelledby="read-reader-title" hidden>
+          <div class="read-reader-head">
+            <h3 id="read-reader-title">原文</h3>
+            <div class="read-reader-meta">
+              <span class="read-paragraph-count" id="read-paragraph-count"></span>
+              <button class="outline-button" id="read-analyze-all" type="button">解析全文</button>
+            </div>
+          </div>
+          <div class="read-display-bar" role="group" aria-label="解析结果显示设置">
+            <label><input type="checkbox" id="read-toggle-furigana" checked> 注音</label>
+            <label><input type="checkbox" id="read-toggle-romaji"> 罗马音</label>
+            <label><input type="checkbox" id="read-toggle-translation" checked> 译文</label>
+          </div>
+          <div class="read-legend" id="read-legend" aria-label="词性图例" hidden></div>
+          <div class="read-paragraph-list" id="read-paragraph-list"></div>
+          <p class="read-empty" id="read-paragraph-empty" hidden>没有可显示的段落。</p>
+        </section>
+
+        <section class="read-subview read-settings-view" id="read-view-settings" aria-labelledby="read-settings-title" hidden>
+          <div class="read-card">
+            <div class="read-settings-head">
+              <h3 id="read-settings-title">模型 / API 设置</h3>
+              <button class="text-button" id="read-settings-back" type="button">返回阅读</button>
+            </div>
+            <p class="read-settings-privacy">文章会发送给你填写的服务地址；密钥以明文保存在当前浏览器，不会上传到本项目任何服务器（本项目没有服务器）。</p>
+
+            <div class="read-field">
+              <label for="read-config-base-url">服务地址</label>
+              <input id="read-config-base-url" type="url" placeholder="https://api.example.com" autocomplete="off">
+            </div>
+            <div class="read-field">
+              <label for="read-config-model">模型名</label>
+              <input id="read-config-model" type="text" placeholder="填写服务商的模型名" autocomplete="off">
+            </div>
+            <div class="read-field">
+              <label for="read-config-key">API 密钥</label>
+              <input id="read-config-key" type="password" placeholder="留空表示沿用已保存的密钥" autocomplete="off">
+              <p class="read-field-hint" id="read-config-key-hint" hidden></p>
+            </div>
+            <div class="read-field">
+              <label for="read-config-temperature">温度</label>
+              <input id="read-config-temperature" type="number" min="0" max="1" step="0.1" value="0.2">
+            </div>
+            <p class="read-config-url">实际请求地址：<span id="read-config-resolved-url">—</span></p>
+            <div class="read-config-errors" id="read-config-errors" role="alert" hidden></div>
+            <div class="read-config-actions">
+              <button class="primary-button" id="read-config-save" type="button">保存</button>
+              <button class="outline-button" id="read-config-test" type="button">测试连接</button>
+            </div>
+            <p class="read-config-result" id="read-config-test-result" role="status" hidden></p>
+          </div>
+        </section>
+
+      </section>
     </main>
 
     <footer class="footer">
@@ -972,6 +1087,20 @@
     </footer>
     </div>
     <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="关闭导航" hidden></button>
+  </div>
+
+  <!-- 阅读模块的词详情 / 语法抽屉：放在外壳之外，避免 fixed 定位受主内容滚动容器影响。 -->
+  <button class="read-selection-action" id="read-selection-action" type="button" hidden>分析选区</button>
+  <div class="read-sheet" id="read-sheet" role="dialog" aria-modal="true" aria-labelledby="read-sheet-title" hidden>
+    <div class="read-sheet-backdrop" id="read-sheet-backdrop"></div>
+    <div class="read-sheet-panel">
+      <div class="read-sheet-head">
+        <h3 id="read-sheet-title">词详情</h3>
+        <button class="text-button" id="read-sheet-close" type="button">关闭</button>
+      </div>
+      <div class="read-sheet-body" id="read-sheet-body"></div>
+      <div class="read-sheet-actions" id="read-sheet-actions"></div>
+    </div>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

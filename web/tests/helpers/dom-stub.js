@@ -427,7 +427,29 @@ function createWindow() {
     JapaneseVerbEngine: require(path.join(PROJECT_ROOT, "verb-engine.js")),
     JapaneseAdjectiveEngine: require(path.join(PROJECT_ROOT, "adjective-engine.js")),
     JapaneseParticleEngine: require(path.join(PROJECT_ROOT, "particle-engine.js")),
-    JapaneseParticleEngine: require(path.join(PROJECT_ROOT, "particle-engine.js")),
+    ReadEngine: require(path.join(PROJECT_ROOT, "read-engine.js")),
+    ReadPrompts: require(path.join(PROJECT_ROOT, "read-prompts.js")),
+    ReadView: require(path.join(PROJECT_ROOT, "read-view.js")),
+    ReadClient: require(path.join(PROJECT_ROOT, "read-client.js")),
+    // 网络层桩：默认返回可解析的 analyze 成功响应，测试可覆盖 window.fetch 造错误态。
+    AbortController: function () {
+      this.signal = {};
+      this.abort = noop;
+    },
+    fetch: function () {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        text: function () {
+          return Promise.resolve(JSON.stringify({
+            choices: [{
+              message: { content: '{"tokens":[{"word":"テスト","pos":"名詞","furigana":""}]}' },
+              finish_reason: "stop"
+            }]
+          }));
+        }
+      });
+    },
     // 与 font/fonts.js 产出的结构一致，用于覆盖动态 @font-face 注入路径。
     JapaneseFontManifest: [
       {

@@ -206,6 +206,15 @@ async function main() {
     await shoot(mobilePage, outDir, "18-mobile-particle-practice");
     await mobile.close();
 
+    // 文章阅读（桌面）：输入态与本地切段后的阅读态。
+    await page.click('[data-view="read"]');
+    await settle(page);
+    await shoot(page, outDir, "19-read-input");
+    await page.fill("#read-input-textarea", "今日はいい天気です。\n散歩に行きました。\n\n明日は雨だそうだ。");
+    await page.click("#read-start-button");
+    await settle(page);
+    await shoot(page, outDir, "20-read-reader");
+
     console.log("完成 -> " + outDir);
   } finally {
     await browser.close();

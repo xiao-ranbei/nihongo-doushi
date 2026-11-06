@@ -249,6 +249,12 @@
       main: "复习错题，",
       accent: "巩固每一次练习。",
       copy: "动词与形容词错题集中保存；助词错题在助词模块内复习。"
+    },
+    read: {
+      eyebrow: "从真实文章里学日语",
+      main: "把读不动的长文，",
+      accent: "拆成能看懂的一段。",
+      copy: "贴入日语文章，先在本地切成段落读原文；配置模型后可逐段查看读音、词性与译文。"
     }
   };
 
@@ -279,8 +285,53 @@
       verb: document.getElementById("view-verb"),
       adjective: document.getElementById("view-adjective"),
       particle: document.getElementById("view-particle"),
-      mistakes: document.getElementById("view-mistakes")
+      mistakes: document.getElementById("view-mistakes"),
+      read: document.getElementById("view-read")
     },
+    read: {
+      textarea: document.getElementById("read-input-textarea"),
+      charCount: document.getElementById("read-char-count"),
+      startButton: document.getElementById("read-start-button"),
+      backButton: document.getElementById("read-back-input"),
+      inputView: document.getElementById("read-view-input"),
+      readerView: document.getElementById("read-view-reader"),
+      paragraphList: document.getElementById("read-paragraph-list"),
+      paragraphEmpty: document.getElementById("read-paragraph-empty"),
+      paragraphCount: document.getElementById("read-paragraph-count"),
+      errorState: document.getElementById("read-state-error"),
+      offlineState: document.getElementById("read-state-offline"),
+      loadingState: document.getElementById("read-state-loading"),
+      settingsView: document.getElementById("read-view-settings"),
+      openSettingsButton: document.getElementById("read-open-settings"),
+      settingsBackButton: document.getElementById("read-settings-back"),
+      configBaseUrl: document.getElementById("read-config-base-url"),
+      configModel: document.getElementById("read-config-model"),
+      configKey: document.getElementById("read-config-key"),
+      configKeyHint: document.getElementById("read-config-key-hint"),
+      configTemperature: document.getElementById("read-config-temperature"),
+      configResolvedUrl: document.getElementById("read-config-resolved-url"),
+      configErrors: document.getElementById("read-config-errors"),
+      configSave: document.getElementById("read-config-save"),
+      configTest: document.getElementById("read-config-test"),
+      configTestResult: document.getElementById("read-config-test-result"),
+      legend: document.getElementById("read-legend"),
+      toggleFurigana: document.getElementById("read-toggle-furigana"),
+      toggleRomaji: document.getElementById("read-toggle-romaji"),
+      toggleTranslation: document.getElementById("read-toggle-translation"),
+      sheet: document.getElementById("read-sheet"),
+      sheetTitle: document.getElementById("read-sheet-title"),
+      sheetBody: document.getElementById("read-sheet-body"),
+      sheetClose: document.getElementById("read-sheet-close"),
+      sheetBackdrop: document.getElementById("read-sheet-backdrop"),
+      sheetActions: document.getElementById("read-sheet-actions"),
+      analyzeAllButton: document.getElementById("read-analyze-all"),
+      runStatus: document.getElementById("read-run-status"),
+      runStatusText: document.getElementById("read-run-status-text"),
+      runCancel: document.getElementById("read-run-cancel"),
+      selectionAction: document.getElementById("read-selection-action")
+    },
+    homeReadStatus: document.getElementById("home-read-status"),
+    homeReadCount: document.getElementById("home-read-count"),
     verbSubviewNav: document.getElementById("verb-subnav"),
     verbSubviewPractice: document.getElementById("view-practice"),
     verbSubviewReference: document.getElementById("view-reference"),
@@ -506,6 +557,20 @@
   let toastTimeout = null;
   let composing = false;
   let activeViewId = "home";
+  let readView = null;
+  let readConfig = null;
+  let readClient = null;
+  let readCache = { entries: [] };
+  let readInFlight = {};
+  let readArticleRequests = 0;
+  let readBudget = null;
+  let readDetailLru = null;
+  let readCatalogs = [];
+  let readSheetContext = null;
+  let readAllRun = null;
+  let readSelectionIndices = [];
+  let readBookmarks = { items: [] };
+  let readActivity = null;
   let currentVerbSubview = "practice";
   let currentQuestion = null;
   let lastPairKey = "";
@@ -563,8 +628,854 @@
   const VIEW_ANNOUNCE_LABELS = {
     home: "学习主页",
     adjective: "形容词模块",
-    mistakes: "错题本"
+    mistakes: "错题本",
+    read: "文章阅读"
   };
+
+  // 文章阅读 · 模型配置与错误文案（中文只写在本文件，index.html / styles.css 同样在字体收集白名单内）。
+  const READ_CONFIG_KEY = "japanese-read-analyzer-config-v1";
+  const READ_ERROR_MESSAGES = {
+    NOT_CONFIGURED: "还没配置模型与服务地址，先去设置页填写。",
+    NETWORK: "网络不可用或服务地址填错了。",
+    TIMEOUT: "请求超时，这一段可能太长。",
+    AUTH: "密钥无效或没有该模型的权限，先检查密钥。",
+    ENDPOINT: "接口地址不对，检查服务地址。",
+    RATE_LIMIT: "请求太频繁，稍后再试。",
+    SERVER: "服务端错误，请稍后重试。",
+    BAD_REQUEST: "请求被拒绝，检查地址、模型名与参数。",
+    MALFORMED: "模型返回结构异常。",
+    TRUNCATED: "返回被截断，这一段可能过长。",
+    PARSE_FAILED: "模型返回格式异常。"
+  };
+  const READ_CONFIG_ERRORS = {
+    BASE_URL_REQUIRED: "请填写 API 地址",
+    BASE_URL_SCHEME: "API 地址必须以 http:// 或 https:// 开头",
+    MODEL_REQUIRED: "请填写模型名称",
+    API_KEY_REQUIRED: "请填写 API Key",
+    TEMPERATURE_RANGE: "温度必须在 0.0 到 1.0 之间",
+    SAVE_FAILED: "浏览器不允许写入本地存储，设置只保留在当前页面。"
+  };
+  const READ_CACHE_KEY = "japanese-read-analyzer-cache-v1";
+  const READ_BUDGET_KEY = "japanese-read-analyzer-budget-v1";
+  const READ_DAILY_LIMIT = 100;
+  const READ_ARTICLE_LIMIT = 20;
+  const READ_STATE_MESSAGES = {
+    idle: "点击这一段解析 · 本次约 2 次请求",
+    loading: "解析中…",
+    unaligned: "分词不可用（原句重建不一致），仅显示译文。",
+    translationFailed: "译文暂不可用，逐词仍可阅读。",
+    offline: "当前离线，这一段需要联网后解析。",
+    budget: "已达到请求上限，只显示已缓存的结果。"
+  };
+  const READ_POS_LABELS = {
+    n: "名词", v: "动词", adj: "形容词", adjv: "形容动词",
+    adv: "副词", misc: "其他", p: "助词", aux: "助动词"
+  };
+  const READ_SHEET_LABELS = {
+    meaning: "意思", dictionaryForm: "辞书形", usage: "本句用法",
+    conjugation: "活用", example: "例句", exampleMeaning: "例句译文"
+  };
+  const READ_BOOKMARKS_KEY = "japanese-verb-practice-bookmarks-v1";
+  const READ_ACTIVITY_KEY = "japanese-read-analyzer-activity-v1";
+
+  function defaultReadConfig() {
+    return { baseUrl: "", model: "", apiKey: "", temperature: 0.2 };
+  }
+
+  function loadReadConfig() {
+    try {
+      const raw = window.localStorage.getItem(READ_CONFIG_KEY);
+      if (!raw) return defaultReadConfig();
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return defaultReadConfig();
+      const temperature = Number(parsed.temperature);
+      return {
+        baseUrl: typeof parsed.baseUrl === "string" ? parsed.baseUrl : "",
+        model: typeof parsed.model === "string" ? parsed.model : "",
+        apiKey: typeof parsed.apiKey === "string" ? parsed.apiKey : "",
+        temperature: isNaN(temperature) ? 0.2 : temperature
+      };
+    } catch (error) {
+      return defaultReadConfig();
+    }
+  }
+
+  function saveReadConfig(config) {
+    try {
+      window.localStorage.setItem(READ_CONFIG_KEY, JSON.stringify(config));
+      return true;
+    } catch (error) {
+      storageAvailable = false;
+      return false;
+    }
+  }
+
+  function maskReadKey(key) {
+    return "••••••" + String(key).slice(-4);
+  }
+
+  function readConfigFromForm() {
+    const typedKey = elements.read.configKey.value.trim();
+    return {
+      baseUrl: elements.read.configBaseUrl.value.trim(),
+      model: elements.read.configModel.value.trim(),
+      apiKey: typedKey || (readConfig ? readConfig.apiKey : ""),
+      temperature: Number(elements.read.configTemperature.value)
+    };
+  }
+
+  function renderReadConfigErrors(codes) {
+    const box = elements.read.configErrors;
+    box.replaceChildren();
+    if (!codes.length) {
+      box.hidden = true;
+      return;
+    }
+    const list = document.createElement("ul");
+    codes.forEach(function (code) {
+      const item = document.createElement("li");
+      item.textContent = READ_CONFIG_ERRORS[code] || code;
+      list.append(item);
+    });
+    box.append(list);
+    box.hidden = false;
+  }
+
+  function updateReadResolvedUrl() {
+    const url = window.ReadEngine.normalizeEndpoint(elements.read.configBaseUrl.value.trim());
+    elements.read.configResolvedUrl.textContent = url || "—";
+  }
+
+  function fillReadConfigForm() {
+    elements.read.configBaseUrl.value = readConfig.baseUrl;
+    elements.read.configModel.value = readConfig.model;
+    elements.read.configKey.value = "";
+    elements.read.configKeyHint.hidden = !readConfig.apiKey;
+    elements.read.configKeyHint.textContent = readConfig.apiKey
+      ? "已保存密钥：" + maskReadKey(readConfig.apiKey)
+      : "";
+    elements.read.configTemperature.value = String(readConfig.temperature);
+    elements.read.configErrors.hidden = true;
+    elements.read.configTestResult.hidden = true;
+    updateReadResolvedUrl();
+  }
+
+  function openReadSettings() {
+    fillReadConfigForm();
+    readView.showSettings();
+  }
+
+  function saveReadSettings() {
+    const config = readConfigFromForm();
+    const errors = window.ReadEngine.validateConfig(config);
+    renderReadConfigErrors(errors);
+    if (errors.length) return false;
+    if (!saveReadConfig(config)) {
+      renderReadConfigErrors(["SAVE_FAILED"]);
+      return false;
+    }
+    readConfig = config;
+    fillReadConfigForm();
+    elements.read.configTestResult.hidden = false;
+    elements.read.configTestResult.textContent = "已保存。";
+    return true;
+  }
+
+  // 测试连接由用户主动点击才发起请求；本会话不会在真实浏览器里触发它（G2 未授权）。
+  function testReadConnection() {
+    const config = readConfigFromForm();
+    const errors = window.ReadEngine.validateConfig(config);
+    renderReadConfigErrors(errors);
+    elements.read.configTestResult.hidden = true;
+    if (errors.length) return;
+    readClient.analyze({ text: "テスト" }, config, { requestId: "settings-test" })
+      .then(function (outcome) {
+        const box = elements.read.configTestResult;
+        box.hidden = false;
+        if (outcome.ok) {
+          box.textContent = "连接成功，模型返回可解析。";
+        } else if (outcome.cancelled) {
+          box.textContent = "已取消。";
+        } else {
+          box.textContent = READ_ERROR_MESSAGES[outcome.error] || "连接失败。";
+        }
+      });
+  }
+
+  // B4 · 按段缓存（与 Android 同名同构），坏条目过滤、上限 500 条。
+  function loadReadCache() {
+    try {
+      const raw = window.localStorage.getItem(READ_CACHE_KEY);
+      if (!raw) return { entries: [] };
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.entries)) return { entries: [] };
+      return {
+        entries: parsed.entries.filter(function (entry) {
+          return entry && typeof entry.key === "string" && entry.result &&
+            Array.isArray(entry.result.tokens);
+        })
+      };
+    } catch (error) {
+      return { entries: [] };
+    }
+  }
+
+  function saveReadCache() {
+    readCache.entries = window.ReadEngine.trimCache(readCache.entries);
+    try {
+      window.localStorage.setItem(READ_CACHE_KEY, JSON.stringify(readCache));
+      return true;
+    } catch (error) {
+      storageAvailable = false;
+      return false;
+    }
+  }
+
+  function readCacheLookup(key) {
+    return readCache.entries.filter(function (entry) { return entry.key === key; })[0] || null;
+  }
+
+  function readCacheStore(key, entry) {
+    readCache.entries = readCache.entries.filter(function (item) { return item.key !== key; });
+    readCache.entries.push(entry);
+    saveReadCache();
+  }
+
+  // Q4 成本控制：每篇 / 每日请求上限，达上限后只出缓存、不发请求。
+  function loadReadBudget() {
+    const today = localDateString(new Date());
+    try {
+      const raw = window.localStorage.getItem(READ_BUDGET_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (!parsed || parsed.date !== today) return { date: today, dailyCount: 0, articleCount: 0 };
+      return { date: today, dailyCount: Number(parsed.dailyCount) || 0, articleCount: 0 };
+    } catch (error) {
+      return { date: today, dailyCount: 0, articleCount: 0 };
+    }
+  }
+
+  function readBudgetAllow(count) {
+    return readBudget.dailyCount + count <= READ_DAILY_LIMIT &&
+      readArticleRequests + count <= READ_ARTICLE_LIMIT;
+  }
+
+  function readBudgetCharge(count) {
+    readBudget.dailyCount += count;
+    readArticleRequests += count;
+    try {
+      window.localStorage.setItem(READ_BUDGET_KEY, JSON.stringify(readBudget));
+    } catch (error) {
+      // 预算计数写失败不阻塞阅读，仅本次会话内生效。
+    }
+  }
+
+  function startReadAnalysis(index) {
+    const paragraph = readView.getParagraphs()[index];
+    if (!paragraph) return;
+    readView.hideSelectionAction();
+    if (window.ReadEngine.validateConfig(readConfig).length) {
+      readView.setParagraphState(index, "error", {
+        message: READ_ERROR_MESSAGES.NOT_CONFIGURED
+      });
+      return;
+    }
+    readView.setParagraphState(index, "loading", { message: READ_STATE_MESSAGES.loading });
+    const offline = Boolean(window.navigator && window.navigator.onLine === false);
+    window.ReadClient.analyzeParagraph(readClient, readConfig, paragraph.text, {
+      engine: window.ReadEngine,
+      inFlight: readInFlight,
+      offline: offline,
+      cacheLookup: readCacheLookup,
+      cacheStore: readCacheStore,
+      budgetAllow: readBudgetAllow,
+      budgetCharge: readBudgetCharge,
+      now: function () { return new Date().toISOString(); }
+    }).then(function (outcome) {
+      if (outcome.ok) {
+        readView.renderAnalysis(index, outcome.data);
+        if (!outcome.fromCache) bumpReadActivity("paragraphs");
+        return;
+      }
+      if (outcome.cancelled) return;
+      if (outcome.local === window.ReadClient.LOCAL_REASONS.OFFLINE) {
+        readView.setParagraphState(index, "offline", { message: READ_STATE_MESSAGES.offline });
+      } else if (outcome.local === window.ReadClient.LOCAL_REASONS.BUDGET) {
+        readView.setParagraphState(index, "budget", { message: READ_STATE_MESSAGES.budget });
+      } else {
+        readView.setParagraphState(index, "error", {
+          message: (READ_ERROR_MESSAGES[outcome.error] || READ_STATE_MESSAGES.loading) + "，点击卡片重试。"
+        });
+      }
+    });
+  }
+
+  // B7 · 一键全文解析：按原文序取预算内最长前缀（Q4 每篇 20 次请求），
+  // 费用二次确认后走 analyzeLongText 分块并发；结果按连续完成前缀顺序落位，
+  // 部分失败整体失败且不写半截缓存；取消中止全部在途块。
+  function planReadAllItems() {
+    const paragraphs = readView.getParagraphs();
+    const items = [];
+    let need = 0;
+    let capped = false;
+    for (let i = 0; i < paragraphs.length; i++) {
+      const key = window.ReadEngine.cacheKey(paragraphs[i].text, readConfig.model);
+      const extra = readCacheLookup(key) ? 0 : 2;
+      if (extra && !readBudgetAllow(need + extra)) {
+        capped = true;
+        break;
+      }
+      need += extra;
+      items.push({ index: i, text: paragraphs[i].text });
+    }
+    return { items: items, need: need, total: paragraphs.length, capped: capped };
+  }
+
+  function startReadAll() {
+    if (window.ReadEngine.validateConfig(readConfig).length) {
+      showToast(READ_ERROR_MESSAGES.NOT_CONFIGURED, true);
+      return;
+    }
+    const plan = planReadAllItems();
+    if (!plan.items.length) return;
+    if (plan.need === 0) {
+      runReadAll(plan.items);
+      return;
+    }
+    const rows = [
+      {
+        label: "段落",
+        value: "共 " + plan.total + " 段，本次解析 " + plan.items.length + " 段" +
+          (plan.capped ? "（受每篇请求上限约束）" : "")
+      },
+      { label: "请求", value: "约 " + plan.need + " 次请求，已缓存段落不计" },
+      { label: "预算", value: "每篇上限 " + READ_ARTICLE_LIMIT + " 次 · 每日上限 " + READ_DAILY_LIMIT + " 次" }
+    ];
+    readSheetContext = { mode: "confirm-read-all", title: "解析全文", rows: rows, items: plan.items };
+    readView.showSheet("解析全文", rows, [
+      { label: "开始解析", kind: "confirm-read-all" },
+      { label: "取消", kind: "dismiss-sheet" }
+    ]);
+  }
+
+  function runReadAll(items) {
+    readView.hideSheet();
+    readView.hideSelectionAction();
+    const total = items.length;
+    const rendered = {};
+    readView.showRunStatus("解析中 0 / " + total + " 段…", true);
+    const run = window.ReadClient.analyzeLongText(readClient, readConfig, items, {
+      engine: window.ReadEngine,
+      inFlight: readInFlight,
+      offline: Boolean(window.navigator && window.navigator.onLine === false),
+      cacheLookup: readCacheLookup,
+      cacheStore: readCacheStore,
+      budgetAllow: readBudgetAllow,
+      budgetCharge: readBudgetCharge,
+      now: function () { return new Date().toISOString(); },
+      // 长文块走 SSE：截断时宽松兜底可救回完整 token（D-035）。
+      stream: true,
+      onOrdered: function (emitted, progress) {
+        emitted.forEach(function (entry) {
+          const result = entry.result || {};
+          if (result.ok) {
+            readView.renderAnalysis(entry.index, result.data);
+            rendered[entry.index] = true;
+            if (!result.fromCache) bumpReadActivity("paragraphs");
+            return;
+          }
+          if (result.cancelled) return;
+          readView.setParagraphState(entry.index, "error", {
+            message: (READ_ERROR_MESSAGES[result.error] || READ_STATE_MESSAGES.loading) + "，点击卡片重试。"
+          });
+          rendered[entry.index] = true;
+        });
+        readView.showRunStatus("解析中 " + progress.prefix + " / " + progress.total + " 段…", true);
+      }
+    });
+    readAllRun = run;
+    run.promise.then(function (outcome) {
+      readAllRun = null;
+      readView.hideRunStatus();
+      if (outcome.ok) {
+        showToast("全文解析完成。", false);
+        return;
+      }
+      resetUnrenderedCards(items, rendered);
+      if (outcome.cancelled) {
+        showToast("已取消全文解析。", false);
+        return;
+      }
+      if (outcome.local === window.ReadClient.LOCAL_REASONS.OFFLINE) {
+        showToast(READ_STATE_MESSAGES.offline, true);
+        return;
+      }
+      if (outcome.local === window.ReadClient.LOCAL_REASONS.BUDGET) {
+        showToast(READ_STATE_MESSAGES.budget, true);
+        return;
+      }
+      showToast((READ_ERROR_MESSAGES[outcome.error] || "全文解析失败。") + " 已解析的段落已保留。", true);
+    });
+  }
+
+  // 取消 / 失败后，没落位的卡片回到待解析态，保持可点击重试。
+  function resetUnrenderedCards(items, rendered) {
+    items.forEach(function (item) {
+      if (!rendered[item.index]) {
+        readView.setParagraphState(item.index, "idle", { message: READ_STATE_MESSAGES.idle });
+      }
+    });
+  }
+
+  function cancelReadAll() {
+    if (readAllRun) readAllRun.cancel(window.ReadClient.CANCEL_REASONS.USER);
+  }
+
+  // B7 · 划选区间合并分析：选中范围按段界取整段（列表不动），串行分批后结果进弹层。
+  function readSelectionCardIndices() {
+    const selection = window.getSelection ? window.getSelection() : null;
+    if (!selection || !selection.rangeCount || selection.isCollapsed) return null;
+    function cardOf(node) {
+      let el = node;
+      if (el && el.nodeType === 3) el = el.parentNode;
+      return el && el.closest ? el.closest(".read-paragraph-card") : null;
+    }
+    const cards = Array.prototype.slice.call(
+      elements.read.paragraphList.querySelectorAll(".read-paragraph-card")
+    );
+    const first = cardOf(selection.anchorNode);
+    const last = cardOf(selection.focusNode);
+    const i0 = cards.indexOf(first);
+    const i1 = cards.indexOf(last);
+    if (i0 < 0 && i1 < 0) return null;
+    const from = Math.min(i0 < 0 ? i1 : i0, i1 < 0 ? i0 : i1);
+    const to = Math.max(i0 < 0 ? i1 : i0, i1 < 0 ? i0 : i1);
+    const indices = [];
+    for (let i = from; i <= to; i++) indices.push(i);
+    return { indices: indices, range: selection.getRangeAt ? selection.getRangeAt(0) : null };
+  }
+
+  function updateReadSelectionAction() {
+    const found = readSelectionCardIndices();
+    if (!found) {
+      readView.hideSelectionAction();
+      return;
+    }
+    readSelectionIndices = found.indices;
+    let x = 0;
+    let y = 0;
+    const range = found.range;
+    if (range && range.getClientRects) {
+      const rects = range.getClientRects();
+      if (rects && rects.length) {
+        x = rects[rects.length - 1].right;
+        y = rects[rects.length - 1].bottom;
+      }
+    }
+    readView.showSelectionAction(x, y);
+  }
+
+  function startReadSelection() {
+    const paragraphs = readView.getParagraphs();
+    const texts = readSelectionIndices.map(function (i) {
+      return paragraphs[i] ? paragraphs[i].text : "";
+    }).filter(function (value) { return value !== ""; });
+    readView.hideSelectionAction();
+    if (!texts.length) return;
+    if (window.ReadEngine.validateConfig(readConfig).length) {
+      showToast(READ_ERROR_MESSAGES.NOT_CONFIGURED, true);
+      return;
+    }
+    readView.showRunStatus("分析选区…", true);
+    const run = window.ReadClient.analyzeSelection(readClient, readConfig, texts, {
+      engine: window.ReadEngine,
+      inFlight: readInFlight,
+      offline: Boolean(window.navigator && window.navigator.onLine === false),
+      cacheLookup: readCacheLookup,
+      cacheStore: readCacheStore,
+      budgetAllow: readBudgetAllow,
+      budgetCharge: readBudgetCharge,
+      now: function () { return new Date().toISOString(); },
+      onBatch: function (info) {
+        readView.showRunStatus("分析选区 " + info.batch + " / " + info.total + " 批…", true);
+      }
+    });
+    readAllRun = run;
+    run.promise.then(function (outcome) {
+      readAllRun = null;
+      readView.hideRunStatus();
+      if (outcome.ok) {
+        readView.showSheetAnalysis("选区解析", outcome.data, readSelectionIndices[0]);
+        return;
+      }
+      if (outcome.cancelled) {
+        showToast("已取消。", false);
+        return;
+      }
+      showToast(outcome.local === window.ReadClient.LOCAL_REASONS.OFFLINE
+        ? READ_STATE_MESSAGES.offline
+        : outcome.local === window.ReadClient.LOCAL_REASONS.BUDGET
+          ? READ_STATE_MESSAGES.budget
+          : readSheetError(outcome.error), true);
+    });
+  }
+
+  function updateReadDisplay() {
+    readView.setDisplay({
+      furigana: elements.read.toggleFurigana.checked,
+      romaji: elements.read.toggleRomaji.checked,
+      translation: elements.read.toggleTranslation.checked
+    });
+  }
+
+  // B5 · 语法结果挂在同一条按段缓存里，换模型自然失效。
+  function readGrammarLookup(key) {
+    const entry = readCacheLookup(key);
+    return entry && entry.grammar ? entry.grammar : null;
+  }
+
+  function readGrammarStore(key, grammar) {
+    const entry = readCacheLookup(key);
+    if (!entry) return;
+    entry.grammar = grammar;
+    saveReadCache();
+  }
+
+  function readSheetError(code) {
+    return READ_ERROR_MESSAGES[code] || "解析失败，请稍后重试。";
+  }
+
+  // B6 · 复用既有书签键（与 Android 同构），只存 word / sentence 两类。
+  function loadReadBookmarks() {
+    try {
+      const raw = window.localStorage.getItem(READ_BOOKMARKS_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (!parsed || !Array.isArray(parsed.items)) return { items: [] };
+      return {
+        items: parsed.items.filter(function (item) {
+          return item && typeof item.id === "string" &&
+            (item.type === "word" || item.type === "sentence");
+        })
+      };
+    } catch (error) {
+      return { items: [] };
+    }
+  }
+
+  function isReadBookmarked(type, refId) {
+    const id = type + "::" + refId;
+    return readBookmarks.items.some(function (item) { return item.id === id; });
+  }
+
+  function toggleReadBookmark(type, refId, title, note) {
+    const id = type + "::" + refId;
+    const before = readBookmarks.items.length;
+    readBookmarks.items = readBookmarks.items.filter(function (item) {
+      return item.id !== id;
+    });
+    if (readBookmarks.items.length === before) {
+      readBookmarks.items.push({
+        id: id,
+        type: type,
+        refId: refId,
+        title: String(title || "").slice(0, 30),
+        note: String(note || "").slice(0, 60),
+        createdAt: new Date().toISOString()
+      });
+      if (readBookmarks.items.length > 500) readBookmarks.items.shift();
+    }
+    try {
+      window.localStorage.setItem(READ_BOOKMARKS_KEY, JSON.stringify(readBookmarks));
+    } catch (error) {
+      // 写失败不阻塞收藏动作，仅本次会话内保留。
+    }
+    return isReadBookmarked(type, refId);
+  }
+
+  function loadReadActivity() {
+    const today = localDateString(new Date());
+    const empty = { date: today, paragraphs: 0, words: 0 };
+    try {
+      const raw = window.localStorage.getItem(READ_ACTIVITY_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (!parsed || parsed.date !== today) return empty;
+      return {
+        date: today,
+        paragraphs: Number(parsed.paragraphs) || 0,
+        words: Number(parsed.words) || 0
+      };
+    } catch (error) {
+      return empty;
+    }
+  }
+
+  function bumpReadActivity(field) {
+    if (readActivity.date !== localDateString(new Date())) {
+      readActivity = loadReadActivity();
+    }
+    readActivity[field] = (readActivity[field] || 0) + 1;
+    try {
+      window.localStorage.setItem(READ_ACTIVITY_KEY, JSON.stringify(readActivity));
+    } catch (error) {
+      // 同上，摘要写失败不影响阅读。
+    }
+    renderHomeReadSummary();
+  }
+
+  function renderHomeReadSummary() {
+    const activity = readActivity || { paragraphs: 0, words: 0 };
+    elements.homeReadCount.textContent = activity.paragraphs + " 段";
+    elements.homeReadStatus.textContent = activity.paragraphs > 0
+      ? "今日已读 " + activity.paragraphs + " 段 · 收藏 " + activity.words + " 词"
+      : "今天还没读过文章";
+  }
+
+  // B6 · 文章词形 → 既有引擎题目 key → 既有练习通道 → 既有错题/统计。
+  function startReadPractice(ref) {
+    if (!ref) return false;
+    if (ref.type === "verb") {
+      const verb = window.JapaneseVerbEngine.VERBS.filter(function (item) {
+        return item.id === ref.id;
+      })[0];
+      if (!verb) return false;
+      const parts = String(ref.formId || "base::dictionary").split("::");
+      practiceFromReference(verb, parts[0], parts[1]);
+      return true;
+    }
+    if (ref.type === "adjective") {
+      const formId = ref.formId || "attributive";
+      const question = buildAdjectiveQuestionById(ref.id, formId);
+      if (!question) return false;
+      setReviewingMistakes(false);
+      setReviewingAdjectiveMistakes(false);
+      showView("adjective");
+      setAdjectiveSubview("practice");
+      startAdjectiveQuestion(question);
+      elements.adjAnswerInput.focus();
+      return true;
+    }
+    if (ref.type === "particle") {
+      const questions = window.JapaneseParticleEngine.getQuestions("beginner", ref.id);
+      if (!questions.length) return false;
+      particleQuestionQueue = [questions[0].id];
+      particleQuestionIndex = 0;
+      currentParticleQuestion = window.JapaneseParticleEngine.getQuestion(questions[0].id);
+      reviewingParticleMistakes = false;
+      showView("particle");
+      setParticleSubview("practice");
+      renderParticleQuestion();
+      return true;
+    }
+    return false;
+  }
+
+  function readSheetButtons(context) {
+    const buttons = [];
+    if (context.ref) buttons.push({ label: "练这个词", kind: "practice" });
+    if (context.grammarRefs && context.grammarRefs.length) {
+      buttons.push({ label: "练这组词", kind: "practice-grammar" });
+    }
+    const wordId = context.cacheKey + "|" + (context.token ? context.token.word : "");
+    if (context.token) {
+      buttons.push({
+        label: isReadBookmarked("word", wordId) ? "已收藏 · 取消" : "收藏这个词",
+        kind: "bookmark-word"
+      });
+    }
+    buttons.push({
+      label: isReadBookmarked("sentence", context.cacheKey) ? "已收藏 · 取消" : "收藏这一段",
+      kind: "bookmark-paragraph"
+    });
+    return buttons;
+  }
+
+  function refreshReadSheet() {
+    if (!readSheetContext) return;
+    readView.showSheet(
+      readSheetContext.title,
+      readSheetContext.rows,
+      readSheetButtons(readSheetContext)
+    );
+  }
+
+  function onReadSheetAction(kind) {
+    const context = readSheetContext;
+    if (!context) return;
+    if (kind === "confirm-read-all") {
+      readView.hideSheet();
+      runReadAll(context.items || []);
+      return;
+    }
+    if (kind === "dismiss-sheet") {
+      readView.hideSheet();
+      return;
+    }
+    if (kind === "practice") {
+      if (!startReadPractice(context.ref)) {
+        showToast("这个词暂时没有对应的练习题。", true);
+      }
+      return;
+    }
+    if (kind === "practice-grammar") {
+      const first = (context.grammarRefs || [])[0];
+      const posByType = { verb: "動詞", adjective: "形容詞", particle: "助詞" };
+      const ref = first
+        ? window.ReadEngine.resolveEngineRef({
+          word: first.surface || first.id || "",
+          pos: posByType[first.type] || "",
+          furigana: ""
+        }, readCatalogs)
+        : null;
+      if (!ref || !startReadPractice(ref)) {
+        showToast("这一组暂时没有对应的练习题。", true);
+      }
+      return;
+    }
+    if (kind !== "bookmark-word" && kind !== "bookmark-paragraph") return;
+    const isWord = kind === "bookmark-word";
+    const type = isWord ? "word" : "sentence";
+    const refId = isWord
+      ? context.cacheKey + "|" + (context.token ? context.token.word : "")
+      : context.cacheKey;
+    const title = isWord
+      ? (context.token ? context.token.word : "")
+      : (context.paragraph ? context.paragraph.text : "");
+    const note = isWord
+      ? (context.paragraph ? context.paragraph.text : "")
+      : (context.translation || "");
+    const added = toggleReadBookmark(type, refId, title, note);
+    if (isWord && added) bumpReadActivity("words");
+    refreshReadSheet();
+    showToast(added ? "已收藏" : "已取消收藏", false);
+  }
+
+  function startWordDetail(index, token) {
+    const paragraph = readView.getParagraphs()[index];
+    if (!paragraph) return;
+    const cacheKey = window.ReadEngine.cacheKey(paragraph.text, readConfig.model);
+    const cached = readCacheLookup(cacheKey);
+    readSheetContext = {
+      index: index,
+      token: token,
+      paragraph: paragraph,
+      cacheKey: cacheKey,
+      ref: window.ReadEngine.resolveEngineRef(token, readCatalogs),
+      translation: cached && cached.result ? cached.result.translation : "",
+      grammarRefs: [],
+      title: "词详情",
+      rows: []
+    };
+    if (window.ReadEngine.validateConfig(readConfig).length) {
+      readSheetContext.rows = [{ label: "提示", value: READ_ERROR_MESSAGES.NOT_CONFIGURED }];
+      refreshReadSheet();
+      return;
+    }
+    readSheetContext.rows = [{ label: "状态", value: "解析中…" }];
+    refreshReadSheet();
+    const fullText = readView.getParagraphs().map(function (item) {
+      return item.text;
+    }).join("\n");
+    window.ReadClient.wordDetailParagraph(readClient, readConfig, {
+      fullText: fullText,
+      word: token.word,
+      pos: token.pos,
+      furigana: token.furigana
+    }, { engine: window.ReadEngine, lru: readDetailLru }).then(function (outcome) {
+      if (!outcome.ok) {
+        readSheetContext.rows = [{ label: "提示", value: readSheetError(outcome.error) }];
+        refreshReadSheet();
+        return;
+      }
+      const detail = outcome.data;
+      readSheetContext.title = "词详情 · " + token.word;
+      readSheetContext.rows = window.ReadEngine.WORD_DETAIL_FIELDS.map(function (field) {
+        return { label: READ_SHEET_LABELS[field], value: detail[field] || "—" };
+      });
+      refreshReadSheet();
+    });
+  }
+
+  function startGrammar(index) {
+    const paragraph = readView.getParagraphs()[index];
+    if (!paragraph) return;
+    const cacheKey = window.ReadEngine.cacheKey(paragraph.text, readConfig.model);
+    const cached = readCacheLookup(cacheKey);
+    readSheetContext = {
+      index: index,
+      token: null,
+      paragraph: paragraph,
+      cacheKey: cacheKey,
+      ref: null,
+      translation: cached && cached.result ? cached.result.translation : "",
+      grammarRefs: [],
+      title: "语法分析",
+      rows: []
+    };
+    if (window.ReadEngine.validateConfig(readConfig).length) {
+      readSheetContext.rows = [{ label: "提示", value: READ_ERROR_MESSAGES.NOT_CONFIGURED }];
+      refreshReadSheet();
+      return;
+    }
+    readSheetContext.rows = [{ label: "状态", value: "解析中…" }];
+    refreshReadSheet();
+    const offline = Boolean(window.navigator && window.navigator.onLine === false);
+    window.ReadClient.grammarParagraph(readClient, readConfig, paragraph.text, {
+      engine: window.ReadEngine,
+      offline: offline,
+      cacheLookup: readGrammarLookup,
+      cacheStore: readGrammarStore,
+      budgetAllow: readBudgetAllow,
+      budgetCharge: readBudgetCharge
+    }).then(function (outcome) {
+      if (!outcome.ok) {
+        const message = outcome.local === window.ReadClient.LOCAL_REASONS.OFFLINE
+          ? READ_STATE_MESSAGES.offline
+          : outcome.local === window.ReadClient.LOCAL_REASONS.BUDGET
+            ? READ_STATE_MESSAGES.budget
+            : readSheetError(outcome.error);
+        readSheetContext.rows = [{ label: "提示", value: message }];
+        refreshReadSheet();
+        return;
+      }
+      const grammar = outcome.data;
+      readSheetContext.grammarRefs = grammar.engineRefs;
+      const rows = [
+        {
+          label: "句型",
+          value: grammar.patterns.length
+            ? grammar.patterns.map(function (item) {
+              return item.label + (item.meaning ? " · " + item.meaning : "") +
+                (item.note ? " · " + item.note : "");
+            })
+            : "本段没有识别到固定句型。"
+        },
+        {
+          label: "句子结构",
+          value: grammar.structure.clauses.length
+            ? grammar.structure.clauses.map(function (item) {
+              return item.role + "：" + (item.head || "—");
+            })
+            : "—"
+        },
+        {
+          label: "文体",
+          value: (grammar.style.politeness || "—") + " · " + (grammar.style.register || "—")
+        },
+        {
+          label: "可练习词",
+          value: grammar.engineRefs.length
+            ? grammar.engineRefs.map(function (item) {
+              return item.type + "：" + (item.surface || item.id || "—");
+            })
+            : "本段没有可映射到现有练习的词。"
+        }
+      ];
+      readSheetContext.rows = rows;
+      refreshReadSheet();
+      readView.highlightGrammar(index, grammar.patterns.map(function (item) {
+        return item.span;
+      }));
+    });
+  }
 
   function announce(message) {
     elements.viewAnnouncer.textContent = "";
@@ -1781,6 +2692,7 @@
     elements.homeAdjectiveStatus.textContent = adjectiveCount > 0 ? "今日已练" : "今日尚未练习";
     elements.homeParticleToday.textContent = particleCount + " 题";
     elements.homeParticleStatus.textContent = particleCount > 0 ? "今日已练" : "今日尚未练习";
+    renderHomeReadSummary();
   }
 
   function setMobileSidebarOpen(open, restoreFocus) {
@@ -2370,6 +3282,11 @@
     }
     if (viewId === "mistakes") {
       renderMistakes();
+    }
+    if (viewId === "read" && readView) {
+      readView.updateCount();
+    } else if (readView) {
+      readView.hideSheet();
     }
   }
 
@@ -3715,5 +4632,85 @@
   renderParticleMistakes();
   newRandomQuestion();
   newAdjectiveQuestion();
+  // 文章阅读：界面文案集中在此（app.js 在字体收集白名单内）。
+  readConfig = loadReadConfig();
+  readCache = loadReadCache();
+  readBudget = loadReadBudget();
+  readDetailLru = window.ReadEngine.createLru(80);
+  readCatalogs = window.ReadEngine.buildEngineCatalogs(
+    window.JapaneseVerbEngine, window.JapaneseAdjectiveEngine, window.JapaneseParticleEngine
+  );
+  readBookmarks = loadReadBookmarks();
+  readActivity = loadReadActivity();
+  readClient = window.ReadClient.createReadClient(
+    window.ReadClient.createFetchTransport(window),
+    { engine: window.ReadEngine, prompts: window.ReadPrompts }
+  );
+  readView = window.ReadView.createView(document, elements.read, window.ReadEngine, {
+    charCount: function (count) { return count + " 字"; },
+    paragraphCount: function (count) { return "共 " + count + " 段"; },
+    needAnalysis: READ_STATE_MESSAGES.idle,
+    hardCut: "长段已分段",
+    defaultError: "解析失败，请稍后重试。",
+    grammarButton: "看语法",
+    states: READ_STATE_MESSAGES,
+    posLabels: READ_POS_LABELS
+  }, {
+    onParagraphClick: startReadAnalysis,
+    onTokenClick: startWordDetail,
+    onGrammarClick: startGrammar,
+    onSheetAction: onReadSheetAction
+  });
+  elements.read.textarea.addEventListener("input", function () {
+    readView.updateCount();
+  });
+  elements.read.startButton.addEventListener("click", function () {
+    cancelReadAll();
+    readView.hideRunStatus();
+    readView.hideSelectionAction();
+    if (readView.startReading()) {
+      readArticleRequests = 0;
+      readInFlight = {};
+      updateReadDisplay();
+    }
+  });
+  ["toggleFurigana", "toggleRomaji", "toggleTranslation"].forEach(function (key) {
+    elements.read[key].addEventListener("change", updateReadDisplay);
+  });
+  elements.read.sheetClose.addEventListener("click", function () { readView.hideSheet(); });
+  elements.read.sheetBackdrop.addEventListener("click", function () { readView.hideSheet(); });
+  elements.read.analyzeAllButton.addEventListener("click", startReadAll);
+  elements.read.runCancel.addEventListener("click", cancelReadAll);
+  elements.read.selectionAction.addEventListener("click", startReadSelection);
+  // 划选入口：段落区里结束鼠标/触摸选择后，按钮在选区旁浮现。
+  elements.read.paragraphList.addEventListener("mouseup", updateReadSelectionAction);
+  elements.read.paragraphList.addEventListener("touchend", updateReadSelectionAction);
+  // 按钮 mousedown 若放任默认行为会折掉选区 → selectionchange 立刻藏按钮 →
+  // click 永远落空（Playwright 真浏览器实测抓到）。preventDefault 保住选区。
+  elements.read.selectionAction.addEventListener("mousedown", function (event) {
+    event.preventDefault();
+  });
+  if (typeof document.addEventListener === "function") {
+    document.addEventListener("selectionchange", updateReadSelectionAction);
+  }
+  elements.read.backButton.addEventListener("click", function () {
+    cancelReadAll();
+    readView.hideRunStatus();
+    readView.hideSelectionAction();
+    readView.showInput();
+  });
+  elements.read.openSettingsButton.addEventListener("click", openReadSettings);
+  elements.read.settingsBackButton.addEventListener("click", function () {
+    readView.backFromSettings();
+  });
+  elements.read.configBaseUrl.addEventListener("input", updateReadResolvedUrl);
+  ["configBaseUrl", "configModel", "configKey", "configTemperature"].forEach(function (key) {
+    elements.read[key].addEventListener("input", function () {
+      elements.read.configErrors.hidden = true;
+    });
+  });
+  elements.read.configSave.addEventListener("click", saveReadSettings);
+  elements.read.configTest.addEventListener("click", testReadConnection);
+  readView.updateCount();
   showView("home", { focus: false }); // 初始装载不抢焦点
 })();

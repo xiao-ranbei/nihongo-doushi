@@ -36,7 +36,7 @@
 安装 Node.js 后，在 `web/` 目录运行：
 
 ```text
-node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
+node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js tests/read-engine.test.js tests/read-client.test.js
 ```
 
 Windows 下 `node --test` 需要显式列出文件，不能只传 `tests/` 目录。
@@ -49,6 +49,8 @@ Windows 下 `node --test` 需要显式列出文件，不能只传 `tests/` 目�
 | `styles.test.js` | 样式契约守卫（令牌必须已定义、组件内禁止硬编码色值） |
 | `font.test.js` | 字体契约守卫（子集字符表与源码一致、清单指向的文件存在且未误提交全量字体） |
 | `ui.test.js` | UI 冒烟：用零依赖 DOM 桩加载 `app.js`，覆盖动词／形容词流程、助词混合题型切换、错题复习与存档容错 |
+| `read-engine.test.js` | 文章分析纯逻辑：切段／硬切／分批、端点与配置校验、同步 SHA-256 缓存键、原文逐字符重建、词详情与结构化语法解析、禁则分组、罗马音、pos 标签归一化、学习闭环反查、纯逻辑边界 |
+| `read-client.test.js` | 网络层（Fake transport，零真实调用）：请求构造与密钥位置、11 类错误映射、四次调用解析、`response_format` 400 去字段重试一次、截断与结构异常、取消三态、SSE 增量扫描 |
 
 ## 字体
 
