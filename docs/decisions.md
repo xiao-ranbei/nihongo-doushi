@@ -39,7 +39,7 @@
 | D-033 | Android 阅读模块首个联网能力「AI 文章解析」采用**客户端直连** OpenAI 兼容接口：不新增服务器、不代理转发、不内置任何密钥；用户在自己的设备上填写服务地址／模型名／API Key，存在 filesDir 版本化 JSON（`japanese-read-analyzer-config-v1`），明文保存并在界面如实告知；请求只发用户填写的地址 | 已实现（[android-read-analyzer-spec.md](android-read-analyzer-spec.md)，批 1–3） |
 | D-034 | 解析粒度为**点句解析**：文章按本地规则切句（不动网络），用户点哪句才解析哪句；每次请求只发送该句原文（≤500 字符，超长句先硬切——切分与请求上限同为 500，见 spec §6.2）；不做全文批量上传 | 已实现（批 1） |
 | D-035 | 解析结果分三次调用取得：`analyze` 返回 `{tokens:[{word,pos,furigana}]}`、`translate` 返回纯文本译文（前两者并发、按句缓存）、`word-detail` 按需返回 6 字段词详情并缓存在句子条目下。**逐词拼接必须与原句逐字符一致**（重建校验为 P0）；不一致时隐藏逐词、只显示译文并标注，宁可少显示也不教错 | 已实现（批 1–3） |
-| D-036 | 参考仓库 `cokice/japanese-analyzer` 为 AGPL-3.0-only（历史 MIT 仅覆盖 tag `mit-final`／`fb57ddc`），本项目根目录无 LICENSE：**只借鉴功能面、契约形状与工程思路，不复制其任何源码与提示词文本**；仓库留在临时目录阅读，不 clone 进本仓库 | 已确认（2026-10-19） |
+| D-036 | 参考仓库 `cokice/japanese-analyzer` 为 AGPL-3.0-only（commit `f203982`；历史 MIT 仅覆盖 tag `mit-final`／commit `fb57ddc`），本项目根目录无 LICENSE：**只借鉴功能面、契约形状与工程思路，不复制其任何源码与提示词文本**；仓库留在临时目录阅读，不 clone 进本仓库 | 已确认（2026-10-19） |
 | D-037 | 联网边界（D-011 落地）：Manifest 只新增 `INTERNET`；全局不开 `usesCleartextTraffic`，用 `network_security_config.xml` 仅对 localhost/127.0.0.1/10.0.2.2 放行明文；除用户填写的地址外无其他出网目标、无遥测；离线时文章正文与已缓存解析仍可读，联网失败不影响阅读本身 | 已实现（批 2，`res/xml/network_security_config.xml`） |
 | D-038 | 产品名改为「言の葉」（ことのは）：古典语里即「词语／言语」，同时覆盖动词活用训练与 AI 文章阅读两种能力，故取一整名替代原「日语学习」通称。影响面＝Android `android:label`、Web 页面标题与品牌区、README、文档索引；不改仓库名 `nihongo-doushi`、不改命令与路径（`applicationId` 另由 D-039 单独决定） | 已完成（2026-10-21）：Web 标题/品牌区、Android `android:label="言の葉"`、README、文档索引 |
 
@@ -49,6 +49,11 @@
 | D-042 | 圆角与阴影**必须令牌化**，否则只有配色跟随系统、几何仍停在糖果卡一套，深色下会出现「墨夜配色 + 糖果卡大圆角柔影」的混搭。新增 `ModuleGeometry(cardRadius, smallRadius, cardShadow, pillRadius, navFloating)` 与 `@Composable fun geometry()` | 已实现（2026-10-22） |
 | D-043 | 字体**不跟着换**：继续用霞鹜臻楷子集。换无衬线就等于退掉 `web/font/subset-chars.txt` + `web/tests/font.test.js` 整条子集管线，而楷体是本项目唯一的品牌记忆点 | 已确认（2026-10-22） |
 | D-044 | `ModuleTones` 四个实例是 `object` 里的 `val`（写死浅色值），深色映射改由 `ProvideModuleTone` 与新增的 `themedTone(tone)` 承担。**按 tab／按模块循环渲染处必须走 `themedTone()`**，直接引用 `ModuleTones.X` 会拿到浅色常量（曾导致深色底栏选中胶囊仍是 `#E9F7EF`） | 已实现（2026-10-22，规范见 [android-theme-spec.md](android-theme-spec.md)） |
+| D-045 | Web 文章阅读联网边界与 D-033/D-037 同构：客户端直连用户自填 OpenAI 兼容地址，无后端、无内置 Key、无遥测；密钥明文存 `localStorage`（`japanese-read-analyzer-config-v1`），界面如实告知「明文保存在当前浏览器」（Web 无 Android filesDir 私有目录，不假装加密）；未配置只能本地切段读原文，解析不发起任何请求。形态差异：`file://` 的 Origin 为 `null`，用户 API 若做 CORS 白名单需放行 `*` 或 `null`；GitHub Pages 形态需放行 `https://xiao-ranbei.github.io`；https 页面下用户端点必须 https（http 被 mixed content 拦截） | 已实现（B3/B8；两种形态同链路冒烟各 17 断言全过，2026-11-06） |
+| D-046 | Web 四次调用契约：`analyze`（词法标注器 → `{tokens:[{word,pos,furigana}]}`，仅 analyze 可开 stream）/ `translate`（纯文本译文）/ `word-detail`（6 字段，键名 `exampleMeaning`，D-035 键名事故测试钉住）/ `grammar`（D-049 契约）。analyze+translate 并发、译文失败降级空串、只有 analyze 成功才写按段缓存；`response_format` 400 去字段重试一次且只重试一次；宽松兜底只收完整 token 对象且仍过原文逐字符一致性校验；提示词自写（D-036）含注入包装 | 已实现（B3–B7，Fake transport 零真实调用） |
+| D-047 | 成本口径：每段 2 次请求（analyze+translate）；词详情 LRU 80（命中零请求）；`grammar` 严格按需且按段缓存；每篇 20 次 / 每日 100 次硬预算，一键全文二次确认（写明段数/请求数）+ 预算预检只按未缓存块计；换模型缓存失效重新请求；本地埋点（`japanese-read-analyzer-stats-v1`，7 组错误归并）不出网、不含原文与密钥 | 已实现（B4/B5/B7/B8，成本报告见 [web-read-analyzer-plan.md](web-read-analyzer-plan.md) B9） |
+| D-048 | 今日活动口径（Q8）：从文章进入的题走既有判题通道，自动进既有错题与间隔复习——**不把解析结果直接写进错题本**；新增仅 `japanese-read-analyzer-activity-v1`（今日阅读段数/收藏词数）+ 主页卡最小摘要；书签复用 `japanese-verb-practice-bookmarks-v1`（word/sentence 两类） | 已实现（B6） |
+| D-049 | `grammar` 能力定位（G3 按 §4.4 草案）：结构化语法分析（patterns/structure/style/engineRefs），不产题、不做依存树或主谓宾可视化；`engineRefs` 由模型给 `type/surface/span`，词库 `id` 由 `resolveEngineRef` 本地反查（模型不可能知道本项目词库 id）；默认不发请求，只由「看语法」触发；反查成功提供「练这组词／练这个词」进既有练习 | 已实现（B5/B6） |
 
 ## 明确延后的决定
 

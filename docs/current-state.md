@@ -5,11 +5,11 @@
 
 ## 1. 项目概述
 
-当前网页端位于 `web/`，是一个纯静态、离线可用的日语学习工具，提供学习主页、动词活用、形容词接续、助词学习、速查和错题复习。用户用浏览器打开 `web/index.html` 即可使用；运行时不需要服务器、构建工具、外部 API 或第三方题库。
+当前网页端位于 `web/`，是一个纯静态、离线可用的日语学习工具，提供学习主页、动词活用、形容词接续、助词学习、速查、错题复习和文章阅读（AI 解析）。用户用浏览器打开 `web/index.html` 即可使用；除文章阅读的 AI 解析需用户自备模型服务（D-045）外，运行时不需要服务器、构建工具或第三方题库。
 
 界面、规则引擎和记录均在浏览器本地运行。答题统计、每日练习记录和错题保存在当前浏览器的 `localStorage` 中，不提供云端同步。
 
-每次打开网页默认进入学习主页。桌面端侧栏与主内容区分别滚动，页面外层锁定动态视口且不参与滚动；答题后焦点滚动主内容区时，侧栏保持固定。桌面侧栏左上角的“日”品牌可返回主页，侧栏不重复放置主页按钮，折叠状态在主页导航时保留。窄屏使用左侧抽屉，顶部“日”品牌可返回主页，顶部栏固定，主页内容在独立滚动区内浏览，底部内容带安全留白。动词、形容词和助词是独立学习模块；动词与形容词错题在全局错题本中分组，助词错题在助词模块内复习。Android 端为同一套模块的原生实现（动词、形容词、助词与共享错题本），导航为底部四标签（主页/学习/阅读/我的）。「阅读」标签与「查词」「模型/API 设置」等预留位是规划中占位，无真实能力。
+每次打开网页默认进入学习主页。桌面端侧栏与主内容区分别滚动，页面外层锁定动态视口且不参与滚动；答题后焦点滚动主内容区时，侧栏保持固定。桌面侧栏左上角的“日”品牌可返回主页，侧栏不重复放置主页按钮，折叠状态在主页导航时保留。窄屏使用左侧抽屉，顶部“日”品牌可返回主页，顶部栏固定，主页内容在独立滚动区内浏览，底部内容带安全留白。动词、形容词和助词是独立学习模块；动词与形容词错题在全局错题本中分组，助词错题在助词模块内复习。文章阅读是第四个模块（B0–B9，见 [web-read-analyzer-plan.md](web-read-analyzer-plan.md)）：贴文本地切段、点段解析逐词/译文、点词详情、结构化语法、朗读、图片 OCR、AI 助手与本地埋点，解析题可经 `resolveEngineRef` 反查进既有练习。Android 端为同一套模块的原生实现（动词、形容词、助词与共享错题本 + AI 文章解析），导航为底部四标签（主页/学习/阅读/我的）。「排版」「撰写」与「查词」仍是规划中占位。
 
 ## 2. 总体结构
 
@@ -22,7 +22,12 @@ web/index.html ── 页面结构与交互节点
            ├── web/verb-engine.js ── 动词数据、活用、答案归一化与说明
            ├── web/adjective-engine.js ── 形容词数据、变形与说明
            ├── web/particle-engine.js ── 助词专题、对比题与分层讲解
-           └── 浏览器 localStorage ── 错题、统计与连续练习记录
+           ├── web/read-engine.js ── 文章阅读纯逻辑（切段/解析重建/反查/罗马音）
+           ├── web/read-client.js ── 网络层（transport 注入、四次调用、错误映射）
+           ├── web/read-prompts.js ── 四条系统提示词（自写，D-036）
+           ├── web/read-view.js ── 阅读视图渲染（逐词/抽屉/状态）
+           ├── web/read-tts.js / read-ocr.js / read-stats.js ── 朗读 / 图片 OCR 压缩 / 本地埋点
+           └── 浏览器 localStorage ── 错题、统计与连续练习记录 + 阅读五键
 ```
 
 页面通过普通 `<script defer>` 加载，顺序为字体清单、动词引擎、形容词引擎、助词引擎、应用脚本。三个引擎以 UMD 方式导出：浏览器中挂到 `window`，Node.js 测试中通过 `module.exports` 使用。
@@ -34,13 +39,16 @@ web/index.html ── 页面结构与交互节点
 | `web/verb-engine.js` | 动词词库、语态与活用、规则解释、输入归一化及罗马字转假名 | 纯逻辑，不访问 DOM 或浏览器存储 |
 | `web/adjective-engine.js` | 形容词词库、形式转换、可接受变体和规则解释 | 纯逻辑；答案归一化复用动词引擎 |
 | `web/particle-engine.js` | 助词专题、语境例句、入门／进阶讲解、填空与句义判断题 | 纯数据与判题，不访问 DOM 或浏览器存储 |
+| `web/read-engine.js`、`web/read-prompts.js` | 文章切段、解析结果重建校验、词详情/语法解析、缓存键与反查目录 | 纯逻辑，不访问 DOM、网络或浏览器存储 |
+| `web/read-client.js` | 四次调用请求构造、SSE、错误映射、取消与预算预检 | transport 注入，测试零真实调用（Fake） |
+| `web/read-view.js`、`web/read-tts.js`、`web/read-ocr.js`、`web/read-stats.js` | 阅读视图渲染、朗读、图片压缩转写、本地埋点 | 埋点不出网、不含原文与密钥 |
 | `web/styles.css` | 纸感主题、组件样式、响应式布局和动画 | 颜色通过 CSS 语义令牌管理 |
 | `web/font/`、`web/icon/` | 本地字体资源与 favicon | 字体子集生成脚本仅用于开发维护 |
 | `web/tests/`、`web/tools/` | 引擎、UI 接线、样式和字体测试及可选开发工具 | UI 冒烟测试使用零依赖 DOM 桩 |
 
 ## 3. 功能与页面
 
-学习主页提供今日答题量、连续学习天数、已开始模块数量和各模块今日题数，可从侧栏或窄屏顶部的“日”品牌返回。侧栏在动词、形容词、助词和全局错题本之间切换；动词模块内提供「练习／活用速查」，形容词模块内提供「练习／速查」，助词模块默认进入「练习」，并提供「学习地图／错题复习」辅助入口。
+学习主页提供今日答题量、连续学习天数、已开始模块数量和各模块今日题数，可从侧栏或窄屏顶部的“日”品牌返回。侧栏在动词、形容词、助词、文章阅读和全局错题本之间切换；动词模块内提供「练习／活用速查」，形容词模块内提供「练习／速查」，助词模块默认进入「练习」，并提供「学习地图／错题复习」辅助入口；文章阅读提供「输入／阅读器／模型设置」三态。
 
 ### 3.1 动词练习
 
@@ -120,6 +128,11 @@ web/index.html ── 页面结构与交互节点
 | `japanese-verb-practice-stats-v1` | 动词答对、答错计数 |
 | `japanese-verb-practice-adj-stats-v1` | 形容词答对、答错计数 |
 | `japanese-verb-practice-daily-v1` | 最近练习日期、当前连续天数、最佳连续天数，以及动词／形容词／助词当日答题数 |
+| `japanese-read-analyzer-config-v1` | 文章阅读模型配置（地址/模型/密钥/温度/视觉模型/助手开关，D-045） |
+| `japanese-read-analyzer-cache-v1` | 按段解析缓存（词/译文/词详情/语法，500 条上限，D-046） |
+| `japanese-read-analyzer-budget-v1` | 每日 100 / 每篇 20 次请求预算计数（D-047） |
+| `japanese-read-analyzer-stats-v1` | 本地埋点：解析次数/缓存命中/耗时/7 组错误归并（不出网，D-037/D-047） |
+| `japanese-read-analyzer-activity-v1` | 今日阅读段数与收藏词数（D-048；书签复用 `japanese-verb-practice-bookmarks-v1`） |
 
 错题记录按模块保存对应词条 ID 和目标形式，并包含错误次数、最近错误答案、更新时间、连续正确次数、复习间隔和下次到期时间。旧版没有 `module` 字段的记录按动词错题兼容。会话内重试计数用于当前会话调度，不包含在导出文件中。
 
@@ -135,10 +148,10 @@ web/index.html ── 页面结构与交互节点
 - **测试：** 引擎测试覆盖变形和答案处理；UI 冒烟测试验证页面接线与主要闭环；字体、样式测试守护静态资源契约。运行完整测试：
 
   ```text
-  node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
+  node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/read-engine.test.js tests/read-client.test.js tests/read-ocr.test.js tests/read-stats.test.js tests/read-tts.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
   ```
 
-当前基线（2026-10-22 实测）：网页端 6 个测试文件共 121 项全绿；Android 端 `./gradlew :app:testDebugUnitTest` 264 项全绿（聚合 `test-results/testDebugUnitTest/*.xml`：files=25 tests=264 failures=0 errors=0），仪器化 `TalkBackMergeTest` 4 项全绿（qa36 模拟器，读屏语义树口径，见 D-030/D-031）。
+当前基线（2026-11-06 实测）：网页端 11 个测试文件共 396 项全绿；Android 端 `./gradlew :app:testDebugUnitTest` 264 项全绿（聚合 `test-results/testDebugUnitTest/*.xml`：files=25 tests=264 failures=0 errors=0），仪器化 `TalkBackMergeTest` 4 项全绿（qa36 模拟器，读屏语义树口径，见 D-030/D-031）。
 
 未解决的遗留问题（预留位转正清单、跨端数据缺口、技术债务等）统一登记在 [known-issues.md](known-issues.md)，不要在本文件重复罗列。
 

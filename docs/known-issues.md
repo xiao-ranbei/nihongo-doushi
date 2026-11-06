@@ -8,6 +8,7 @@
 - 复核：2026-10-19 AI 阅读落地后（Web 121/121、Android 214 单测全绿、仪器化 4/4 未变）；IK-04/06/08/12/16/20 关闭
 - 复核：2026-11-05 推送 578b93e 前（Web 121/121、Android 25 类 264 项 0 失败、`compileDebugKotlin --rerun` 强制重编 0 警告）；IK-01/02/03/05/07/14 关闭
 - 复核：2026-11-05 第二批（Web 122/122）；IK-10/18 关闭（实现此前已落地，本批补断言并核实）
+- 复核：2026-11-06 Web 文章阅读 B0–B9 收口（Web 396/396）；IK-11 收窄为独立查词入口；新增 IK-21/IK-22
 
 ## 优先级定义
 
@@ -28,13 +29,15 @@
 | ~~IK-07~~ | 文档滞后：D-016 与 particle spec 状态仍写「待实现」 | — | 已关闭（6e5109a + 本次 spec 标题修正） |
 | ~~IK-09~~ | Android 应用图标未接入自绘资产 | — | 已关闭（2026-10-22） |
 | ~~IK-10~~ | Web romaji 归一化失败静默回退 | — | 已关闭（52731c9 实现，本批核实） |
-| IK-11 | 查词入口为规划中位 | ui/study/StudyScreen.kt:142 | P2 |
+| IK-11 | 查词入口为规划中位（文章内词详情已随 AI 文章解析两端落地，本条收窄为不依托文章的独立查词） | ui/study/StudyScreen.kt:142 | P2 |
 | IK-13 | 我的页两个预留设置位（模型/API 已转正） | ui/mine/MineScreen.kt:92 | P2 |
 | ~~IK-14~~ | 书签已有写入入口，缺浏览页 | — | 已关闭（b75c6c1，2026-10-21） |
 | IK-15 | Android 缺活用速查与错题导入/导出（D-008 暂缓） | —（Web 已有） | P2 |
 | IK-17 | Web PWA 与打印样式缺失 | web/（无 manifest/sw、无 @media print） | P2 |
 | ~~IK-18~~ | Web aria-live 与焦点管理漏点 | — | 已关闭（本批核实 + 补断言） |
 | IK-19 | 速查页难度过滤未做 | web/app.js:3336 | P2 |
+| IK-21 | Web 书签只有写入/取消，无浏览页 | web/（B6 收藏动作已落，浏览 UI 未做） | P3 |
+| IK-22 | 朗读仅 speechSynthesis，无第三方 TTS 端点（计划 B8 可选项） | web/read-tts.js | P3 |
 
 ## 明细
 
@@ -64,7 +67,7 @@
 
 | 编号 | 位置 | 当前形态 | 转正条件 |
 | --- | --- | --- | --- |
-| IK-11 查词 | ui/study/StudyScreen.kt:142 | PlannedRow 不可点 | 词典数据源确定后翻 AVAILABLE + 二级页 StudyDestination.DICTIONARY |
+| IK-11 查词 | ui/study/StudyScreen.kt:142 | PlannedRow 不可点 | 词典数据源确定后翻 AVAILABLE + 二级页 StudyDestination.DICTIONARY；文章内点词查详情已随 Web B5 / Android 批 1–3 落地（word-detail 调用），本条只管独立查词入口 |
 | IK-13 设置预留位 | ui/mine/MineScreen.kt:92（发音音色、词库导入导出） | PlannedRow 不可点 | 「模型/API 设置」已转正（可点入口，接通 MainActivity 的 MODEL_SETTINGS）；剩两项：发音音色依赖 TTS 引擎、词库导入导出依赖词库数据源，仍待定 |
 | ~~IK-14 书签浏览页~~ | — | 已关闭（2026-10-21） | 见「已关闭」节 |
 
@@ -97,6 +100,18 @@
 - 位置：`web/app.js:3336` 速查表按「基础活用/进阶活用」分组展示，无按难度筛选
 - 影响：查找特定难度形式需滚动
 - 建议时机：低优先级
+
+#### IK-21 Web 书签无浏览页（P3）
+
+- 位置：Web 阅读抽屉「收藏这个词／收藏这一段」写入 `japanese-verb-practice-bookmarks-v1`（B6），但 Web 端没有书签浏览/管理页（Android「我的」页已有）
+- 影响：Web 收藏后只能取消，不能回看列表；数据不丢（键与 Android 同构）
+- 建议时机：随 Web「我的/资料」类页面一起做，或复用 Android 我的页交互
+
+#### IK-22 朗读无第三方 TTS 端点（P3）
+
+- 位置：`web/read-tts.js` 只实现 `speechSynthesis` 通道（零密钥零成本零出网）
+- 影响：无 TTS 的浏览器/环境无法朗读；计划 B8 的「可选第三方 TTS 自填端点」未实现
+- 建议时机：出现真实需求再做；做的时候沿用 D-045 联网边界（自填地址、明文告知、可关）
 
 ## 已关闭
 

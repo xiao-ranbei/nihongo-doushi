@@ -31,7 +31,7 @@
 | [android-theme-spec.md](android-theme-spec.md) | Android 双皮肤主题规范：为什么两套（浅色糖果卡／深色墨夜）、四个取色入口、配色与几何令牌表、平台层 windowBackground、与原型的关系、验收口径 | 已实现（2026-10-22） |
 | [workflow-review-two-increments.md](workflow-review-two-increments.md) | 两次追加功能的工作流复盘：目标、步骤、模块依赖、异同与演进、注意事项与可复用模板 | 参考文档 |
 | [design/home-mine-prototypes.html](design/home-mine-prototypes.html) | 主页/我的 三版可交互原型（框内底栏可切换） | 讨论用原型，不是正式页面 |
-| [web-read-analyzer-plan.md](web-read-analyzer-plan.md) | Web 端文章分析分批实施计划：参考项目全能力逐项适配、四次调用契约、成本与隐私口径、B0～B9 批次与验收、闸门清单 | 计划（2026-11-06 建立，待实施） |
+| [web-read-analyzer-plan.md](web-read-analyzer-plan.md) | Web 端文章分析分批实施计划：参考项目全能力逐项适配、四次调用契约、成本与隐私口径、B0～B9 批次与验收、闸门清单 | 已实现（B0–B9 收口，2026-11-06；Web 396/396） |
 | [design/icon-concepts/](design/icon-concepts/) | 应用图标方向 1「あ・纸页」资产（已轮廓化，含 VectorDrawable）与生成/自检脚本 | 可接入 |
 
 ## 信息来源与更新规则

@@ -47,9 +47,19 @@
 - 样式更改运行样式契约测试；UI 结构更改运行 DOM 桩冒烟测试。
 - 新增网页界面文字或日语词条后重建 `web/font/` 字体子集，并运行字体契约测试。
 
+### 既有模块登记
+
+| 模块 | 模块 ID / 键边界 | 接入结论 |
+| --- | --- | --- |
+| 动词活用 | 错题 `module: "verb"` | 已接入全局错题与每日活动 |
+| 形容词接续 | 错题 `module: "adjective"`（题 key 带 `adj::` 前缀） | 已接入全局错题与每日活动 |
+| 助词学习 | `japanese-particle-practice-*` 独立键族 | 错题在助词模块内独立复习，不进全局错题分组 |
+| 文章阅读（read-analyzer） | `japanese-read-analyzer-*` 五键 + 书签复用 `japanese-verb-practice-bookmarks-v1` | 已接入（2026-11-06，B0–B9）：解析题经 `resolveEngineRef` 反查后走既有出题通道、归属目标模块错题，**本身不占错题模块 ID、不直接写错题本**（D-048）；今日活动只记阅读段数/收藏词数（`japanese-read-analyzer-activity-v1`） |
+
 ## Web 当前代码约定
 
 - `web/verb-engine.js` 与 `web/adjective-engine.js` 是纯逻辑 UMD 模块；继续保持引擎不操作 DOM。
+- `web/read-engine.js`、`web/read-prompts.js` 同为纯逻辑（禁 DOM/网络/存储）；`web/read-client.js` 的 transport 一律注入，测试用 Fake 零真实调用。
 - `web/app.js` 负责状态、事件和渲染；新增 DOM 节点登记在集中管理的元素对象中。
 - 颜色使用 `web/styles.css` 已定义的语义令牌；维护样式时运行 `web/tests/styles.test.js`。
 - 本地存储以版本化 key 管理，读取和写入需显式处理解析、结构或访问错误。

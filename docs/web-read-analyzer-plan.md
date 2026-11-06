@@ -373,6 +373,21 @@ web/tools/visual-check.js 改 · 补阅读页状态截图
 
 全量测试（Web 122+N、Android 264 不劣化）；视觉验收 12+ 态与像素差（≤500 像素且平均通道差 ≤0.5）；字体子集两端一致；文档同步（§8 表）；两种运行形态走查（`file://` 双击与 GitHub Pages `https://` 的 Origin / CORS / mixed-content / 缓存）；GitHub Pages 部署验证；成本报告（每篇调用次数、缓存命中率、预算触发次数）。
 
+**实施记录（2026-11-06，已完成）**：
+
+- **全量测试**：Web 11 文件 **396/396**（含静态守卫）；Android `:app:testDebugUnitTest --rerun` 强制重跑实测 25 类 **264 项 0 失败**（聚合 XML `files=25 tests=264 failures=0 errors=0`）。全程 Fake transport，零真实 AI 调用（G2 未授权）。
+- **视觉验收**：`visual-check.js` 20 态全产出；`visual-diff.py` 对比 B1–B7 基线（`27b4e99` 的 `git archive` 提取物，同一 harness 双跑）——**01–19 全 PASS**（其中 16 态像素级零差；04/09/14 三态 ≤5 像素、≤1 超容差像素的渲染噪声），实证 B8 令牌收编「浅色像素零变化」；**20-read-reader FAIL**（111482 超容差像素）为 B8 阅读器新控件（单段喇叭/显示入口/播放条）造成的有意布局变化，热图显示差异全部落在新控件与卡片位移上，目视成品完整、无重叠无溢出。
+- **字体子集**：woff2 与 Android TTF 的 cmap 对称差 **0**（各 1422 字形；字符表 1424 项 = cmap 1422 + `\n` + `↻` 两个不产字形项），woff2 422KB / TTF 766KB，`font.test.js` 绿。
+- **两种运行形态走查**：同链路冒烟（粘贴 → 切段 → 点段（逐词/译文）→ 点词（6 字段词详情）→ 语法 → 练这组词进练习）在 `file://` 与 Pages `https://` **各 17 断言全过**，出站 4 次调用（analyze/translate/detail/grammar）全部命中假 transport。形态差异事实：① Origin——`file://` 为 `null`（用户 API 的 CORS 白名单需放行 `*` 或 `null`），Pages 需放行 `https://xiao-ranbei.github.io`；② mixed content——https 页面下用户端点必须 https（http 被拦），`file://` 无此限制；③ 缓存——Pages 响应头 `Cache-Control: max-age=600` + ETag/Last-Modified（新版本最长 10 分钟全局可见），HSTS 已开；应用数据 localStorage 按 origin 隔离，`file://` 与线上记录互不相通；④ 静态扫描 `http://` 子资源为零（唯一命中是校验文案字符串）。
+- **GitHub Pages 部署验证**：`00f9be0` 推送触发 Deploy workflow **success**（21s）；线上 HTML 实测含 `read-tts.js/read-ocr.js/read-stats.js/read-view.js` 全部 B8 标记，响应头如上。
+- **文档同步（§10 清单十项全部落地）**：`decisions.md` 新增 D-045～D-049 且 D-036 补 commit `f203982`/`fb57ddc` 标注；`current-state.md` 阅读模块/结构/存储键/测试基线；根 `README.md`（线上地址、Web 能力、Android 阅读、联网限制、测试命令）；`information-architecture.md`；`docs/README.md` 索引；`module-guide.md` 既有模块登记与 Web 约定；`known-issues.md`（IK-11 收窄 + 新增 IK-21/IK-22）；`web/README.md`（字体数字、测试表补三行）；`android-read-analyzer-spec.md`（即本文所指 spec.md：许可证标注、两处「13 项品詞」→「13 个 pos 标签」）。
+- **成本报告（设计口径 + Fake 实测；真实调用 0 次）**：
+  - 每篇调用次数：每段 2 次（analyze+translate 并发）；点词详情 1 次（LRU 80 内命中 0 次）；`grammar` 1 次（按需触发、按段缓存后 0 次）；一键全文 = 未缓存段数 × 2（费用二次确认 + 预算预检只按未缓存块计）；助手每问 1 次；OCR 每图 1 次。3 段样例全解析 + 词详情 + 语法 = 8 次。
+  - 缓存命中率：命中即零请求（B4 冒烟实测「二次点同一段 fetch 不增」、B5「二次点同一词 LRU 命中」）；收口链路冒烟 4 次出站全部为必要调用，零重复。
+  - 预算触发次数：**0**（每篇 20 / 每日 100 硬上限由单测守护；全程零真实调用，无真实触发）。
+- **范围调整与遗留登记**：① 计划 B8 的「可选第三方 TTS 自填端点」未实现，只落 `speechSynthesis` → 登记 IK-22；② Web 书签无浏览页 → 登记 IK-21；③ 识图导入按钮在配置无效时隐藏（未配置态不展示不可用入口——19 态像素零差的直接原因），属实现细节非闸门。
+- **会话事故记录（非产品事实）**：清理变异探针时误用 `git checkout -- web/app.js` 把未提交的 B8 改动回滚到 HEAD，经会话转录（`~/.workbuddy/projects/…jsonl`）导出 49 条 Edit 按 timestamp 重放 100% 复原，396/396 复跑全绿；教训「清理变异探针禁用 git checkout」已写入跨项目长期记忆。
+
 ---
 
 ## 9. 需关子确认的闸门（最少化）

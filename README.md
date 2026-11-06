@@ -97,7 +97,7 @@ export JAVA_HOME=<待补：本机 JDK 路径>
 
 `web/**` 的变更推送到 `master` 会触发 `.github/workflows/deploy-pages.yml`，把 `web/` 目录整个发布到 GitHub Pages。首次启用需在仓库 Settings → Pages → Source 选择 GitHub Actions，详见 [docs/deployment-github-pages.md](docs/deployment-github-pages.md)。
 
-线上地址：待补。
+线上地址：<https://xiao-ranbei.github.io/nihongo-doushi/>。
 
 ## 4. 使用示例
 
@@ -117,15 +117,19 @@ export JAVA_HOME=<待补：本机 JDK 路径>
 
 错题本 → 按动词／形容词分组 →「重练」进入复习，页面顶部显示本轮待练题数的常驻横幅；「导出」得到 JSON，可用于备份或换设备（换浏览器需手动导入）。
 
-### 4.4 Android
+### 4.4 网页端读一篇文章
 
-底栏四个一级标签：「主页」看随机日语谚语（可换一句）、本周打卡与知识点建议；「学习」是动词、形容词、助词与错题本的模块入口；「阅读」是规划中的工具框架（AI 阅读／排版／撰写／语法单词解析占位）；「我的」看今日统计、编辑本地昵称资料卡、书签收藏夹与统计清零。动词、形容词练习、助词学习和错题本是二级页。答题判定为选择题，判定结果在底部抽屉展示。
+侧栏选「阅读」→ 粘贴日语文章 → 本地切段 → 点段解析逐词（假名/罗马音/词性底色）与译文 → 点词看 6 字段词详情 → 「看语法」看结构化语法分析 → 反查「练这个词／练这组词」进既有练习。扩展能力：显示弹层（三开关+语速）、朗读播放条、图片 OCR 导入、AI 助手（默认关）、本地埋点；深浅色跟随系统。联网需自备 OpenAI 兼容服务地址与 Key（明文存浏览器，D-045）；未配置时只能本地切段读原文。规格见 [docs/web-read-analyzer-plan.md](docs/web-read-analyzer-plan.md)（B0–B9）。
 
-### 4.5 测试
+### 4.5 Android
+
+底栏四个一级标签：「主页」看随机日语谚语（可换一句）、本周打卡与知识点建议；「学习」是动词、形容词、助词与错题本的模块入口；「阅读」已上线 AI 文章解析（贴入文章逐段解析），「排版」「撰写」与「查词」仍是规划中占位；「我的」看今日统计、编辑本地昵称资料卡、书签收藏夹与统计清零。动词、形容词练习、助词学习和错题本是二级页。答题判定为选择题，判定结果在底部抽屉展示。
+
+### 4.6 测试
 
 ```bash
 # 网页端（在 web/ 目录下；Windows 必须显式列出文件，不能只传 tests/ 目录）
-node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
+node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/read-engine.test.js tests/read-client.test.js tests/read-ocr.test.js tests/read-stats.test.js tests/read-tts.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
 
 # Android（在 android/ 目录下）
 ./gradlew :app:testDebugUnitTest
@@ -214,8 +218,8 @@ keyPassword=<待补>
 
 - **无同步与备份**：不做账号、云同步、自动备份；只能手动导出 JSON（Android 端暂不支持导入导出，D-008 延后）。
 - **两端数据不通**：Web 与 Android 存储结构对齐但不自动迁移，换端等于从零开始。
-- **功能不对齐**：活用速查、错题导入导出目前仅 Web 端；Android 为四标签框架（主页/学习/阅读/我的），「阅读」已上线 AI 阅读（贴入文章逐句解析），「排版」「撰写」与「查词」仍是规划中占位，发音音色、词库导入导出为预留功能位。
-- **联网需自备 Key 且仅 Android 端**：AI 阅读是阅读模块首个联网能力，走「客户端直连用户自填的 OpenAI 兼容地址」，无后端、无内置 Key，正文会发往你填写的服务地址（D-033）。不配置时该功能整体不可用，其余模块仍完全离线（D-009 不变）。规格见 [docs/android-read-analyzer-spec.md](docs/android-read-analyzer-spec.md)。
+- **功能不对齐**：活用速查、错题导入导出目前仅 Web 端；Android 为四标签框架（主页/学习/阅读/我的），「阅读」已上线 AI 文章解析（贴入文章逐段解析），「排版」「撰写」与「查词」仍是规划中占位，发音音色、词库导入导出为预留功能位。
+- **联网需自备 Key（Web 与 Android 两端）**：AI 文章解析是目前唯一的联网能力，走「客户端直连用户自填的 OpenAI 兼容地址」，无后端、无内置 Key，正文会发往你填写的服务地址（D-033/D-045）。不配置时该功能整体不可用，其余模块仍完全离线（D-009 不变）。规格见 [docs/android-read-analyzer-spec.md](docs/android-read-analyzer-spec.md) 与 [docs/web-read-analyzer-plan.md](docs/web-read-analyzer-plan.md)。
 - **设备范围窄**：Android 只按手机竖屏设计（D-010），平板、横屏、折叠屏未适配；Web 桌面端有侧栏、窄屏有抽屉，未做平板专门布局。
 - **无 PWA**：没有 Service Worker 与应用清单，网页端无法「安装」到桌面，离线依赖本地文件；Android 端本身离线可用。
 - **词库规模有限**：79 动词、15 形容词、9 个助词专题 48 题；不是完整 JLPT 词表。

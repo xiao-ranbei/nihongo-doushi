@@ -1,6 +1,6 @@
 # 言の葉 · 日语学习工具（网页端）
 
-一个离线可用的日语学习网页，当前包含动词、形容词和助词学习模块，不依赖外部服务或第三方题库。产品方向与目标设计见[项目文档索引](../docs/README.md)。
+一个离线可用的日语学习网页，当前包含动词、形容词、助词学习与文章阅读（AI 解析，需用户自备模型服务）模块；除 AI 解析外不依赖外部服务或第三方题库。产品方向与目标设计见[项目文档索引](../docs/README.md)。
 
 ## 使用
 
@@ -36,7 +36,7 @@
 安装 Node.js 后，在 `web/` 目录运行：
 
 ```text
-node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js tests/read-engine.test.js tests/read-client.test.js
+node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/read-engine.test.js tests/read-client.test.js tests/read-ocr.test.js tests/read-stats.test.js tests/read-tts.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
 ```
 
 Windows 下 `node --test` 需要显式列出文件，不能只传 `tests/` 目录。
@@ -51,10 +51,13 @@ Windows 下 `node --test` 需要显式列出文件，不能只传 `tests/` 目�
 | `ui.test.js` | UI 冒烟：用零依赖 DOM 桩加载 `app.js`，覆盖动词／形容词流程、助词混合题型切换、错题复习与存档容错 |
 | `read-engine.test.js` | 文章分析纯逻辑：切段／硬切／分批、端点与配置校验、同步 SHA-256 缓存键、原文逐字符重建、词详情与结构化语法解析、禁则分组、罗马音、pos 标签归一化、学习闭环反查、纯逻辑边界 |
 | `read-client.test.js` | 网络层（Fake transport，零真实调用）：请求构造与密钥位置、11 类错误映射、四次调用解析、`response_format` 400 去字段重试一次、截断与结构异常、取消三态、SSE 增量扫描 |
+| `read-ocr.test.js` | 图片 OCR 压缩边界（长边 1600 / JPEG 0.7、无 canvas 降级）与多模态消息构造 |
+| `read-stats.test.js` | 本地埋点 schema v1（坏数据回退、7 组错误归并、不出网且不含原文与密钥的红线断言） |
+| `read-tts.test.js` | 朗读代际号与顺序接续（cancel 后旧 onend 失效、播放三态、stop 空闲不白打 cancel） |
 
 ## 字体
 
-页面使用霞鹜楷体（`font/LXGWZhenKaiGB-Regular.ttf`，约 16.7MB）。运行时实际加载的是按当前词库与界面文本生成的子集 `LXGWZhenKaiGB-Regular.subset.woff2`（约 312KB，1070 个字符，字形轮廓与步进宽度与原字体一致）。新增词库或界面文本后，重新生成子集：
+页面使用霞鹜楷体（`font/LXGWZhenKaiGB-Regular.ttf`，约 16.7MB）。运行时实际加载的是按当前词库与界面文本生成的子集 `LXGWZhenKaiGB-Regular.subset.woff2`（约 422KB，字符表 1424 项 / cmap 1422 字形，字形轮廓与步进宽度与原字体一致）。同一脚本还会产出 Android 端 TTF `android/app/src/main/res/font/lxgw_zhenkai_subset.ttf`（约 766KB，与 woff2 同一字符表，D-029），两端必须一起重建。新增词库或界面文本后，重新生成子集：
 
 ```text
 pip install fonttools brotli
