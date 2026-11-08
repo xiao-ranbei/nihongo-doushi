@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -34,7 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kotonoha.app.ui.glass.GlassSurface
-import com.kotonoha.app.ui.glass.GlassShape
+import com.kotonoha.app.ui.glass.GlassAlertDialog
 import com.kotonoha.app.engine.read.ReadArticle
 import com.kotonoha.app.engine.read.ReadRules
 import com.kotonoha.app.ui.AppState
@@ -183,9 +182,8 @@ fun ReadInputScreen(
 
     val target = pendingDelete
     if (target != null) {
-        AlertDialog(
-            shape = GlassShape.corner,
-            onDismissRequest = { pendingDelete = null },
+        GlassAlertDialog(
+                        onDismissRequest = { pendingDelete = null },
             title = { Text("删除这篇文章？") },
             text = { Text("「" + target.title + "」将从最近文章里移除，已解析的句子缓存不受影响。") },
             confirmButton = {

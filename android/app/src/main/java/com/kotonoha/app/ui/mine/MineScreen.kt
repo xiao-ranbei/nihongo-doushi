@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,7 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kotonoha.app.ui.glass.GlassSurface
-import com.kotonoha.app.ui.glass.GlassShape
+import com.kotonoha.app.ui.glass.GlassAlertDialog
 import com.kotonoha.app.storage.Bookmark
 import com.kotonoha.app.ui.AppState
 import com.kotonoha.app.ui.removeBookmark
@@ -160,9 +159,8 @@ fun MineScreen(app: AppState, onOpenModelSettings: () -> Unit) {
     }
 
     if (confirmReset) {
-        AlertDialog(
-            shape = GlassShape.corner,
-            onDismissRequest = { confirmReset = false },
+        GlassAlertDialog(
+                        onDismissRequest = { confirmReset = false },
             title = { Text("统计清零？") },
             text = {
                 Text(

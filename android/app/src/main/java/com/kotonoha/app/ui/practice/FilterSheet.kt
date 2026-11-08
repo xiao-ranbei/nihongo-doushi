@@ -7,11 +7,12 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -25,7 +26,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.kotonoha.app.ui.glass.GlassShape
+import com.kotonoha.app.ui.glass.GlassBottomSheet
 import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 
@@ -57,17 +58,13 @@ fun FilterSheet(
         mutableStateMapOf<String, String>().apply { sections.forEach { put(it.key, it.selected) } }
     }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        // 方案 B：四角同 24（取消「上圆下直」），无抓手，玻璃底
-        shape = GlassShape.corner,
-        containerColor = MaterialTheme.colorScheme.surface,
-        dragHandle = null,
-    ) {
+    // 方案 B：四角同 24（取消「上圆下直」）、无抓手、玻璃底（独立窗口采样见 GlassBottomSheet）
+    GlassBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                // 抽屉高度有上限（0.78 屏高）：分组多时靠滚动到底，而不是被裁掉
+                .verticalScroll(rememberScrollState())
                 .padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {

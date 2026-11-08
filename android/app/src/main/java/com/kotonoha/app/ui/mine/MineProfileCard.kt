@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Create
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,7 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.kotonoha.app.ui.glass.GlassSurface
-import com.kotonoha.app.ui.glass.GlassShape
+import com.kotonoha.app.ui.glass.GlassAlertDialog
 import com.kotonoha.app.storage.NicknameCheck
 import com.kotonoha.app.storage.ProfileRules
 import com.kotonoha.app.ui.AppState
@@ -128,9 +127,8 @@ private fun EditNicknameDialog(
     var text by remember { mutableStateOf(current) }
     var errorReason by remember { mutableStateOf<String?>(null) }
 
-    AlertDialog(
-        shape = GlassShape.corner,
-        onDismissRequest = onDismiss,
+    GlassAlertDialog(
+                onDismissRequest = onDismiss,
         title = { Text("编辑昵称") },
         text = {
             Column {

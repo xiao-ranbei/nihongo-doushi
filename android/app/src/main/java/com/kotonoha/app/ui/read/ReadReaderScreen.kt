@@ -35,7 +35,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -58,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kotonoha.app.ui.glass.GlassSurface
+import com.kotonoha.app.ui.glass.GlassBottomSheet
 import com.kotonoha.app.ui.glass.GlassShape
 import com.kotonoha.app.engine.read.AnalysisCacheEntry
 import com.kotonoha.app.engine.read.AnalyzeToken
@@ -784,13 +784,8 @@ private fun MergedResultSheet(
     onDismiss: () -> Unit,
 ) {
     val paper = paperColors()
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(),
-        // 方案 B：四角同 24、无抓手
-        shape = GlassShape.corner,
-        dragHandle = null,
-    ) {
+    // 方案 B：四角同 24、无抓手、玻璃底
+    GlassBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -875,13 +870,8 @@ private fun WordDetailSheet(
     onDismiss: () -> Unit,
 ) {
     val paper = paperColors()
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(),
-        // 方案 B：四角同 24、无抓手
-        shape = GlassShape.corner,
-        dragHandle = null,
-    ) {
+    // 方案 B：四角同 24、无抓手、玻璃底
+    GlassBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState()) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),

@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,7 +28,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.kotonoha.app.ui.glass.GlassShape
+import com.kotonoha.app.ui.glass.GlassBottomSheet
 import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 
@@ -69,14 +68,8 @@ fun ReferencePickerSheet(
         }
     }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        // 方案 B：四角同 24（取消「上圆下直」），无抓手，玻璃底
-        shape = GlassShape.corner,
-        containerColor = MaterialTheme.colorScheme.surface,
-        dragHandle = null,
-    ) {
+    // 方案 B：四角同 24（取消「上圆下直」）、无抓手、玻璃底（独立窗口采样见 GlassBottomSheet）
+    GlassBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -110,7 +103,9 @@ fun ReferencePickerSheet(
                 )
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
+                    // 抽屉高度有上限（GlassBottomSheet 给 0.78 屏高）：列表必须吃掉剩余空间，
+                    // 否则会被 Column 直接裁断，末尾几行永远滚不出来
+                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(visible, key = { it.id }) { item ->

@@ -29,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +37,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kotonoha.app.ui.glass.GlassShape
+import com.kotonoha.app.ui.glass.glassPanel
+import com.kotonoha.app.ui.theme.GlassTokens
 import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 import kotlinx.coroutines.launch
@@ -87,7 +90,13 @@ fun ReadSideMenu(
             gesturesEnabled = drawerState.isOpen,
             drawerContent = {
                 // 方案 B：抽屉四角同 24（M3 默认是「内侧大圆角 + 外侧直角」）
-                ModalDrawerSheet(drawerShape = GlassShape.corner) {
+                ModalDrawerSheet(
+                    // 抽屉在主窗口内（不是 Dialog），能直接采主窗口的屏幕底层，不必走静态副本
+                    modifier = Modifier.glassPanel(elevation = GlassTokens.sheetElevation),
+                    drawerShape = GlassShape.corner,
+                    drawerContainerColor = Color.Transparent,
+                    drawerTonalElevation = 0.dp,
+                ) {
                     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                         Column(
                             modifier = Modifier

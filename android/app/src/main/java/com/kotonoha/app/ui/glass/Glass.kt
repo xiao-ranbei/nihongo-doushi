@@ -1,13 +1,14 @@
 package com.kotonoha.app.ui.glass
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,11 +20,17 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
@@ -112,16 +119,78 @@ fun GlassLayer(
 }
 
 /**
- * 一块玻璃面。没有 [GlassLayer] 时自动退回半透明实底，保证预览 / 测试环境不炸。
+ * 独立窗口（Dialog / BottomSheet / Drawer）里的采样源。
+ *
+ * 这些容器跑在自己的 Window 上，采样不到主窗口 [GlassLayer] 录的 RenderNode——
+ * 表现是弹层玻璃只剩一层平涂、模糊与折射全缺席（IK-23）。
+ * 这里的替代做法是**按窗口坐标重画一遍屏幕底纹理**：玻璃至少能拿到同一条渐变与同一批光斑，
+ * 模糊与折射才有东西可作用，弹层与主窗口的观感也就接上了。
+ *
+ * 为什么不用 `rememberCanvasBackdrop`：那条路径只把 `onDraw` 直接丢进本地 DrawScope，
+ * 拿不到玻璃面在窗口里的位置，纹理会被压缩进每块玻璃自己的矩形里。
+ * 本类自己实现 [Backdrop]，用 `positionInWindow()` 做反向平移，纹理才是"钉在屏幕上"的。
+ */
+private class ScreenTextureBackdrop(
+    private val colors: GlassColors,
+    private val windowSize: Size,
+) : Backdrop {
+
+    override val isCoordinatesDependent: Boolean = true
+
+    override fun DrawScope.drawBackdrop(
+        density: Density,
+        coordinates: LayoutCoordinates?,
+        layerBlock: (GraphicsLayerScope.() -> Unit)?,
+    ) {
+        val origin = coordinates?.positionInWindow() ?: Offset.Zero
+        translate(-origin.x, -origin.y) {
+            drawScreenTexture(colors, windowSize)
+        }
+    }
+}
+
+/**
+ * 给弹层用的采样源：屏幕底纹理的静态副本，坐标对齐窗口。
+ * 屏幕尺寸取 `LocalConfiguration`（Dialog 的 `containerSize` 是弹窗自己的尺寸，不能用）。
+ */
+@Composable
+fun rememberScreenTextureBackdrop(colors: GlassColors = glassColors()): Backdrop {
+    val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
+    val width = configuration.screenWidthDp * density.density
+    val height = configuration.screenHeightDp * density.density
+    return remember(colors, width, height) {
+        ScreenTextureBackdrop(colors, Size(width, height))
+    }
+}
+
+/**
+ * 把 [backdrop] 注入给子树里的所有 [GlassSurface]（两层都指过去：弹层里没有"内容层"概念）。
+ * 只给独立窗口里的弹层用；主窗口的层级由 [GlassLayer] 自己管。
+ */
+@Composable
+fun ProvideGlassBackdrop(backdrop: Backdrop, content: @Composable () -> Unit) {
+    CompositionLocalProvider(
+        LocalBackgroundBackdrop provides backdrop,
+        LocalContentBackdrop provides backdrop,
+        content = content,
+    )
+}
+
+/**
+ * 玻璃绘制本体，做成 Modifier 是为了能贴到别人的容器上——
+ * M3 的 `ModalBottomSheet` / `AlertDialog` / `ModalDrawerSheet` 都自带一个 Surface，
+ * 只有把玻璃画在它们的 Surface 上，四角与尺寸才和容器严丝合缝（不会在边缘露出 1dp 缝）。
  *
  * 三层结构：投影（外）→ 玻璃本体（drawBackdrop）→ 1dp 渐变描边（内，顶亮底暗）。
  *
+ * @param backdrop 显式指定采样源；为 null 时按 [layer] 取当前 `GlassLayer` 提供的层
  * @param layer 采样哪一层：内容流里的卡片用 [Layer.Background]；悬浮岛 / 吸底条用 [Layer.Content]
  * @param elevation 外部投影高度；卡片 4dp、岛 10dp、弹层 24dp
  */
 @Composable
-fun GlassSurface(
-    modifier: Modifier = Modifier,
+fun Modifier.glassPanel(
+    backdrop: Backdrop? = null,
     shape: Shape = GlassShape.corner,
     colors: GlassColors = glassColors(),
     layer: Layer = Layer.Background,
@@ -130,9 +199,8 @@ fun GlassSurface(
     blurRadius: Dp = GlassTokens.blur,
     refractionHeight: Dp = GlassTokens.refractionHeight,
     refractionAmount: Dp = GlassTokens.refractionAmount,
-    content: @Composable BoxScope.() -> Unit,
-) {
-    val backdrop = when (layer) {
+): Modifier {
+    val sampled = backdrop ?: when (layer) {
         Layer.Background -> LocalBackgroundBackdrop.current
         Layer.Content -> LocalContentBackdrop.current
     }
@@ -140,7 +208,7 @@ fun GlassSurface(
     val cornerPx = with(density) { GlassTokens.radius.toPx() }
     val strokePx = with(density) { GlassTokens.hairline.toPx() }
 
-    val shell = modifier
+    return this
         .shadow(
             elevation = elevation,
             shape = shape,
@@ -149,7 +217,7 @@ fun GlassSurface(
             spotColor = colors.dockShadow,
         )
         .then(
-            if (backdrop == null) {
+            if (sampled == null) {
                 // 兜底：没有玻璃层（独立预览 / Compose 预览面板）时铺半透明实底，形状与描边保持一致
                 Modifier.background(colors.surface, shape)
             } else {
@@ -157,7 +225,7 @@ fun GlassSurface(
                 val heightPx = with(density) { refractionHeight.toPx() }
                 val amountPx = with(density) { refractionAmount.toPx() }
                 Modifier.drawBackdrop(
-                    backdrop = backdrop,
+                    backdrop = sampled,
                     shape = { shape },
                     effects = {
                         vibrancy()
@@ -188,8 +256,36 @@ fun GlassSurface(
                 )
             }
         }
+}
 
-    Box(modifier = shell, content = content)
+/** 一块玻璃面。参数见 [glassPanel]。 */
+@Composable
+fun GlassSurface(
+    modifier: Modifier = Modifier,
+    shape: Shape = GlassShape.corner,
+    colors: GlassColors = glassColors(),
+    layer: Layer = Layer.Background,
+    elevation: Dp = GlassTokens.cardElevation,
+    borderStroke: BorderStroke? = null,
+    blurRadius: Dp = GlassTokens.blur,
+    refractionHeight: Dp = GlassTokens.refractionHeight,
+    refractionAmount: Dp = GlassTokens.refractionAmount,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    Box(
+        modifier = modifier.glassPanel(
+            backdrop = null,
+            shape = shape,
+            colors = colors,
+            layer = layer,
+            elevation = elevation,
+            borderStroke = borderStroke,
+            blurRadius = blurRadius,
+            refractionHeight = refractionHeight,
+            refractionAmount = refractionAmount,
+        ),
+        content = content,
+    )
 }
 
 /**
@@ -197,20 +293,24 @@ fun GlassSurface(
  * 光斑的尺寸与位置逐值对齐 Golden（190×230 @ 16%/14%、230×270 @ 88%/40%、210×210 @ 28%/88%）。
  *
  * 光斑不是装饰：玻璃的折射与模糊在纯色底上完全看不出来，必须有低频明暗差才成立。
+ *
+ * @param canvas 绘制范围。默认取当前 DrawScope 尺寸；弹层的静态副本会显式传整屏尺寸，
+ *   再靠调用方平移坐标，纹理才与主窗口那条对得上。
  */
-private fun DrawScope.drawScreenTexture(colors: GlassColors) {
-    val w = size.width
-    val h = size.height
+private fun DrawScope.drawScreenTexture(colors: GlassColors, canvas: Size = size) {
+    val w = canvas.width
+    val h = canvas.height
     // 165deg：CSS 里 0deg 朝上、顺时针，换算成向量的 (sin, -cos)
     val radians = 165.0 * PI / 180.0
     val dx = sin(radians).toFloat()
     val dy = -cos(radians).toFloat()
     drawRect(
-        Brush.linearGradient(
+        brush = Brush.linearGradient(
             colors = listOf(colors.screenTop, colors.screenBottom),
             start = Offset.Zero,
             end = Offset(w * dx, h * dy),
         ),
+        size = canvas,
     )
     drawBlob(Offset(w * 0.16f, h * 0.14f), 190.dp.toPx(), 230.dp.toPx(), colors.blobTeal)
     drawBlob(Offset(w * 0.88f, h * 0.40f), 230.dp.toPx(), 270.dp.toPx(), colors.blobBlue)
@@ -228,7 +328,7 @@ private fun DrawScope.drawBlob(center: Offset, radiusX: Float, radiusY: Float, c
         translate(-center.x, -center.y)
     }) {
         drawRect(
-            Brush.radialGradient(
+            brush = Brush.radialGradient(
                 colors = listOf(color, Color.Transparent),
                 center = center,
                 radius = radiusX,

@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -28,7 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kotonoha.app.ui.glass.GlassShape
+import com.kotonoha.app.ui.glass.GlassAlertDialog
 import com.kotonoha.app.storage.MistakeRecord
 import com.kotonoha.app.ui.AppState
 import com.kotonoha.app.ui.adjectiveMistakes
@@ -102,9 +101,8 @@ fun MistakesScreen(
     }
 
     if (confirmClear) {
-        AlertDialog(
-            shape = GlassShape.corner,
-            onDismissRequest = { confirmClear = false },
+        GlassAlertDialog(
+                        onDismissRequest = { confirmClear = false },
             title = { Text("清空错题？") },
             text = {
                 Text(
