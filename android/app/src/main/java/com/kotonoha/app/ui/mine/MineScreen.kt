@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
@@ -36,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -71,6 +74,17 @@ import java.time.LocalDate
 fun MineScreen(app: AppState, onOpenModelSettings: () -> Unit) {
     val g = geometry()
     var confirmReset by remember { mutableStateOf(false) }
+    var showLicenses by remember { mutableStateOf(false) }
+    // 许可证正文随包走 assets：Apache-2.0 与 OFL-1.1 都要求分发时分发许可证副本，
+    // 只在 README 里挂个链接不算。读失败时给一行提示，不让入口变成死按钮
+    val context = LocalContext.current
+    val licensesText = remember {
+        runCatching {
+            THREE_PARTY_LICENSES.joinToString("\n") { path ->
+                context.assets.open(path).bufferedReader().use { it.readText() }
+            }
+        }.getOrElse { "许可证文本读取失败：" + it.message }
+    }
 
     Column(
         modifier = Modifier
@@ -123,7 +137,13 @@ fun MineScreen(app: AppState, onOpenModelSettings: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                SettingsEntryRow(onClick = onOpenModelSettings)
+                EntryRow(
+                    icon = Icons.Filled.Settings,
+                    title = "模型/API 设置",
+                    description = "配置 AI 阅读使用的模型与服务地址",
+                    contentDescription = "打开模型设置",
+                    onClick = onOpenModelSettings,
+                )
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -145,6 +165,19 @@ fun MineScreen(app: AppState, onOpenModelSettings: () -> Unit) {
                     icon = Icons.AutoMirrored.Filled.List,
                     title = "词库导入导出",
                     description = "导入或导出本地词库数据",
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant),
+                )
+                EntryRow(
+                    icon = Icons.Filled.Info,
+                    title = "开源许可",
+                    description = "第三方组件清单与许可证全文",
+                    contentDescription = "查看开源许可",
+                    onClick = { showLicenses = true },
                 )
             }
         }
@@ -180,7 +213,34 @@ fun MineScreen(app: AppState, onOpenModelSettings: () -> Unit) {
             },
         )
     }
+
+    if (showLicenses) {
+        GlassAlertDialog(
+            onDismissRequest = { showLicenses = false },
+            title = { Text("开源许可") },
+            text = {
+                Text(
+                    text = licensesText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = paperColors().textStrong,
+                    modifier = Modifier
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState()),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showLicenses = false }) { Text("关闭") }
+            },
+        )
+    }
 }
+
+/** 随包分发的许可证文件顺序：清单 → Apache-2.0 全文 → OFL-1.1 全文 */
+private val THREE_PARTY_LICENSES = listOf(
+    "licenses/third-party-notices.txt",
+    "licenses/Apache-2.0.txt",
+    "licenses/OFL-1.1.txt",
+)
 
 /** 书签收藏夹小节：左标题 + 右计数（容量防御：>99 折叠为 99+） */
 @Composable
@@ -329,7 +389,13 @@ private fun BookmarkRow(bookmark: Bookmark, onRemove: () -> Unit) {
  * 「说没做好又让你点」的自相矛盾，且没有箭头，用户看不出这里能点（D-026）。
  */
 @Composable
-private fun SettingsEntryRow(onClick: () -> Unit) {
+private fun EntryRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
     val paper = paperColors()
     Box(
         modifier = Modifier
@@ -343,24 +409,24 @@ private fun SettingsEntryRow(onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(13.dp),
         ) {
-            ModuleGlyphBox(icon = Icons.Filled.Settings)
+            ModuleGlyphBox(icon = icon)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "模型/API 设置",
+                    text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
-                    text = "配置 AI 阅读使用的模型与服务地址",
+                    text = description,
                     style = MaterialTheme.typography.labelSmall,
                     color = paper.muted,
                 )
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "打开模型设置",
+                contentDescription = contentDescription,
                 tint = paper.muted,
             )
         }

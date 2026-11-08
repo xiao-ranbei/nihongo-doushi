@@ -38,7 +38,7 @@
 | IK-19 | 速查页难度过滤未做 | web/app.js:3336 | P2 |
 | IK-21 | Web 书签只有写入/取消，无浏览页 | web/（B6 收藏动作已落，浏览 UI 未做） | P3 |
 | IK-22 | 朗读仅 speechSynthesis，无第三方 TTS 端点（计划 B8 可选项） | web/read-tts.js | P3 |
-| IK-23 | 弹层窗口拿不到主窗口 backdrop，玻璃模糊/折射缺席（方案 B 限制，候选解法见正文） | android/ui/**（4 sheet + 7 dialog + 1 drawer） | P2 |
+| ~~IK-23~~ | ~~弹层窗口拿不到主窗口 backdrop~~ → 已关闭（2026-11-08，`ScreenTextureBackdrop` + `glassPanel`，见 D-058） | android/ui/**（4 sheet + 7 dialog + 1 drawer） | P2·已关闭 |
 
 ## 明细
 
@@ -178,17 +178,21 @@
 - ② 进程重启状态验证：qa36 两轮 `HOME → am kill → 重启` 实测，练习屏题目进度与选中/判题态均经 rememberSaveable 恢复（截图 `qa-restart-1~3`）
 - ③ Web↔Android mistakes-v2 互通实测：qa36 真实答错产生错题（`run-as cat files/japanese-particle-practice-mistakes-v2.json` 取出）→ Playwright 将该 JSON 原样注入 Web localStorage 同名键 → 10 项断言全过：纳秒精度 ISO 时间戳可解析、角标计数、复习列表 1 条（错 1 次/下次复习 10/19）、function 题句 before+mark+after 正确拼接、到期判定（dueAt 明天 + session=5 → 今天 0 道到期）、复习按钮可用（截图 `qa-ik20-web-read.png`）
 
-#### IK-23 弹层（sheet / dialog / drawer）拿不到主窗口的 backdrop（P2，方案 B 已知限制）
+#### ~~IK-23 弹层拿不到主窗口的 backdrop~~（已关闭，2026-11-08）
 
-- 现象：`ModalBottomSheet` / `AlertDialog` / `ModalDrawerSheet` 各自在独立窗口（Dialog）里绘制，
-  Compose 的 `CompositionLocal` 能传进去，但 `Backdrop` 指向的 RenderNode 属于主窗口的渲染树，
-  跨窗口采样拿不到内容。当前实现：弹层用**不透明 `surface` 底 + 四角 24 + 无抓手**，
-  玻璃的模糊/折射在弹层上缺席，只有主窗口内的卡片、悬浮岛、吸底条是真玻璃。
-- 影响面：4 sheet + 7 dialog + 1 drawer。
-- 候选解法（按代价排序）：① 弹层改为**主窗口内的自绘浮层**（不用 Dialog 窗口），复用 `Layer.Content` 采样；
-  ② 开弹层时先 `capture` 一帧作为静态 backdrop（内容是静止的，模糊等效）；
-  ③ 接受现状并写进 UI 规格。② 最省事且视觉接近，但需要主窗口截图能力。
-- 状态：**待定**。方案 B 的「不简化」条款下这是一处必须收口的缺口，但优先度低于全量页面走查。
+- 现象（关闭前）：`ModalBottomSheet` / `AlertDialog` 各自在独立 Dialog 窗口里绘制，`CompositionLocal`
+  能传进去，但 `Backdrop` 指向的 RenderNode 属于主窗口渲染树，跨窗口采样拿不到内容，
+  弹层玻璃的模糊与折射全部缺席。
+- 结论：跨窗口采样这条路走不通（不是用法问题），但**不需要**改主窗口自绘浮层，也不需要截帧：
+  自己实现一个 `Backdrop`，按 `layoutCoordinates.positionInWindow()` 反向平移后重画屏幕底纹理
+  （`ScreenTextureBackdrop`），玻璃就能拿到同一条 165° 渐变与同一批光斑，模糊/折射重新有东西可作用。
+  另有一条实测坑：`glassPanel` 不能挂在 `ModalBottomSheet` 的 `modifier` 上——那个 modifier 落在
+  Dialog 的全屏根 Box 上，玻璃会铺满整屏把抽屉内容盖住；要挂在 content 自己那层。
+- 实现：`ui/glass/GlassDialog.kt`（`GlassBottomSheet` / `GlassAlertDialog`）、
+  `ui/glass/Glass.kt`（`ScreenTextureBackdrop` / `ProvideGlassBackdrop` / `Modifier.glassPanel`）。
+- 残留差异（已知且接受）：弹层玻璃采样到的是**屏幕底纹理**，看不到被弹层遮住的页面内容。
+  方案 B 的弹层本来带 26% scrim，遮住的内容在视觉上已压暗，观感一致；`ModalNavigationDrawer`
+  在主窗口内，不受此限制。
 
 ## 复核方法
 

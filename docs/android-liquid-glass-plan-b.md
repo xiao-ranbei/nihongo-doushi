@@ -316,20 +316,27 @@ Gate 1 ──> R2.1 ──┬──> R2.2 ──> R2.5 ──┐
 | 任务 | 状态 | 证据 |
 | --- | --- | --- |
 | R0.1 依赖与工具链 | ✅ 完成 | backdrop 1.0.6 落地；`assembleDebug` 通过；结论写入 §0.8 / D-054 |
-| R1.1 令牌层 M2 | ✅ 完成 | `GlassTokens.kt`（圆角/间距/模糊/折射/投影/岛几何）、`Theme.kt` 新增 `GlassColors` + `glassColors()`、`Motion.kt`；`ThemeTokensTest` 4 用例钉住 |
+| R0.2 三档兼容 | ✅ 完成（API 33 实测） | 新建 `qa33` AVD（`system-images;android-33;google_apis_playstore`）从冷启动到四标签、抽屉、深色全部走通；同时暴露并修掉状态栏灰带（`enableEdgeToEdge` 默认 scrim）。API 34/35 走同一条渲染路径（blur ≥31、`RuntimeShader` ≥33），未单独建 AVD |
+| R0.3 lens 实参校准 | ✅ 完成 | 对照实验（`lens(0,0)` vs `lens(18dp,24dp)`）：全屏 1.75% 像素有差异、最大通道差 614、集中在中部卡片边缘 18dp 带内 —— 折射存在且克制。Golden 的 `backdrop-filter` 本身不含折射，Android 侧保留为 GPU 上的轻微增强 |
+| R0.4 弹层采样边界 | ✅ 完成 | 结论：Dialog 窗口采不到主窗口 RenderNode；解法见 D-058，IK-23 关闭 |
+| R0.5 性能基线 | ⚠ 环境受限 | 模拟器 `swiftshader_indirect` 软渲染下 96% janky（50p 69ms），**不代表真机**；`lens` 开关对照 96.1% vs 97.5%（噪声内），证明折射不是瓶颈、瓶颈是软件光栅的 blur。真机基线待测 |
+| R0.6 双皮肤对比度 | ✅ 完成 | `android/tools/contrast-check.py` 11 组 × 两皮肤全绿；据此把浅色 `--text-3` 加深一档（D-057） |
+| R1.1 令牌层 M2 | ✅ 完成 | `GlassTokens.kt`（圆角/间距/模糊/折射/投影/岛几何/三团光斑）、`Theme.kt` 新增 `GlassColors` + `glassColors()`、`Motion.kt` |
 | R1.2 依赖落地 M1 | ✅ 完成 | `libs.versions.toml` + `app/build.gradle.kts`（minSdk 33 / compileSdk 36 / buildTools 36.0.0） |
 | R1.3 根层 M4 | ✅ 完成 | `ui/glass/Glass.kt` 的 `GlassLayer`：165° 渐变 + 三团椭圆光斑（逐值对齐 Golden）；`Scaffold.containerColor` 改透明 |
 | R1.4 单一材质 M3 | ✅ 完成 | 全链路只有 `vibrancy → blur → lens`，无 `SDK_INT` 分支、无 blur/solid 档 |
 | R1.5 悬浮岛 M5 | ✅ 完成 | 满宽 −32dp、四角 24、`padding 8/10`、tab 50dp、图标 20dp 于 26dp 槽、选中态只有颜色 + 字重；四页底部 112dp 避让 |
-| R1.6 弹层 M8/M9 | ✅ 完成 | 4 sheet（四角 24 + 无抓手）+ 7 AlertDialog（`shape = GlassShape.corner`）+ 1 drawer（`drawerShape`）；弹层窗口采样限制见 IK-23 |
-| R1.7 组件层 M6/M7 | ✅ 完成 | 36 处卡片 `Surface` → `GlassSurface`（保留 `borderStroke` 语义描边）；ModuleBottomSurface 改四角 24 浮起玻璃条；EntryCard / 形式卡 / 统计卡 / 阅读段卡全部走玻璃 |
-| R1.8 底部面板 M10 | ✅ 完成 | 4 处吸底条形状改 `GlassShape.corner`（四角 24） |
-| R0.2–R0.6 | ⚠ 部分 | R0.4 结论已定（弹层窗口采样不了主窗口 backdrop → IK-23）；R0.2/R0.3/R0.5/R0.6 仍欠实测 |
+| R1.6 弹层 M8/M9 | ✅ 完成 | 4 sheet + 7 dialog + 1 drawer 全部玻璃化：`GlassBottomSheet` / `GlassAlertDialog` 包装件 + `ScreenTextureBackdrop`（D-058）；抽屉 0.78 屏高上限 + 列表 `weight(fill=false)` |
+| R1.7 组件层 M6/M7 | ✅ 完成 | 39 处卡片改 `GlassSurface`（含形容词形式卡 / 助词课卡 / 判定吸底条三处补漏）；`ModuleBottomSurface` 四角 24 浮起玻璃条 |
+| R1.8 底部面板 M10 | ✅ 完成 | 4 处吸底条形状改 `GlassShape.corner` |
 | R2.1 一级页 | ✅ 完成 | 四页页边距 22dp + 底部 112dp 避让 + 卡片玻璃化 |
-| R2.2–R2.6 | ⚠ 部分 | 模块页/练习屏/阅读链路随 R1.7 一并玻璃化（共用组件驱动），逐页目视走查未全部完成 |
-| R3 收口 | ⚠ 部分 | 文档与决策已更新；发布前检查（APK 体积 / LICENSE / 三档兼容）未做 |
+| R2.2–R2.6 逐页走查 | ✅ 完成 | API 33 实机走查：主页 / 学习 / 阅读 / 我的 / 动词（首页·速查·练习·判定·退出确认）/ 形容词首页 / 助词首页 / 抽屉 / 对话框 / 深色皮肤；均无白块、无穿帮、无裁切 |
+| M12 冷启动 | ✅ 完成 | `values-v31` / `values-night-v31` 补 `windowSplashScreenBackground`（Android 12+ 由系统 SplashScreen 接管，`windowBackground` 不生效） |
+| M14 契约测试 | ✅ 完成 | `GlassContractTest` 8 用例：Golden CSS 逐值比对（圆角/玻璃底/玻璃边/渐变两端/三团光斑尺寸位置颜色）+ 三条静态守卫（禁数字圆角、禁不透明 surface 冒充玻璃、弹层必须走包装件、抽屉必须挂 glassPanel） |
+| M17 动效 | ✅ 完成 | Tab 淡入 +8dp、底栏选中换色/缩放、页面进出、Toast 进出场、判定淡入；骨架呼吸在本项目无对应界面，不适用 |
+| R3 收口 | ✅ 完成 | D-050～D-058、`android-requirements` minSdk、`known-issues` IK-23 关闭、`android-theme-spec` 按方案 B 重写、计划状态改「已完成」；`assembleRelease` 出包 **23.5 MB**（未开 R8，体积优化另议）；Apache-2.0 与 OFL-1.1 全文随包走 `assets/licenses/`，「我的 → 更多设置 → 开源许可」可查看 |
 
-> 本轮实测基线（2026-11-08，`qa36` AVD / API 36）：单测 **265 项 0 失败**（原 264，+1 玻璃令牌用例）、仪器化 `TalkBackMergeTest` **4/4 通过**（此前长期待设备）；浅色与深色首屏、四标签切换均已实机走查。
+> 最终基线（2026-11-08）：单测 **273 项 0 失败**（原 265，+8 契约用例）；仪器化 `TalkBackMergeTest` 在 **API 33 与 API 36 两个 AVD** 上均 **4/4 通过**；对比度脚本全绿；`assembleDebug` / `assembleRelease` 通过。
 
 ---
 

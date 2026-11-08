@@ -1,0 +1,20 @@
+本应用使用的第三方开源组件
+
+1. Backdrop
+   坐标：io.github.kyant0:backdrop:1.0.6
+   用途：液态玻璃材质（vibrancy / blur / lens 效果链）
+   许可证：Apache License 2.0
+   版权：Copyright 2025 Kyant
+   仓库：https://github.com/Kyant0/AndroidLiquidGlass
+
+2. AndroidX / Jetpack Compose / Kotlin 标准库
+   许可证：Apache License 2.0
+   版权：Copyright The Android Open Source Project、JetBrains s.r.o.
+
+3. 霞鹜臻楷（LXGW ZhenKai）子集字体
+   许可证：SIL Open Font License 1.1
+   说明：本项目仅打包按所需字符裁剪的子集，字符表见仓库 web/font/subset-chars.txt
+
+除上述组件外，应用的业务逻辑、界面与词库数据均为本项目自有实现。
+
+===== Apache License 2.0 全文 =====

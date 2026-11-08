@@ -9,7 +9,7 @@
 
 界面、规则引擎和记录均在浏览器本地运行。答题统计、每日练习记录和错题保存在当前浏览器的 `localStorage` 中，不提供云端同步。
 
-每次打开网页默认进入学习主页。桌面端侧栏与主内容区分别滚动，页面外层锁定动态视口且不参与滚动；答题后焦点滚动主内容区时，侧栏保持固定。桌面侧栏左上角的“日”品牌可返回主页，侧栏不重复放置主页按钮，折叠状态在主页导航时保留。窄屏使用左侧抽屉，顶部“日”品牌可返回主页，顶部栏固定，主页内容在独立滚动区内浏览，底部内容带安全留白。动词、形容词和助词是独立学习模块；动词与形容词错题在全局错题本中分组，助词错题在助词模块内复习。文章阅读是第四个模块（B0–B9，见 [web-read-analyzer-plan.md](web-read-analyzer-plan.md)）：贴文本地切段、点段解析逐词/译文、点词详情、结构化语法、朗读、图片 OCR、AI 助手与本地埋点，解析题可经 `resolveEngineRef` 反查进既有练习。Android 端为同一套模块的原生实现（动词、形容词、助词与共享错题本 + AI 文章解析），导航为底部四标签（主页/学习/阅读/我的）。「排版」「撰写」与「查词」仍是规划中占位。
+每次打开网页默认进入学习主页。桌面端侧栏与主内容区分别滚动，页面外层锁定动态视口且不参与滚动；答题后焦点滚动主内容区时，侧栏保持固定。桌面侧栏左上角的“日”品牌可返回主页，侧栏不重复放置主页按钮，折叠状态在主页导航时保留。窄屏使用左侧抽屉，顶部“日”品牌可返回主页，顶部栏固定，主页内容在独立滚动区内浏览，底部内容带安全留白。动词、形容词和助词是独立学习模块；动词与形容词错题在全局错题本中分组，助词错题在助词模块内复习。文章阅读是第四个模块（B0–B9，见 [web-read-analyzer-plan.md](web-read-analyzer-plan.md)）：贴文本地切段、点段解析逐词/译文、点词详情、结构化语法、朗读、图片 OCR、AI 助手与本地埋点，解析题可经 `resolveEngineRef` 反查进既有练习。Android 端为同一套模块的原生实现（动词、形容词、助词与共享错题本 + AI 文章解析），导航为底部四标签（主页/学习/阅读/我的）；整套 UI 已按**方案 B 液态玻璃**重做（悬浮岛底栏、全局单值 24dp 圆角、玻璃采样 `vibrancy → blur → lens`，见 [android-liquid-glass-plan-b.md](android-liquid-glass-plan-b.md)）。「排版」「撰写」与「查词」仍是规划中占位。
 
 ## 2. 总体结构
 
@@ -143,7 +143,7 @@ web/index.html ── 页面结构与交互节点
 - **离线与隐私：** 运行时资源随项目提供，不依赖外部服务；学习记录保存在当前浏览器。
 - **可访问性：** 使用语义化表单和视图；反馈、提示及状态使用适当的 `aria-live`／状态属性，支持键盘操作与输入法组字。
 - **响应式与动效：** 练习双栏布局在较窄屏幕堆叠；焦点状态清晰，并尊重减少动态效果的系统设置。
-- **样式一致性：** 动词、形容词和助词模块共用页签、说明卡、练习控制面板与答题统计布局；颜色通过 `web/styles.css` 的语义令牌维护，`web/tests/styles.test.js` 检查组件契约。Android 端同理：配色与几何（圆角、阴影）全部收在 `ui/theme/Theme.kt` 的 `Palette` 与 `ModuleGeometry` 两张令牌表里，页面只经 `MaterialTheme.colorScheme`／`paperColors()`／`moduleTone()`／`posBackgroundColor()` 四个入口取色，**不写硬编码色值**；主题跟随系统深浅色自动切换两套皮肤，见 [android-theme-spec.md](android-theme-spec.md)。
+- **样式一致性：** 动词、形容词和助词模块共用页签、说明卡、练习控制面板与答题统计布局；颜色通过 `web/styles.css` 的语义令牌维护，`web/tests/styles.test.js` 检查组件契约。Android 端同理：配色收在 `ui/theme/Theme.kt` 的 `Palette` 表里，几何与材质收在 `ui/theme/GlassTokens.kt`（唯一圆角 24dp、模糊 16dp、折射 18/24dp、三档投影、岛几何、三团光斑），页面只经 `MaterialTheme.colorScheme`／`paperColors()`／`glassColors()`／`moduleTone()`／`posBackgroundColor()` 取色取形，**不写硬编码色值、不写字面量圆角**（`GlassContractTest` 静态守卫）；玻璃面一律走 `GlassSurface` / `Modifier.glassPanel`，弹层走 `GlassBottomSheet` / `GlassAlertDialog`。主题跟随系统深浅色自动切换两套皮肤，见 [android-theme-spec.md](android-theme-spec.md)。
 - **字体完整性：** `web/font/fonts.js` 声明运行时字体；新增词条或界面文字后，按网页端说明重建字体子集，并运行字体契约测试。
 - **测试：** 引擎测试覆盖变形和答案处理；UI 冒烟测试验证页面接线与主要闭环；字体、样式测试守护静态资源契约。运行完整测试：
 
@@ -151,7 +151,7 @@ web/index.html ── 页面结构与交互节点
   node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/read-engine.test.js tests/read-client.test.js tests/read-ocr.test.js tests/read-stats.test.js tests/read-tts.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
   ```
 
-当前基线（2026-11-06 实测）：网页端 11 个测试文件共 396 项全绿；Android 端 `./gradlew :app:testDebugUnitTest` 264 项全绿（聚合 `test-results/testDebugUnitTest/*.xml`：files=25 tests=264 failures=0 errors=0），仪器化 `TalkBackMergeTest` 4 项全绿（qa36 模拟器，读屏语义树口径，见 D-030/D-031）。
+当前基线（2026-11-08 实测）：网页端 11 个测试文件共 396 项全绿；Android 端 `./gradlew :app:testDebugUnitTest` **273 项全绿**（含 `GlassContractTest` 8 项 Golden 契约与静态守卫），仪器化 `TalkBackMergeTest` **4 项全绿**（qa33 API 33 与 qa36 API 36 两个模拟器各跑一遍，读屏语义树口径，见 D-030/D-031）；双皮肤 WCAG 对比度由 `android/tools/contrast-check.py` 逐项校验全绿。
 
 未解决的遗留问题（预留位转正清单、跨端数据缺口、技术债务等）统一登记在 [known-issues.md](known-issues.md)，不要在本文件重复罗列。
 
