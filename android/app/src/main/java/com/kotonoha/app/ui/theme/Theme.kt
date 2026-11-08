@@ -107,7 +107,9 @@ private val CandyPalette = Palette(
     paper = Color(0xFFE9F1F3),
     surface = Color(0xFFF7FBFB),
     ink = Color(0xFF143036),
-    muted = Color(0xFF6D8A8E),
+    // Golden 原值 #6D8A8E 在纸底上只有 3.2:1，够不上 WCAG AA 正文 4.5；
+    // 加深一档到 #587175（玻璃卡 4.9:1 / 纸底 4.6:1），色相不变（D-057）
+    muted = Color(0xFF587175),
     line = Color(0xFFE4EBEC),
     lineControl = Color(0xFFD3E0E2),
     green = Color(0xFF14857F),

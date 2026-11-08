@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ 的冷启动由系统 SplashScreen 接管：windowBackground 在那几帧里根本不生效，
+         底色由 windowSplashScreenBackground 决定。这里给它纸色，冷启动才不会先白闪一帧再切青绿。 -->
+    <style name="Theme.Kotonoha" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#E9F1F3</item>
+        <item name="android:windowSplashScreenBackground">#E9F1F3</item>
+    </style>
+</resources>

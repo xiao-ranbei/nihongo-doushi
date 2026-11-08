@@ -39,6 +39,7 @@ import com.kotonoha.app.ui.common.ModuleBottomSurface
 import com.kotonoha.app.ui.common.ModuleProgressBar
 import com.kotonoha.app.ui.common.ModuleSectionLabel
 import com.kotonoha.app.ui.common.ModuleTopBar
+import com.kotonoha.app.ui.glass.GlassSurface
 import com.kotonoha.app.ui.practice.ProgressRing
 import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
@@ -186,7 +187,7 @@ fun AdjectiveHomeScreen(
                     row.forEach { form ->
                         val mastered = app.adjectiveMasteredForForm(form.id)
                         val fraction = if (total == 0) 0f else mastered.toFloat() / total
-                        Surface(
+                        GlassSurface(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(g.smallRadius))
@@ -197,10 +198,7 @@ fun AdjectiveHomeScreen(
                                     onLongClick = { onStartTheme(form.id) },
                                     onLongClickLabel = "直接练习",
                                 ),
-                            shape = RoundedCornerShape(g.smallRadius),
-                            color = MaterialTheme.colorScheme.surface,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                            shadowElevation = g.cardShadow,
+                            borderStroke = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                         ) {
                             Column(
                                 modifier = Modifier

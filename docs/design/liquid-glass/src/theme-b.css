@@ -5,7 +5,7 @@
 :root{
   --stage-bg:#F2F4F1;--stage-panel:#FFFFFF;--stage-line:#DDE3DC;--stage-text:#5A6B60;--stage-on:#2E9463;--stage-on-text:#FFFFFF;
   --bg:#E9F1F3;--surface:rgba(255,255,255,.58);--surface-2:rgba(255,255,255,.40);--line:rgba(255,255,255,.68);--line-strong:rgba(255,255,255,.9);
-  --text:#143036;--text-2:#3D5A60;--text-3:#6D8A8E;
+  --text:#143036;--text-2:#3D5A60;--text-3:#587175;
   --brand:#14857F;--brand-soft:rgba(20,133,127,.14);--brand-ink:#0C645F;--brand-on:#FFFFFF;--brand-line:rgba(20,133,127,.35);--glyph-line:rgba(255,255,255,.7);
   --ok:#14857F;--ok-soft:rgba(20,133,127,.13);--ok-line:rgba(20,133,127,.35);
   --warn:#A8761B;--warn-soft:rgba(200,150,40,.16);--warn-line:rgba(190,140,40,.35);

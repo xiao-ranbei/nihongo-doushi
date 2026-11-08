@@ -49,4 +49,13 @@ object GlassTokens {
     val tabHeight = 50.dp
     val tabGlyphSlot = 26.dp
     val tabIcon = 20.dp
+
+    /**
+     * 屏幕底三团椭圆光斑的尺寸与中心（比例坐标）。
+     * 逐值对齐 Golden 的 `--screen-texture`，改动会由 [com.kotonoha.app.ui.theme.GlassContractTest] 拦下。
+     */
+    val blobWidths = listOf(190.dp, 230.dp, 210.dp)
+    val blobHeights = listOf(230.dp, 270.dp, 210.dp)
+    val blobCenterX = listOf(0.16f, 0.88f, 0.28f)
+    val blobCenterY = listOf(0.14f, 0.40f, 0.88f)
 }

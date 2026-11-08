@@ -1,6 +1,9 @@
 package com.kotonoha.app.ui.practice
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -32,6 +35,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +47,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
@@ -49,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import com.kotonoha.app.ui.glass.GlassSurface
 import com.kotonoha.app.ui.glass.GlassShape
 import com.kotonoha.app.storage.ReviewPolicy
+import com.kotonoha.app.ui.theme.GlassMotion
 import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 import kotlinx.coroutines.delay
@@ -423,13 +432,21 @@ fun JudgementDock(
     val scheme = MaterialTheme.colorScheme
     val paper = paperColors()
     val picked = pickedIndex in question.options.indices
+    // 判定结果淡入（M17）：只动 alpha 与 6dp 上移，不做缩放/弹跳。
+    // 每次判定重放一遍，收敛在 160ms，答对答错同一条曲线。
+    val judgeEnter = remember { Animatable(1f) }
+    val judgeShiftPx = with(LocalDensity.current) { GlassMotion.toastShift.dp.toPx() }
+    LaunchedEffect(judged, roundComplete) {
+        if (judged) {
+            judgeEnter.snapTo(0f)
+            judgeEnter.animateTo(1f, tween(GlassMotion.fast, easing = GlassMotion.enter))
+        }
+    }
 
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        color = scheme.surface,
-        shape = GlassShape.corner,
-        border = BorderStroke(1.dp, scheme.outlineVariant),
-        shadowElevation = g.cardShadow,
+        borderStroke = BorderStroke(1.dp, scheme.outlineVariant),
+        elevation = g.cardShadow,
     ) {
         Column(
             modifier = Modifier
@@ -522,7 +539,12 @@ fun JudgementDock(
                 }
             } else {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            alpha = judgeEnter.value
+                            translationY = (1f - judgeEnter.value) * judgeShiftPx
+                        },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
@@ -623,14 +645,29 @@ fun EmptyPoolHint(onReset: () -> Unit) {
 fun ToastLine(toast: String?, onConsume: () -> Unit) {
     val g = geometry()
     if (toast == null) return
+    // 入场淡入 + 6dp 上移，出场同曲线反向；等出场走完再清状态，否则末帧会硬切（M17）
+    var shown by remember { mutableStateOf(false) }
     LaunchedEffect(toast) {
+        shown = true
         delay(2500)
+        shown = false
+        delay(GlassMotion.base.toLong())
         onConsume()
     }
+    val progress by animateFloatAsState(
+        targetValue = if (shown) 1f else 0f,
+        animationSpec = tween(GlassMotion.base, easing = GlassMotion.enter),
+        label = "toast-progress",
+    )
+    val shiftPx = with(LocalDensity.current) { GlassMotion.toastShift.dp.toPx() }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .graphicsLayer {
+                alpha = progress
+                translationY = (1f - progress) * shiftPx
+            },
         color = MaterialTheme.colorScheme.primaryContainer,
         shape = RoundedCornerShape(g.smallRadius),
     ) {

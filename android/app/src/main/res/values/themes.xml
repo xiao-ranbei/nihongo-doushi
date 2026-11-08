@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- 平台原生浅色无标题栏主题；糖果卡配色在 Compose 主题层实现。
-         windowBackground 显式给出：冷启动的第一帧来自这里，留空会先闪一帧系统默认底再切到 Compose -->
+         windowBackground 与 paper（#E9F1F3）同值：根 backdrop 的第一帧就铺这个色，
+         冷启动不会从系统白闪一下再切到青绿底（方案 B / M12）
+         留空会先闪一帧系统默认底再切到 Compose -->
     <style name="Theme.Kotonoha" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">#FAFAF8</item>
+        <item name="android:windowBackground">#E9F1F3</item>
     </style>
 </resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 墨夜冷启动：与 paper（#0A1218）同值，避免夜间先闪一帧白 -->
+    <style name="Theme.Kotonoha" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#0A1218</item>
+        <item name="android:windowSplashScreenBackground">#0A1218</item>
+    </style>
+</resources>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 深色墨夜：原生底换成 Material 深色，windowBackground 给墨黑，避免夜间冷启动白闪 -->
+    <!-- 深色墨夜：原生底换成 Material 深色，windowBackground 给墨夜 paper（#0A1218），避免夜间冷启动白闪 -->
     <style name="Theme.Kotonoha" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">#0F1114</item>
+        <item name="android:windowBackground">#0A1218</item>
     </style>
 </resources>

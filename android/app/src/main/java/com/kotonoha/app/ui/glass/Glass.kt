@@ -312,9 +312,25 @@ private fun DrawScope.drawScreenTexture(colors: GlassColors, canvas: Size = size
         ),
         size = canvas,
     )
-    drawBlob(Offset(w * 0.16f, h * 0.14f), 190.dp.toPx(), 230.dp.toPx(), colors.blobTeal)
-    drawBlob(Offset(w * 0.88f, h * 0.40f), 230.dp.toPx(), 270.dp.toPx(), colors.blobBlue)
-    drawBlob(Offset(w * 0.28f, h * 0.88f), 210.dp.toPx(), 210.dp.toPx(), colors.blobMint)
+    // 三团光斑的尺寸与中心全部来自令牌，改 Golden 时这里的数字必须跟着动（契约测试会拦）
+    drawBlob(
+        Offset(w * GlassTokens.blobCenterX[0], h * GlassTokens.blobCenterY[0]),
+        GlassTokens.blobWidths[0].toPx(),
+        GlassTokens.blobHeights[0].toPx(),
+        colors.blobTeal,
+    )
+    drawBlob(
+        Offset(w * GlassTokens.blobCenterX[1], h * GlassTokens.blobCenterY[1]),
+        GlassTokens.blobWidths[1].toPx(),
+        GlassTokens.blobHeights[1].toPx(),
+        colors.blobBlue,
+    )
+    drawBlob(
+        Offset(w * GlassTokens.blobCenterX[2], h * GlassTokens.blobCenterY[2]),
+        GlassTokens.blobWidths[2].toPx(),
+        GlassTokens.blobHeights[2].toPx(),
+        colors.blobMint,
+    )
 }
 
 /**

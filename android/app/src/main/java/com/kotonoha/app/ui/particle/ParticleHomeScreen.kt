@@ -246,7 +246,7 @@ private fun ParticleLessonCard(
     val g = geometry()
     val paper = paperColors()
     val fraction = if (total == 0) 0f else mastered.toFloat() / total
-    Surface(
+    GlassSurface(
         modifier = modifier
             .clip(RoundedCornerShape(g.smallRadius))
             // 整卡一个焦点站由 combinedClickable 自带合并保证；
@@ -256,10 +256,7 @@ private fun ParticleLessonCard(
                 onLongClick = onDrill,
                 onLongClickLabel = "直接练习",
             ),
-        shape = RoundedCornerShape(g.smallRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
+        borderStroke = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(
             modifier = Modifier

@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -126,7 +127,19 @@ private fun StudyDestination.subPage(): String = when (this) {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // 两块系统栏都要透明的 scrim：AndroidX 默认在 API 29–34 给状态栏叠一层 0xE6FFFFFF，
+        // 在纸底上就是一条灰带（API 35+ 系统强制 edge-to-edge 才看不到）。
+        // auto() 仍按系统深浅色切图标明暗，只是不留底色。
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            ),
+            navigationBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            ),
+        )
         setContent {
             KotonohaTheme(darkTheme = isSystemInDarkTheme()) {
                 // 状态提升到根级：切换标签 / 进出二级页都不丢练习进度；
