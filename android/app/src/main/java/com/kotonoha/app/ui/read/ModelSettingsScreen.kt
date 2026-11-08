@@ -39,6 +39,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
 import com.kotonoha.app.engine.read.ModelConfig
 import com.kotonoha.app.engine.read.ReadRules
 import com.kotonoha.app.net.AnalyzerError
@@ -111,12 +112,8 @@ fun ModelSettingsScreen(app: AppState, onBack: () -> Unit) {
             ) {
                 SettingsIntroCard(paper.textStrong, paper.muted)
 
-                Surface(
+                GlassSurface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(g.cardRadius),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    shadowElevation = g.cardShadow,
                 ) {
                     Column(
                         modifier = Modifier
@@ -232,12 +229,8 @@ fun ModelSettingsScreen(app: AppState, onBack: () -> Unit) {
                     }
                 }
 
-                Surface(
+                GlassSurface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(g.cardRadius),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    shadowElevation = g.cardShadow,
                 ) {
                     Column(
                         modifier = Modifier
@@ -300,12 +293,8 @@ fun ModelSettingsScreen(app: AppState, onBack: () -> Unit) {
 @Composable
 private fun SettingsIntroCard(strong: androidx.compose.ui.graphics.Color, muted: androidx.compose.ui.graphics.Color) {
     val g = geometry()
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(g.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(

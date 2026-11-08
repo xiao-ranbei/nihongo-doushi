@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
 import com.kotonoha.app.engine.verb.VerbData
 import com.kotonoha.app.engine.verb.VerbEngine
 import com.kotonoha.app.ui.common.ModuleSectionLabel
@@ -181,11 +182,8 @@ fun VerbReferenceScreen(
                 )
                 forms.forEach { form ->
                     val result = VerbEngine.conjugate(verb, voiceId, form.id)
-                    Surface(
+                    GlassSurface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(g.smallRadius),
-                        color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     ) {
                         Column(
                             modifier = Modifier.padding(horizontal = 13.dp, vertical = 10.dp),

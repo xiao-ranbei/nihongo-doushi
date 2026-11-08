@@ -17,11 +17,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
+import com.kotonoha.app.ui.glass.GlassShape
 import com.kotonoha.app.engine.verb.VerbData
 import com.kotonoha.app.ui.common.ModuleProgressBar
 import com.kotonoha.app.ui.theme.geometry
@@ -58,10 +61,10 @@ fun ThemeCardGrid(
                     is VerbTheme.Form -> "活用形式"
                     is VerbTheme.Voice -> "语态 · 辞书形"
                 }
-                Surface(
+                GlassSurface(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(g.smallRadius))
+                        .clip(GlassShape.corner)
                         // 整卡一个焦点站由 combinedClickable 自带合并保证
                         // （AbstractClickableNode.shouldMergeDescendantSemantics=true）；
                         // 长按动作带标签，读屏用户可从自定义操作进入「直接练习」
@@ -70,10 +73,6 @@ fun ThemeCardGrid(
                             onLongClick = { onDrill(theme) },
                             onLongClickLabel = "直接练习",
                         ),
-                    shape = RoundedCornerShape(g.smallRadius),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    shadowElevation = g.cardShadow,
                 ) {
                     Column(
                         modifier = Modifier

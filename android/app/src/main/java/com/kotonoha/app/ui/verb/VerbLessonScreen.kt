@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
 import com.kotonoha.app.engine.verb.VerbData
 import com.kotonoha.app.engine.verb.VerbEngine
 import com.kotonoha.app.ui.common.ModuleBottomSurface
@@ -85,11 +86,8 @@ fun VerbLessonScreen(
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Surface(
+            GlassSurface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(g.cardRadius),
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
                 Text(
                     text = meaning,
@@ -107,11 +105,8 @@ fun VerbLessonScreen(
             )
 
             examples.forEach { example ->
-                Surface(
+                GlassSurface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(g.smallRadius),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 ) {
                     Column(
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
@@ -148,7 +143,6 @@ fun VerbLessonScreen(
                 onClick = onStart,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 shape = RoundedCornerShape(g.smallRadius),
             ) {

@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
 import com.kotonoha.app.ui.AppState
 import com.kotonoha.app.ui.common.ModuleGlyphBox
 import com.kotonoha.app.ui.common.ModuleHeader
@@ -92,8 +93,9 @@ fun ReadScreen(app: AppState, onOpen: (ReadTool) -> Unit) {
             .verticalScroll(rememberScrollState())
             // 底部 112dp 让位给悬浮岛（覆盖浮法下内容会从岛后方穿过，滚到底时最后一项不被遮）
             .padding(
-                start = 16.dp,
-                end = 16.dp,
+                // 页边距 22dp = 方案 B 的 --sp-page
+                start = GlassTokens.pagePadding,
+                end = GlassTokens.pagePadding,
                 top = 6.dp,
                 bottom = GlassTokens.islandContentInset,
             ),
@@ -108,12 +110,8 @@ fun ReadScreen(app: AppState, onOpen: (ReadTool) -> Unit) {
         )
 
         // 段② 框架说明卡：全页唯一「可读长文」
-        Surface(
+        GlassSurface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(g.cardRadius),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = g.cardShadow,
         ) {
             Row(
                 modifier = Modifier
@@ -147,12 +145,8 @@ fun ReadScreen(app: AppState, onOpen: (ReadTool) -> Unit) {
         }
 
         // 段③ 工具列表：数据驱动，AVAILABLE 行可点，PLANNED 行不可点
-        Surface(
+        GlassSurface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(g.cardRadius),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = g.cardShadow,
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 READ_TOOLS.forEachIndexed { index, tool ->

@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
 import com.kotonoha.app.AppTab
 import com.kotonoha.app.engine.particle.ParticleData
 import com.kotonoha.app.engine.proverb.ProverbData
@@ -89,8 +90,9 @@ fun HomeScreen(
             .verticalScroll(rememberScrollState())
             // 底部 112dp 让位给悬浮岛（覆盖浮法下内容会从岛后方穿过，滚到底时最后一项不被遮）
             .padding(
-                start = 16.dp,
-                end = 16.dp,
+                // 页边距 22dp = 方案 B 的 --sp-page
+                start = GlassTokens.pagePadding,
+                end = GlassTokens.pagePadding,
                 top = 6.dp,
                 bottom = GlassTokens.islandContentInset,
             ),
@@ -113,12 +115,8 @@ fun HomeScreen(
         )
 
         // 段③ 今日概览（沿用现有周历条 + 本周小结行，样式不改）
-        Surface(
+        GlassSurface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(g.cardRadius),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = g.cardShadow,
         ) {
             Column(
                 modifier = Modifier

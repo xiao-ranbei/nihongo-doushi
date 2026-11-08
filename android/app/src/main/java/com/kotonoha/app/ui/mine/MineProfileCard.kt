@@ -35,6 +35,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
+import com.kotonoha.app.ui.glass.GlassShape
 import com.kotonoha.app.storage.NicknameCheck
 import com.kotonoha.app.storage.ProfileRules
 import com.kotonoha.app.ui.AppState
@@ -51,12 +53,8 @@ fun MineProfileCard(app: AppState) {
     val paper = paperColors()
     var editing by remember { mutableStateOf(false) }
 
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(g.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
     ) {
         Row(
             modifier = Modifier
@@ -131,6 +129,7 @@ private fun EditNicknameDialog(
     var errorReason by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
+        shape = GlassShape.corner,
         onDismissRequest = onDismiss,
         title = { Text("编辑昵称") },
         text = {

@@ -276,7 +276,6 @@ fun AdjectiveHomeScreen(
                 onClick = onStartAll,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 shape = RoundedCornerShape(g.smallRadius),
             ) {

@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
 import com.kotonoha.app.engine.proverb.Proverb
 import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
@@ -39,12 +40,8 @@ fun ProverbCard(
 ) {
     val g = geometry()
     val paper = paperColors()
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(g.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(

@@ -57,6 +57,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kotonoha.app.ui.glass.GlassSurface
+import com.kotonoha.app.ui.glass.GlassShape
 import com.kotonoha.app.engine.read.AnalysisCacheEntry
 import com.kotonoha.app.engine.read.AnalyzeToken
 import com.kotonoha.app.engine.read.ReadParagraph
@@ -511,17 +513,14 @@ private fun ReadParagraphCard(
         else -> Modifier
     }
 
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(g.cardRadius)).then(cardClick),
-        shape = RoundedCornerShape(g.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
         // 选中的起点用主色加粗描边：底部条只说了选了哪个词，用户还得在列表里一眼找到它落在哪一段
-        border = if (selected) {
+        borderStroke = if (selected) {
             BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
         } else {
             BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         },
-        shadowElevation = g.cardShadow,
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 10.dp)) {
             // 解析成功后整行原句不再渲染（用户 2026-10 反馈：原句 + 译文 + 逐词块三段太乱）：
@@ -788,6 +787,9 @@ private fun MergedResultSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(),
+        // 方案 B：四角同 24、无抓手
+        shape = GlassShape.corner,
+        dragHandle = null,
     ) {
         Column(
             modifier = Modifier
@@ -876,6 +878,9 @@ private fun WordDetailSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(),
+        // 方案 B：四角同 24、无抓手
+        shape = GlassShape.corner,
+        dragHandle = null,
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 24.dp),

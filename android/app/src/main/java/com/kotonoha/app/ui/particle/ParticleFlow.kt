@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.kotonoha.app.ui.glass.GlassShape
 import com.kotonoha.app.ui.AppState
 import com.kotonoha.app.ui.practice.particleStateSaver
 
@@ -136,6 +137,7 @@ fun ParticleFlow(
 
     if (confirmExit) {
         AlertDialog(
+            shape = GlassShape.corner,
             onDismissRequest = { confirmExit = false },
             title = { Text("退出本轮？") },
             text = { Text("本轮已作答 ${practice.answered} 题，退出后本轮进度不保存；错题与统计已经记录。") },

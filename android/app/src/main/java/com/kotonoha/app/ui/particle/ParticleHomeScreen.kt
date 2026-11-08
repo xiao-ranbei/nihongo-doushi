@@ -35,6 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
+import com.kotonoha.app.ui.glass.GlassShape
 import com.kotonoha.app.engine.particle.ParticleData
 import com.kotonoha.app.engine.particle.ParticleEngine
 import com.kotonoha.app.engine.particle.ParticleLesson
@@ -210,12 +212,8 @@ fun ParticleHomeScreen(
             )
         }
 
-        Surface(
+        GlassSurface(
             modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(topStart = g.cardRadius, topEnd = g.cardRadius),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = g.cardShadow,
         ) {
             Button(
                 onClick = onStartAll,
@@ -335,10 +333,8 @@ internal fun ParticleTopBar(
     onBack: (() -> Unit)?,
     trailing: @Composable (() -> Unit)? = null,
 ) {
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
             modifier = Modifier

@@ -321,11 +321,13 @@ Gate 1 ──> R2.1 ──┬──> R2.2 ──> R2.5 ──┐
 | R1.3 根层 M4 | ✅ 完成 | `ui/glass/Glass.kt` 的 `GlassLayer`：165° 渐变 + 三团椭圆光斑（逐值对齐 Golden）；`Scaffold.containerColor` 改透明 |
 | R1.4 单一材质 M3 | ✅ 完成 | 全链路只有 `vibrancy → blur → lens`，无 `SDK_INT` 分支、无 blur/solid 档 |
 | R1.5 悬浮岛 M5 | ✅ 完成 | 满宽 −32dp、四角 24、`padding 8/10`、tab 50dp、图标 20dp 于 26dp 槽、选中态只有颜色 + 字重；四页底部 112dp 避让 |
-| R1.6 弹层 M8/M9 | ⬜ 待做 | 前置 R0.4（窗口层级）；4 sheet + 7 dialog + 1 drawer |
-| R1.7 组件层 M6/M7 | ⬜ 待做 | 11 共用组件 + 10 练习组件玻璃化 |
-| R1.8 底部面板 M10 | ⬜ 待做 | 判定抽屉四态 |
-| R0.2–R0.6 | ⬜ 待做 | API 三档 / lens 校准 / 弹层层级 / 性能基线 / 对比度 |
-| R2 / R3 | ⬜ 待做 | 逐批铺开，未开始 |
+| R1.6 弹层 M8/M9 | ✅ 完成 | 4 sheet（四角 24 + 无抓手）+ 7 AlertDialog（`shape = GlassShape.corner`）+ 1 drawer（`drawerShape`）；弹层窗口采样限制见 IK-23 |
+| R1.7 组件层 M6/M7 | ✅ 完成 | 36 处卡片 `Surface` → `GlassSurface`（保留 `borderStroke` 语义描边）；ModuleBottomSurface 改四角 24 浮起玻璃条；EntryCard / 形式卡 / 统计卡 / 阅读段卡全部走玻璃 |
+| R1.8 底部面板 M10 | ✅ 完成 | 4 处吸底条形状改 `GlassShape.corner`（四角 24） |
+| R0.2–R0.6 | ⚠ 部分 | R0.4 结论已定（弹层窗口采样不了主窗口 backdrop → IK-23）；R0.2/R0.3/R0.5/R0.6 仍欠实测 |
+| R2.1 一级页 | ✅ 完成 | 四页页边距 22dp + 底部 112dp 避让 + 卡片玻璃化 |
+| R2.2–R2.6 | ⚠ 部分 | 模块页/练习屏/阅读链路随 R1.7 一并玻璃化（共用组件驱动），逐页目视走查未全部完成 |
+| R3 收口 | ⚠ 部分 | 文档与决策已更新；发布前检查（APK 体积 / LICENSE / 三档兼容）未做 |
 
 > 本轮实测基线（2026-11-08，`qa36` AVD / API 36）：单测 **265 项 0 失败**（原 264，+1 玻璃令牌用例）、仪器化 `TalkBackMergeTest` **4/4 通过**（此前长期待设备）；浅色与深色首屏、四标签切换均已实机走查。
 

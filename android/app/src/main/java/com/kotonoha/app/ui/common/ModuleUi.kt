@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +32,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassShape
+import com.kotonoha.app.ui.glass.GlassSurface
+import com.kotonoha.app.ui.theme.GlassTokens
 import com.kotonoha.app.ui.theme.ModuleTone
 import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.moduleTone
@@ -51,10 +55,8 @@ fun ModuleTopBar(
     onBack: (() -> Unit)?,
     trailing: @Composable (() -> Unit)? = null,
 ) {
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
             modifier = Modifier
@@ -86,21 +88,27 @@ fun ModuleTopBar(
 }
 
 /**
- * 模块底部操作条：cardRadius 顶圆角 + 1dp 细边 + cardShadow 阴影，与纸卡同层级。
- * 背景铺到屏幕底，由调用方在内容里加 [androidx.compose.foundation.layout.navigationBarsPadding]。
+ * 模块底部操作条（方案 B）：四角 24dp 的**浮起**玻璃条，三边离屏 12dp。
+ *
+ * 与旧实现的差别：不再是「贴底 + 只圆上面两角」的平条，而是整体浮起、
+ * 与弹层同一套边距口径（D-053）。导航栏内边距在这里统一处理，
+ * 调用方**不要**再给内部按钮加 `navigationBarsPadding()`，否则会出现双重留白。
  */
 @Composable
 fun ModuleBottomSurface(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val g = geometry()
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = g.cardRadius, topEnd = g.cardRadius),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
+    GlassSurface(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(
+                start = GlassTokens.sheetInset,
+                end = GlassTokens.sheetInset,
+                bottom = GlassTokens.sheetInset,
+            ),
+        elevation = GlassTokens.islandElevation,
     ) {
         Column(content = content)
     }
@@ -242,17 +250,12 @@ fun EntryCard(
     onClick: () -> Unit,
     tone: ModuleTone = moduleTone(),
 ) {
-    val g = geometry()
     val paper = paperColors()
-    Surface(
+    GlassSurface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(g.cardRadius))
+            .clip(GlassShape.corner)
             .clickable(onClick = onClick, role = Role.Button),
-        shape = RoundedCornerShape(g.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
     ) {
         Row(
             modifier = Modifier

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -125,6 +126,7 @@ fun GlassSurface(
     colors: GlassColors = glassColors(),
     layer: Layer = Layer.Background,
     elevation: Dp = GlassTokens.cardElevation,
+    borderStroke: BorderStroke? = null,
     blurRadius: Dp = GlassTokens.blur,
     refractionHeight: Dp = GlassTokens.refractionHeight,
     refractionAmount: Dp = GlassTokens.refractionAmount,
@@ -176,6 +178,15 @@ fun GlassSurface(
                 cornerRadius = CornerRadius(cornerPx),
                 style = Stroke(strokePx),
             )
+            // 语义描边（如「选中的段」主色加粗）：与玻璃边分层，不互相覆盖
+            if (borderStroke != null) {
+                drawRoundRect(
+                    brush = borderStroke.brush,
+                    size = Size(size.width, size.height),
+                    cornerRadius = CornerRadius(cornerPx),
+                    style = Stroke(borderStroke.width.toPx()),
+                )
+            }
         }
 
     Box(modifier = shell, content = content)

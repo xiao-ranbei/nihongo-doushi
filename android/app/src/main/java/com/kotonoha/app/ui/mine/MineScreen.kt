@@ -41,6 +41,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
+import com.kotonoha.app.ui.glass.GlassShape
 import com.kotonoha.app.storage.Bookmark
 import com.kotonoha.app.ui.AppState
 import com.kotonoha.app.ui.removeBookmark
@@ -77,8 +79,9 @@ fun MineScreen(app: AppState, onOpenModelSettings: () -> Unit) {
             .verticalScroll(rememberScrollState())
             // 底部 112dp 让位给悬浮岛（覆盖浮法下内容会从岛后方穿过，滚到底时最后一项不被遮）
             .padding(
-                start = 16.dp,
-                end = 16.dp,
+                // 页边距 22dp = 方案 B 的 --sp-page
+                start = GlassTokens.pagePadding,
+                end = GlassTokens.pagePadding,
                 top = 6.dp,
                 bottom = GlassTokens.islandContentInset,
             ),
@@ -117,12 +120,8 @@ fun MineScreen(app: AppState, onOpenModelSettings: () -> Unit) {
 
         // 段④ 更多设置：首项已落地（可点），后两项仍是规划中位（不可点击）
         SectionLabel("更多设置")
-        Surface(
+        GlassSurface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(g.cardRadius),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = g.cardShadow,
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 SettingsEntryRow(onClick = onOpenModelSettings)
@@ -162,6 +161,7 @@ fun MineScreen(app: AppState, onOpenModelSettings: () -> Unit) {
 
     if (confirmReset) {
         AlertDialog(
+            shape = GlassShape.corner,
             onDismissRequest = { confirmReset = false },
             title = { Text("统计清零？") },
             text = {
@@ -199,12 +199,8 @@ private fun BookmarkSectionLabel(app: AppState) {
 @Composable
 private fun BookmarkEmptyCard() {
     val g = geometry()
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(g.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
     ) {
         Column(
             modifier = Modifier
@@ -268,12 +264,8 @@ private fun BookmarkRow(bookmark: Bookmark, onRemove: () -> Unit) {
     val paper = paperColors()
     val tone = moduleTone()
     val isWord = bookmarkIsWord(bookmark)
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(g.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
     ) {
         Row(
             modifier = Modifier

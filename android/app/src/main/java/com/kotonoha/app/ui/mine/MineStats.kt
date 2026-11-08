@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
 import com.kotonoha.app.engine.adjective.AdjectiveData
 import com.kotonoha.app.engine.verb.VerbData
 import com.kotonoha.app.storage.ActivityAggregation
@@ -44,12 +45,8 @@ fun StudyDurationCard(today: DayActivity) {
     val g = geometry()
     val paper = paperColors()
     val (durationValue, durationUnit) = ActivityAggregation.durationParts(today.seconds)
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(g.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
     ) {
         Row(
             modifier = Modifier
@@ -115,12 +112,8 @@ fun StudyProgressCard(app: AppState) {
     val mastered = app.masteredCount
     val mistakeTotal = app.mistakes.size + mastered
 
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(g.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
     ) {
         Column(
             modifier = Modifier
@@ -164,12 +157,8 @@ fun StudyDetailCard(app: AppState) {
         Math.round((verbStats.correct + adjStats.correct) * 100.0 / totalAnswers).toString() + "%"
     }
 
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(g.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             DetailRow(

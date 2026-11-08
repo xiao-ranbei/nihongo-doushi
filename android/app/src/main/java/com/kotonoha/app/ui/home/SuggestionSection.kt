@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
 import com.kotonoha.app.AppTab
 import com.kotonoha.app.engine.suggest.Suggestion
 import com.kotonoha.app.engine.suggest.SuggestionAction
@@ -62,12 +63,8 @@ fun SuggestionSection(
         modifier = Modifier.padding(start = 2.dp, top = 2.dp),
         tone = moduleTone(),
     )
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(g.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             suggestions.forEachIndexed { index, suggestion ->

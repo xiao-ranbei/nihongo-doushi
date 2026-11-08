@@ -37,6 +37,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
+import com.kotonoha.app.ui.glass.GlassShape
 import com.kotonoha.app.engine.particle.ParticleEngine
 import com.kotonoha.app.engine.particle.ParticleQuestion
 import com.kotonoha.app.engine.particle.ParticleQuestionTypes
@@ -74,10 +76,8 @@ fun ParticlePracticeScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Surface(
+        GlassSurface(
             modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         ) {
             Row(
                 modifier = Modifier
@@ -204,14 +204,10 @@ private fun ParticlePromptCard(
 ) {
     val g = geometry()
     val paper = paperColors()
-    Surface(
+    GlassSurface(
         modifier = Modifier
             .fillMaxWidth()
             .animateContentSize(),
-        shape = RoundedCornerShape(g.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
     ) {
         Column(
             modifier = Modifier
@@ -341,12 +337,8 @@ private fun ParticleDock(
     val item = state.current
     val question = item?.question
 
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = g.cardRadius, topEnd = g.cardRadius),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
     ) {
         Column(
             modifier = Modifier

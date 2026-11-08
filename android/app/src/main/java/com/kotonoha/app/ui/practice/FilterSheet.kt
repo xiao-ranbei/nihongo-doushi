@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassShape
 import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 
@@ -59,7 +60,10 @@ fun FilterSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        // 方案 B：四角同 24（取消「上圆下直」），无抓手，玻璃底
+        shape = GlassShape.corner,
         containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = null,
     ) {
         Column(
             modifier = Modifier

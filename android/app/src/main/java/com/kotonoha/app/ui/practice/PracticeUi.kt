@@ -46,6 +46,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
+import com.kotonoha.app.ui.glass.GlassShape
 import com.kotonoha.app.storage.ReviewPolicy
 import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
@@ -114,14 +116,10 @@ fun PracticeTopArea(
     onHintClick: () -> Unit,
 ) {
     val g = geometry()
-    Surface(
+    GlassSurface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 10.dp),
-        shape = RoundedCornerShape(g.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
@@ -197,14 +195,10 @@ fun PromptCard(
     onToggleHint: () -> Unit,
 ) {
     val g = geometry()
-    Surface(
+    GlassSurface(
         modifier = Modifier
             .fillMaxWidth()
             .animateContentSize(),
-        shape = RoundedCornerShape(g.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = g.cardShadow,
     ) {
         Column(
             modifier = Modifier
@@ -433,7 +427,7 @@ fun JudgementDock(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = scheme.surface,
-        shape = RoundedCornerShape(topStart = g.cardRadius, topEnd = g.cardRadius),
+        shape = GlassShape.corner,
         border = BorderStroke(1.dp, scheme.outlineVariant),
         shadowElevation = g.cardShadow,
     ) {

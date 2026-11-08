@@ -21,6 +21,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
 import com.kotonoha.app.engine.adjective.AdjectiveData
 import com.kotonoha.app.engine.particle.ParticleData
 import com.kotonoha.app.engine.verb.VerbData
@@ -78,8 +79,9 @@ fun StudyScreen(
             .verticalScroll(rememberScrollState())
             // 底部 112dp 让位给悬浮岛（覆盖浮法下内容会从岛后方穿过，滚到底时最后一项不被遮）
             .padding(
-                start = 16.dp,
-                end = 16.dp,
+                // 页边距 22dp = 方案 B 的 --sp-page
+                start = GlassTokens.pagePadding,
+                end = GlassTokens.pagePadding,
                 top = 6.dp,
                 bottom = GlassTokens.islandContentInset,
             ),
@@ -136,12 +138,8 @@ fun StudyScreen(
             modifier = Modifier.padding(start = 2.dp, top = 2.dp),
             tone = tone,
         )
-        Surface(
+        GlassSurface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(g.cardRadius),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = g.cardShadow,
         ) {
             PlannedRow(
                 icon = Icons.Filled.Search,

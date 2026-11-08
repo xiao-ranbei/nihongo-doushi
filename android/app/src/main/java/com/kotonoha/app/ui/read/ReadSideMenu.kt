@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kotonoha.app.ui.glass.GlassShape
 import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 import kotlinx.coroutines.launch
@@ -85,7 +86,8 @@ fun ReadSideMenu(
             // 关着时禁用滑出手势（避开系统返回手势的边缘），打开时恢复：遮罩点击靠它才能关闭抽屉
             gesturesEnabled = drawerState.isOpen,
             drawerContent = {
-                ModalDrawerSheet {
+                // 方案 B：抽屉四角同 24（M3 默认是「内侧大圆角 + 外侧直角」）
+                ModalDrawerSheet(drawerShape = GlassShape.corner) {
                     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                         Column(
                             modifier = Modifier

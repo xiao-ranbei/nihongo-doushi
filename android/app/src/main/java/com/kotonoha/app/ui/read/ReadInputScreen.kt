@@ -33,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kotonoha.app.ui.glass.GlassSurface
+import com.kotonoha.app.ui.glass.GlassShape
 import com.kotonoha.app.engine.read.ReadArticle
 import com.kotonoha.app.engine.read.ReadRules
 import com.kotonoha.app.ui.AppState
@@ -98,12 +100,8 @@ fun ReadInputScreen(
             )
 
             // 正文输入卡：minLines = 8 保证首屏就有「这是一篇文章」的体积感
-            Surface(
+            GlassSurface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(g.cardRadius),
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                shadowElevation = g.cardShadow,
             ) {
                 Column(
                     modifier = Modifier
@@ -158,12 +156,8 @@ fun ReadInputScreen(
                     color = paper.muted,
                     modifier = Modifier.padding(start = 2.dp, top = 4.dp),
                 )
-                Surface(
+                GlassSurface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(g.cardRadius),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    shadowElevation = g.cardShadow,
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         articles.forEachIndexed { index, article ->
@@ -190,6 +184,7 @@ fun ReadInputScreen(
     val target = pendingDelete
     if (target != null) {
         AlertDialog(
+            shape = GlassShape.corner,
             onDismissRequest = { pendingDelete = null },
             title = { Text("删除这篇文章？") },
             text = { Text("「" + target.title + "」将从最近文章里移除，已解析的句子缓存不受影响。") },

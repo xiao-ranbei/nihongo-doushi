@@ -38,6 +38,7 @@
 | IK-19 | 速查页难度过滤未做 | web/app.js:3336 | P2 |
 | IK-21 | Web 书签只有写入/取消，无浏览页 | web/（B6 收藏动作已落，浏览 UI 未做） | P3 |
 | IK-22 | 朗读仅 speechSynthesis，无第三方 TTS 端点（计划 B8 可选项） | web/read-tts.js | P3 |
+| IK-23 | 弹层窗口拿不到主窗口 backdrop，玻璃模糊/折射缺席（方案 B 限制，候选解法见正文） | android/ui/**（4 sheet + 7 dialog + 1 drawer） | P2 |
 
 ## 明细
 
@@ -176,6 +177,18 @@
 - ① TalkBack 语义树实测：仪器化 `TalkBackMergeTest` 4 用例（合并树口径 + picker 选中态，变异验证非空断言），并落实 D-030 真修复（selected 语义 / onLongClickLabel）
 - ② 进程重启状态验证：qa36 两轮 `HOME → am kill → 重启` 实测，练习屏题目进度与选中/判题态均经 rememberSaveable 恢复（截图 `qa-restart-1~3`）
 - ③ Web↔Android mistakes-v2 互通实测：qa36 真实答错产生错题（`run-as cat files/japanese-particle-practice-mistakes-v2.json` 取出）→ Playwright 将该 JSON 原样注入 Web localStorage 同名键 → 10 项断言全过：纳秒精度 ISO 时间戳可解析、角标计数、复习列表 1 条（错 1 次/下次复习 10/19）、function 题句 before+mark+after 正确拼接、到期判定（dueAt 明天 + session=5 → 今天 0 道到期）、复习按钮可用（截图 `qa-ik20-web-read.png`）
+
+#### IK-23 弹层（sheet / dialog / drawer）拿不到主窗口的 backdrop（P2，方案 B 已知限制）
+
+- 现象：`ModalBottomSheet` / `AlertDialog` / `ModalDrawerSheet` 各自在独立窗口（Dialog）里绘制，
+  Compose 的 `CompositionLocal` 能传进去，但 `Backdrop` 指向的 RenderNode 属于主窗口的渲染树，
+  跨窗口采样拿不到内容。当前实现：弹层用**不透明 `surface` 底 + 四角 24 + 无抓手**，
+  玻璃的模糊/折射在弹层上缺席，只有主窗口内的卡片、悬浮岛、吸底条是真玻璃。
+- 影响面：4 sheet + 7 dialog + 1 drawer。
+- 候选解法（按代价排序）：① 弹层改为**主窗口内的自绘浮层**（不用 Dialog 窗口），复用 `Layer.Content` 采样；
+  ② 开弹层时先 `capture` 一帧作为静态 backdrop（内容是静止的，模糊等效）；
+  ③ 接受现状并写进 UI 规格。② 最省事且视觉接近，但需要主窗口截图能力。
+- 状态：**待定**。方案 B 的「不简化」条款下这是一处必须收口的缺口，但优先度低于全量页面走查。
 
 ## 复核方法
 

@@ -30,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.GlassSurface
+import com.kotonoha.app.ui.glass.GlassShape
 import com.kotonoha.app.engine.particle.ParticleEngine
 import com.kotonoha.app.engine.particle.ParticleExample
 import com.kotonoha.app.ui.AppState
@@ -107,11 +109,8 @@ fun ParticleLessonScreen(
                 )
             }
 
-            Surface(
+            GlassSurface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(g.cardRadius),
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
                 Column(
                     modifier = Modifier
@@ -174,12 +173,8 @@ fun ParticleLessonScreen(
             }
         }
 
-        Surface(
+        GlassSurface(
             modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(topStart = g.cardRadius, topEnd = g.cardRadius),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = g.cardShadow,
         ) {
             Button(
                 onClick = onStart,
@@ -207,11 +202,8 @@ private fun ParticleExampleCard(
 ) {
     val g = geometry()
     val paper = paperColors()
-    Surface(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(g.smallRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(
             modifier = Modifier
