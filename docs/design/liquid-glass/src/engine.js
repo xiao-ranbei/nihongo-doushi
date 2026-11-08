@@ -1,0 +1,609 @@
+/* 言の葉 · 液体玻璃 UI 原型共享引擎
+ * 三个方案共用同一份信息架构、页面范围、操作路径与状态机。
+ * 差异完全由各自 CSS（配色 / 字体层级 / 间距 / 布局形态 / 控件样式 / 反馈规则）承担。
+ * 这是原型预览代码，不进生产；不发起任何网络调用。
+ */
+(function () {
+  'use strict';
+
+  /* 底部导航矢量图标：由 build.py 从 src/icons/tab-*.svg 内联注入（内联才能继承 currentColor）
+   * 若构建脚本未运行，这里为空对象，渲染自动退回文字字形，不会出现空图标。 */
+  var ICONS = {/*ICONS*/};
+
+  var PLAN_META = {
+    a: { name: '方案 A · 纸感延续', tag: '局部玻璃 / 渐进', note: '仅在底栏与弹层引入材质，卡片维持纸感。' },
+    b: { name: '方案 B · 全量液态玻璃', tag: '全局玻璃 / 沉浸', note: '卡片、控件、弹层统一玻璃语言，背景带光斑。' },
+    c: { name: '方案 C · 结构化线框', tag: '无玻璃 / 阅读优先', note: '强边界线框与高密度栅格，状态以文字为主。' },
+  };
+
+  var DATA = {
+    proverbs: [
+      { jp: '七転び八起き', zh: '七次跌倒，八次站起' },
+      { jp: '塵も積もれば山となる', zh: '积尘成山' },
+      { jp: '継続は力なり', zh: '坚持即是力量' },
+    ],
+    week: [
+      { d: '一', n: 8 }, { d: '二', n: 12 }, { d: '三', n: 0 },
+      { d: '四', n: 15 }, { d: '五', n: 9 }, { d: '六', n: 12 }, { d: '日', n: 12, today: true },
+    ],
+    suggestions: [
+      { tag: '薄弱形式', title: 'て形 · 促音便', body: '最近 3 次答错「待って」，建议再练一组。', action: '去练习' },
+      { tag: '间隔复习', title: '使役形已到期', body: '「行かせる」距上次答对 4 天，进入复习窗口。', action: '去复习' },
+      { tag: '掌握度', title: '基础形 12/18', body: '再完成 6 个形式即可点亮基础层。', action: '查看' },
+    ],
+    entries: [
+      { id: 'verb', label: '动词', sub: '79 词 · 6 种活用形', glyph: '動', desc: '形式 / 语态 / 速查' },
+      { id: 'adj', label: '形容词', sub: '15 词 · 7 种形式', glyph: '形', desc: 'い / な 与特例' },
+      { id: 'particle', label: '助词', sub: '9 个专题', glyph: '助', desc: '专题地图与练习' },
+      { id: 'mistakes', label: '错题本', sub: '按模块分组', glyph: '誤', desc: '重练与间隔复习' },
+    ],
+    forms: [
+      { k: 'ます形', v: '書きます', lv: '基础' }, { k: 'て形', v: '書いて', lv: '基础' },
+      { k: 'た形', v: '書いた', lv: '基础' }, { k: 'ない形', v: '書かない', lv: '基础' },
+      { k: 'ば形', v: '書けば', lv: '进阶' }, { k: '可能形', v: '書ける', lv: '进阶' },
+    ],
+    voices: [
+      { k: '受身', v: '書かれる' }, { k: '使役', v: '書かせる' }, { k: '使役受身', v: '書かせられる' },
+    ],
+    questions: [
+      { jp: '昨日、手紙を＿＿＿。', kana: 'きのう、てがみを', options: ['書きます', '書きました', '書いて', '書かない'], answer: 1, note: '「昨日」要求过去形，ます形的过去为「ました」。' },
+      { jp: '宿題を＿＿＿から、遊びに行きます。', kana: 'しゅくだいを', options: ['書く', '書いて', '書いた', '書けば'], answer: 2, note: '「〜てから」表示先后顺序，用た形。' },
+      { jp: '毎日、日記を＿＿＿。', kana: 'まいにち、にっきを', options: ['書いた', '書いて', '書きます', '書かせる'], answer: 2, note: '「毎日」是习惯，用现在形。' },
+    ],
+    lexicon: [
+      { id: 'kaku', jp: '書く', kana: 'かく', mean: '写', group: '五段' },
+      { id: 'taberu', jp: '食べる', kana: 'たべる', mean: '吃', group: '一段' },
+      { id: 'iku', jp: '行く', kana: 'いく', mean: '去', group: '五段' },
+      { id: 'miru', jp: '見る', kana: 'みる', mean: '看', group: '一段' },
+      { id: 'kuru', jp: '来る', kana: 'くる', mean: '来', group: 'カ変' },
+    ],
+    article: [
+      '春になると、公園の桜が咲きます。',
+      '朝早く起きて、近所を散歩しました。',
+      '小さな川のそばで、本を読む人がいました。',
+    ],
+    word: { jp: '散歩', kana: 'さんぽ', pos: '名詞 · サ変接続', mean: '散步', sent: '朝早く起きて、近所を散歩しました。', gram: '「を」标记动作对象；「散歩しました」为サ变名词 + する的ます形过去。' },
+  };
+
+  var VIEW_META = {
+    home: { title: '主页', primary: true },
+    study: { title: '学习', primary: true },
+    read: { title: '阅读', primary: true },
+    mine: { title: '我的', primary: true },
+    verb: { title: '动词', primary: false },
+    practice: { title: '综合练习', primary: false },
+    reference: { title: '活用速查', primary: false },
+    reader: { title: '文章阅读', primary: false },
+    mistakes: { title: '错题本', primary: false },
+  };
+
+  var state = {
+    plan: 'a', view: 'home', history: ['home'], dark: false, material: 'glass', dock: 'overlay', radius: '24',
+    sheet: null, toast: null, toastKind: 'info', inject: 'normal',
+    proverb: 0, nick: '关子', nicknameDraft: '关子', moduleLabel: '动词',
+    practice: { index: 0, selected: null, judged: null, revealed: false },
+    picker: { query: '', selectedId: 'kaku', currentId: 'kaku' },
+    read: { status: 'idle', bookmarked: false, activeWord: false },
+    bookmarked: false, filter: { basic: true, advanced: false },
+  };
+
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function $(sel) { return document.querySelector(sel); }
+  function meta() { return VIEW_META[state.view] || VIEW_META.home; }
+  function isSecondary() { return !meta().primary; }
+
+  /* ---------- 通用片段 ---------- */
+  function btn(label, action, opt) {
+    opt = opt || {};
+    var cls = 'btn ' + (opt.primary ? 'btn-primary ' : '') + (opt.ghost ? 'btn-ghost ' : '') + (opt.small ? 'btn-small' : '');
+    var dis = opt.disabled ? ' aria-disabled="true"' : '';
+    var extra = opt.aria ? ' ' + opt.aria : '';
+    return '<button type="button" class="' + cls.trim() + '" data-action="' + action + '"' + dis + extra + '>' + esc(label) + '</button>';
+  }
+  function glyph(ch, tone) { return '<span class="glyph" data-tone="' + (tone || 'main') + '" aria-hidden="true">' + esc(ch) + '</span>'; }
+  function section(label, more) {
+    return '<div class="section"><span class="t-label">' + esc(label) + '</span>' +
+      (more ? '<span class="section-more">' + esc(more) + '</span>' : '') + '</div>';
+  }
+  function badge(text, kind) { return '<span class="badge" data-kind="' + (kind || 'neutral') + '">' + esc(text) + '</span>'; }
+  function empty(title, body, action, label) {
+    return '<div class="empty"><div class="empty-mark" aria-hidden="true"></div>' +
+      '<p class="t-title">' + esc(title) + '</p><p class="t-body">' + esc(body) + '</p>' +
+      (action ? btn(label || '去练习', action, { primary: true }) : '') + '</div>';
+  }
+
+  /* ---------- 视图 ---------- */
+  function viewHome() {
+    var p = DATA.proverbs[state.proverb];
+    var week = DATA.week.map(function (w) {
+      return '<div class="day' + (w.today ? ' is-today' : '') + '" aria-label="' + w.d + ' ' + w.n + ' 题">' +
+        '<span class="t-caption">' + w.d + '</span><span class="day-bar" style="height:' + (4 + w.n * 1.6) + 'px"></span>' +
+        '<span class="t-micro">' + (w.n || '–') + '</span></div>';
+    }).join('');
+    var sug = DATA.suggestions.map(function (s) {
+      return '<div class="card row-card"><div class="row-main">' + badge(s.tag, 'soft') +
+        '<p class="t-title">' + esc(s.title) + '</p><p class="t-body">' + esc(s.body) + '</p></div>' +
+        btn(s.action, 'open:practice', { ghost: true, small: true }) + '</div>';
+    }).join('');
+    return '<div class="page">' +
+      '<div class="hero"><p class="t-caption">11 月 7 日 · 星期六</p><h1 class="t-display">こんにちは，' + esc(state.nick) + '</h1>' +
+      '<p class="t-body">今天也把一点日语，攒成自己的东西。</p></div>' +
+      section('今日一句', '谚语卡') +
+      '<div class="card proverb"><span class="t-label">諺 · ことわざ</span>' +
+      '<p class="t-jp">' + esc(p.jp) + '</p><p class="t-body">' + esc(p.zh) + '</p>' +
+      '<div class="row-actions">' + btn('换一句', 'proverb', { ghost: true, small: true }) + '</div></div>' +
+      section('今日概览', '本周') +
+      '<div class="card"><div class="week">' + week + '</div>' +
+      '<div class="stat-line"><span class="t-body">今日 <b>12</b> 题</span><span class="t-body">连续 <b>5</b> 天</span>' + badge('打卡完成', 'ok') + '</div></div>' +
+      section('知识点建议', '按掌握度排序') + sug + '</div>';
+  }
+
+  function viewStudy() {
+    var cards = DATA.entries.map(function (e) {
+      var act = e.id === 'mistakes' ? 'open:mistakes' : 'open:verb';
+      return '<button type="button" class="card entry" data-action="' + act + '" data-module="' + e.id + '">' +
+        glyph(e.glyph) + '<span class="entry-main"><span class="t-title">' + esc(e.label) + '</span>' +
+        '<span class="t-caption">' + esc(e.sub) + '</span><span class="t-micro">' + esc(e.desc) + '</span></span>' +
+        '<span class="entry-arrow" aria-hidden="true"></span></button>';
+    }).join('');
+    return '<div class="page"><div class="hero compact"><h1 class="t-display">学习</h1>' +
+      '<p class="t-body">选一个模块，从形式到练习走一遍。</p></div>' +
+      section('学习模块', '4 个') + '<div class="grid-2">' + cards + '</div>' +
+      section('更多工具', '规划中') +
+      '<div class="card planned" data-action="planned" aria-disabled="true">' + glyph('詞', 'muted') +
+      '<span class="entry-main"><span class="t-title">独立查词</span><span class="t-caption">词典源待接入</span></span>' +
+      badge('规划中', 'muted') + '</div>' +
+      '<p class="hint">规划中位可见、已标注、不可点击，不做假交互（D-026）。</p></div>';
+  }
+
+  function viewRead() {
+    return '<div class="page"><div class="hero compact"><h1 class="t-display">阅读</h1>' +
+      '<p class="t-body">把一篇文章拆成能读懂的片段。</p></div>' +
+      section('阅读工具', '1 个可用') +
+      '<button type="button" class="card entry" data-action="open:reader">' + glyph('読') +
+      '<span class="entry-main"><span class="t-title">AI 文章解析</span>' +
+      '<span class="t-caption">点段解析 · 逐词 · 注音</span><span class="t-micro">客户端直连模型接口</span></span>' +
+      '<span class="entry-arrow" aria-hidden="true"></span></button>' +
+      '<div class="card planned" data-action="planned" aria-disabled="true">' + glyph('排', 'muted') +
+      '<span class="entry-main"><span class="t-title">排版与导出</span></span>' + badge('规划中', 'muted') + '</div>' +
+      '<div class="card planned" data-action="planned" aria-disabled="true">' + glyph('書', 'muted') +
+      '<span class="entry-main"><span class="t-title">撰写辅助</span></span>' + badge('规划中', 'muted') + '</div>' +
+      section('状态反馈演示', '本地模拟 · 无网络调用') +
+      '<div class="card"><div class="row-actions">' +
+      btn('触发加载态', 'inject:loading', { ghost: true, small: true }) +
+      btn('触发错误态', 'inject:error', { ghost: true, small: true }) +
+      btn('触发成功提示', 'toast:ok', { ghost: true, small: true }) + '</div>' +
+      '<p class="hint">状态注入只改原型状态，不发起任何请求。</p></div></div>';
+  }
+
+  function viewMine() {
+    var book = state.inject === 'empty'
+      ? empty('还没有书签', '阅读时收藏的词或段落会出现在这里。', 'open:reader', '去读一篇')
+      : '<div class="card row-card"><div class="row-main"><span class="t-title">散歩 · さんぽ</span>' +
+        '<span class="t-caption">朝早く起きて、近所を散歩しました。</span></div>' + badge('词', 'soft') + '</div>';
+    return '<div class="page"><div class="hero compact"><h1 class="t-display">我的</h1></div>' +
+      '<div class="card profile">' + glyph('葉') + '<div class="row-main"><span class="t-title">' + esc(state.nick) + '</span>' +
+      '<span class="t-caption">资料卡 · profile-v1</span></div>' + btn('编辑', 'sheet:nickname', { ghost: true, small: true }) + '</div>' +
+      section('学习统计', '本周') + '<div class="grid-3">' +
+      '<div class="card stat"><span class="t-micro">累计答题</span><span class="t-number">486</span></div>' +
+      '<div class="card stat"><span class="t-micro">连续天数</span><span class="t-number">5</span></div>' +
+      '<div class="card stat"><span class="t-micro">已掌握</span><span class="t-number">31</span></div></div>' +
+      section('书签收藏', state.inject === 'empty' ? '空态' : '1 条') + book +
+      section('更多设置', '') +
+      '<div class="card row-card"><div class="row-main"><span class="t-title">外观材质</span>' +
+      '<span class="t-caption">当前：' + materialLabel() + ' · ' + (state.dark ? '墨夜' : '糖果卡') + '</span></div>' +
+      badge('原型预览', 'soft') + '</div>' +
+      '<div class="card planned" data-action="planned" aria-disabled="true"><div class="row-main">' +
+      '<span class="t-title">发音音色 / 词库导入导出</span></div>' + badge('规划中', 'muted') + '</div></div>';
+  }
+
+  function viewVerb() {
+    var forms = DATA.forms.map(function (f) {
+      return '<button type="button" class="card form" data-action="toast:info" aria-label="查看 ' + esc(f.k) + '">' +
+        '<span class="t-micro">' + esc(f.lv) + '</span><span class="t-title">' + esc(f.k) + '</span>' +
+        '<span class="t-jp small">' + esc(f.v) + '</span></button>';
+    }).join('');
+    var voices = DATA.voices.map(function (v) {
+      return '<div class="card voice"><span class="t-caption">' + esc(v.k) + '</span><span class="t-jp small">' + esc(v.v) + '</span></div>';
+    }).join('');
+    return '<div class="page with-dock"><div class="hero compact"><h1 class="t-display">' + esc(state.moduleLabel) + '</h1>' +
+      '<p class="t-body">形式、语态、速查、练习，一条线走通。</p></div>' +
+      section('活用形式', '6 种') + '<div class="grid-2">' + forms + '</div>' +
+      section('语态', '3 种') + '<div class="voice-row">' + voices + '</div>' +
+      section('今日卡', '') + '<div class="card row-card"><div class="row-main">' +
+      '<span class="t-title">書く · かく</span><span class="t-caption">五段 · 写</span></div>' +
+      btn('速查', 'open:reference', { ghost: true, small: true }) + '</div>' +
+      '<div class="dock"><div class="dock-inner">' +
+      '<div class="row-main"><span class="t-title">综合练习</span><span class="t-caption">3 题 · 跨形式随机</span></div>' +
+      btn('开始', 'open:practice', { primary: true }) + '</div></div></div>';
+  }
+
+  function viewReference() {
+    var cur = DATA.lexicon.filter(function (x) { return x.id === state.picker.currentId; })[0] || DATA.lexicon[0];
+    var rows = DATA.forms.map(function (f, i) {
+      return '<div class="table-row"><span class="t-body">' + esc(f.k) + '</span>' +
+        '<span class="t-jp small">' + esc(f.v) + '</span>' +
+        btn('练这题', 'open:practice', { ghost: true, small: true, aria: 'aria-label="练习 ' + esc(f.k) + '"' }) + '</div>';
+    }).join('');
+    return '<div class="page"><div class="hero compact"><h1 class="t-display">活用速查</h1>' +
+      '<p class="t-body">' + esc(cur.jp) + '（' + esc(cur.kana) + '） · ' + esc(cur.mean) + ' · ' + esc(cur.group) + '</p></div>' +
+      '<div class="card"><div class="row-actions">' + btn('换词条', 'sheet:picker', { primary: true, small: true }) +
+      badge('当前：' + cur.jp, 'soft') + '</div></div>' +
+      section('语态对照', '3 种') + '<div class="card">' + DATA.voices.map(function (v) {
+        return '<div class="table-row"><span class="t-body">' + esc(v.k) + '</span><span class="t-jp small">' + esc(v.v) + '</span></div>';
+      }).join('') + '</div>' +
+      section('活用表', '任一行可练') + '<div class="card table">' + rows + '</div>' +
+      '<p class="hint">词条行带 selected 语义；长按可查看提示（桌面为 title 提示）。</p></div>';
+  }
+
+  function viewReader() {
+    var status = state.read.status;
+    var paras = DATA.article.map(function (t, i) {
+      return '<button type="button" class="card para" data-action="sheet:word" data-para="' + i + '" aria-label="解析第 ' + (i + 1) + ' 段">' +
+        '<span class="t-micro">段落 ' + (i + 1) + '</span><span class="t-jp para-jp">' + esc(t) + '</span>' +
+        '<span class="t-caption">点按查看词详情与解析</span></button>';
+    }).join('');
+    var banner = '';
+    if (status === 'loading') banner = '<div class="state-bar" data-kind="loading"><span class="t-body">解析中… 正在处理段落 2</span><span class="skeleton"></span></div>';
+    if (status === 'error') banner = '<div class="state-bar" data-kind="error"><span class="t-body">解析失败 · 接口未响应</span>' + btn('重试', 'analyze', { ghost: true, small: true }) + '</div>';
+    if (status === 'done') banner = '<div class="state-bar" data-kind="ok"><span class="t-body">解析完成 · 3 段 / 12 词</span>' + badge('已缓存', 'ok') + '</div>';
+    return '<div class="page"><div class="hero compact"><h1 class="t-display">文章阅读</h1>' +
+      '<p class="t-body">春の散歩 · 点段解析</p></div>' +
+      '<div class="card"><div class="row-actions">' + btn('开始解析', 'analyze', { primary: true, small: true }) +
+      badge(state.bookmarked ? '已收藏本段' : '未收藏', state.bookmarked ? 'ok' : 'muted') + '</div></div>' +
+      banner + section('正文', '3 段') + paras +
+      '<p class="hint">解析为本地模拟状态机，不发起任何网络或模型调用。</p></div>';
+  }
+
+  function viewMistakes() {
+    if (state.inject === 'empty') {
+      return '<div class="page"><div class="hero compact"><h1 class="t-display">错题本</h1></div>' +
+        section('按模块分组', '暂无记录') +
+        empty('错题本是空的', '答错的题会自动进来，按间隔复习排期。', 'open:practice', '去做一题') +
+        '<p class="hint">空态给出明确下一步，不留死路。</p></div>';
+    }
+    return '<div class="page"><div class="hero compact"><h1 class="t-display">错题本</h1></div>' +
+      section('动词 · 2 条', '') +
+      '<div class="card row-card"><div class="row-main"><span class="t-title">書く · て形</span>' +
+      '<span class="t-caption">答错 2 次 · 今日到期</span></div>' + badge('待复习', 'warn') + '</div>' +
+      '<div class="card row-card"><div class="row-main"><span class="t-title">行く · た形</span>' +
+      '<span class="t-caption">答错 1 次 · 3 天后到期</span></div>' + badge('已排期', 'soft') + '</div></div>';
+  }
+
+  function viewPractice() {
+    var q = DATA.questions[state.practice.index % DATA.questions.length];
+    var p = state.practice;
+    var opts = q.options.map(function (o, i) {
+      var cls = 'option';
+      if (p.selected === i) cls += ' is-selected';
+      if (p.judged !== null && i === q.answer) cls += ' is-answer';
+      if (p.judged !== null && p.selected === i && i !== q.answer) cls += ' is-wrong';
+      return '<button type="button" class="' + cls + '" data-action="option:' + i + '" aria-pressed="' + (p.selected === i) + '">' +
+        '<span class="option-key">' + 'ABCD'.charAt(i) + '</span><span class="t-body">' + esc(o) + '</span>' +
+        '<span class="option-mark" aria-hidden="true"></span></button>';
+    }).join('');
+    var dock = '';
+    if (p.judged === null) {
+      dock = '<div class="dock judge" data-state="idle"><div class="dock-inner">' +
+        '<div class="row-main"><span class="t-title">' + (p.selected === null ? '请选择一个答案' : '已选 ' + 'ABCD'.charAt(p.selected)) + '</span>' +
+        '<span class="t-caption">第 ' + (p.index % DATA.questions.length + 1) + ' / ' + DATA.questions.length + ' 题</span></div>' +
+        btn('提交', 'submit', { primary: true, disabled: p.selected === null }) + '</div></div>';
+    } else {
+      var ok = p.judged === 'correct';
+      dock = '<div class="dock judge" data-state="' + p.judged + '"><div class="dock-inner">' +
+        '<div class="row-main"><span class="t-title">' + (ok ? '正确' : '错误') + (p.revealed ? ' · 已揭晓答案' : '') + '</span>' +
+        '<span class="t-caption">' + (p.revealed ? esc(q.note) : (ok ? '答对了，继续保持。' : '再看一眼解析，然后下一题。')) + '</span></div>' +
+        '<div class="row-actions">' + (p.revealed ? '' : btn('看答案', 'reveal', { ghost: true, small: true })) +
+        btn('下一题', 'next', { primary: true, small: true }) + '</div></div></div>';
+    }
+    return '<div class="page with-dock"><div class="practice-head"><div class="row-actions">' +
+      '<span class="t-label">进度 ' + (p.index % DATA.questions.length + 1) + '/' + DATA.questions.length + '</span>' +
+      btn('筛选', 'sheet:filter', { ghost: true, small: true }) + '</div>' +
+      '<div class="progress"><span style="width:' + ((p.index % DATA.questions.length) / DATA.questions.length * 100) + '%"></span></div></div>' +
+      '<div class="card prompt"><span class="t-caption">' + esc(q.kana) + '</span>' +
+      '<p class="t-jp">' + esc(q.jp) + '</p><span class="t-label">选出正确的活用形</span></div>' +
+      section('选项', '单选') + '<div class="options">' + opts + '</div>' + dock + '</div>';
+  }
+
+  var VIEWS = {
+    home: viewHome, study: viewStudy, read: viewRead, mine: viewMine,
+    verb: viewVerb, practice: viewPractice, reference: viewReference,
+    reader: viewReader, mistakes: viewMistakes,
+  };
+
+  /* ---------- 弹层 ---------- */
+  function sheetPicker() {
+    var q = state.picker.query.trim();
+    var list = DATA.lexicon.filter(function (x) { return !q || x.jp.indexOf(q) >= 0 || x.kana.indexOf(q) >= 0 || x.mean.indexOf(q) >= 0; });
+    var rows = list.length ? list.map(function (x) {
+      var sel = state.picker.selectedId === x.id;
+      return '<button type="button" class="picker-row" data-action="picker-select:' + x.id + '" aria-selected="' + sel + '">' +
+        '<span class="t-jp small">' + esc(x.jp) + '</span><span class="t-caption">' + esc(x.kana) + ' · ' + esc(x.mean) + '</span>' +
+        (sel ? badge('已选', 'ok') : '') + '</button>';
+    }).join('') : '<div class="empty slim"><p class="t-body">没有匹配的词条</p><p class="t-caption">换个关键字试试</p></div>';
+    return { title: '选择词条', body: '<div class="sheet-search"><input class="input" id="picker-input" type="text" placeholder="搜索读音或释义" value="' + esc(state.picker.query) + '" aria-label="搜索词条" data-action="picker-input"></div>' +
+      '<div class="picker-list">' + rows + '</div>', foot: btn('取消', 'sheet-close', { ghost: true }) + btn('确定换词', 'picker-apply', { primary: true }) };
+  }
+
+  function sheetWord() {
+    var w = DATA.word;
+    return { title: '词详情', body: '<div class="detail-head"><span class="t-jp">' + esc(w.jp) + '</span>' + badge(w.pos, 'soft') + '</div>' +
+      '<dl class="detail"><div><dt class="t-micro">読み</dt><dd class="t-body">' + esc(w.kana) + '</dd></div>' +
+      '<div><dt class="t-micro">意味</dt><dd class="t-body">' + esc(w.mean) + '</dd></div>' +
+      '<div><dt class="t-micro">文中</dt><dd class="t-body">' + esc(w.sent) + '</dd></div>' +
+      '<div><dt class="t-micro">语法</dt><dd class="t-body">' + esc(w.gram) + '</dd></div></dl>',
+      foot: btn('关闭', 'sheet-close', { ghost: true }) + btn(state.read.bookmarked ? '已收藏' : '收藏这个词', 'bookmark', { primary: true, disabled: state.read.bookmarked }) };
+  }
+
+  function sheetFilter() {
+    return { title: '练习筛选', body: '<p class="t-body">选择本次练习涵盖的形式层级。</p>' +
+      '<div class="filter-row">' +
+      '<button type="button" class="pill' + (state.filter.basic ? ' is-on' : '') + '" data-action="filter:basic" aria-pressed="' + state.filter.basic + '">基础形</button>' +
+      '<button type="button" class="pill' + (state.filter.advanced ? ' is-on' : '') + '" data-action="filter:advanced" aria-pressed="' + state.filter.advanced + '">进阶形</button></div>' +
+      '<p class="hint">胶囊带 aria-pressed，深浅皮肤与三档材质下均保持选中可见。</p>',
+      foot: btn('重置', 'filter-reset', { ghost: true }) + btn('应用', 'sheet-close', { primary: true }) };
+  }
+
+  function sheetNickname() {
+    return { title: '编辑昵称', body: '<label class="t-label" for="nick-input">昵称（1–12 字）</label>' +
+      '<input class="input" id="nick-input" type="text" maxlength="12" value="' + esc(state.nicknameDraft) + '" data-action="nick-input" aria-label="昵称">' +
+      '<p class="hint">保存后会更新资料卡与主页问候语。</p>',
+      foot: btn('取消', 'sheet-close', { ghost: true }) + btn('保存', 'save-nickname', { primary: true }) };
+  }
+
+  var SHEETS = { picker: sheetPicker, word: sheetWord, filter: sheetFilter, nickname: sheetNickname };
+
+  function renderSheet() {
+    if (!state.sheet || !SHEETS[state.sheet]) return '';
+    var s = SHEETS[state.sheet]();
+    return '<div class="scrim" data-action="sheet-close"></div>' +
+      '<div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(s.title) + '">' +
+      '<div class="sheet-head"><span class="t-title">' + esc(s.title) + '</span>' +
+      '<button type="button" class="sheet-x" data-action="sheet-close" aria-label="关闭">×</button></div>' +
+      '<div class="sheet-body">' + s.body + '</div>' +
+      '<div class="sheet-foot">' + s.foot + '</div></div>';
+  }
+
+  /* ---------- 外壳 ---------- */
+  function renderTopbar() {
+    if (!isSecondary()) {
+      return '<div class="topbar"><div class="topbar-main"><span class="t-brand">言の葉</span>' +
+        '<span class="t-caption">' + esc(meta().title) + '</span></div>' +
+        '<span class="status-dot" aria-label="已同步"></span></div>';
+    }
+    var title = state.view === 'verb' ? state.moduleLabel : meta().title;
+    return '<div class="topbar"><button type="button" class="back" data-action="back" aria-label="返回上一级">' +
+      '<span aria-hidden="true">‹</span><span class="t-body">返回</span></button>' +
+      '<span class="t-title">' + esc(title) + '</span><span class="topbar-spacer"></span></div>';
+  }
+
+  function tabGlyph(id, fallback) {
+    // 方案 B 用矢量图标（内联 SVG，颜色走 currentColor）；A / C 保留文字字形不参与改动
+    if (state.plan === 'b' && ICONS[id]) {
+      return '<span class="tab-glyph tab-glyph-icon" aria-hidden="true">' + ICONS[id] + '</span>';
+    }
+    return '<span class="tab-glyph" aria-hidden="true">' + fallback + '</span>';
+  }
+
+  function renderTabbar() {
+    if (isSecondary()) return '';
+    var tabs = [['home', '主页', '主'], ['study', '学习', '学'], ['read', '阅读', '読'], ['mine', '我的', '我']];
+    return '<nav class="tabbar" aria-label="主导航">' + tabs.map(function (t) {
+      var on = state.view === t[0];
+      return '<button type="button" class="tab' + (on ? ' is-on' : '') + '" data-action="tab:' + t[0] + '" aria-current="' + (on ? 'page' : 'false') + '" aria-label="' + t[1] + '">' +
+        tabGlyph(t[0], t[2]) + '<span class="t-micro">' + t[1] + '</span></button>';
+    }).join('') + '</nav>';
+  }
+
+  function renderToast() {
+    if (!state.toast) return '';
+    return '<div class="toast" data-kind="' + state.toastKind + '" role="status">' + esc(state.toast) + '</div>';
+  }
+
+  function renderScreen() {
+    var showTab = !isSecondary();
+    return '<div class="screen-shell">' + renderTopbar() +
+      '<main class="content' + (showTab ? ' has-island' : '') + '" id="content">' + (VIEWS[state.view] || viewHome)() + '</main>' +
+      renderTabbar() + renderSheet() + renderToast() + '</div>';
+  }
+
+  function renderPathbar() {
+    var chips = state.history.map(function (v, i) {
+      return '<button type="button" class="path-chip' + (i === state.history.length - 1 ? ' is-last' : '') + '" data-action="path-back:' + i + '">' +
+        esc((VIEW_META[v] || {}).title || v) + '</button>';
+    }).join('<span class="path-sep" aria-hidden="true">›</span>');
+    return '<div class="pathbar"><span class="t-micro">操作路径</span><div class="path-list">' + chips + '</div></div>';
+  }
+
+  function materialLabel() { return { glass: '液态玻璃', blur: '背景模糊', solid: '半透明' }[state.material]; }
+  function dockLabel() { return { overlay: '覆盖悬浮', inline: '占位悬浮', compact: '收窄居中' }[state.dock]; }
+
+  function renderLegend() {
+    var m = PLAN_META[state.plan];
+    return '<div class="legend"><div class="legend-line"><b>' + esc(m.name) + '</b>' + badge(m.tag, 'soft') +
+      '<span class="t-micro">' + esc(m.note) + '</span></div>' +
+      '<div class="legend-line"><span class="t-micro">皮肤 ' + (state.dark ? '墨夜' : '糖果卡') + ' · 材质 ' + materialLabel() +
+        (state.plan === 'b' ? ' · 底栏 ' + dockLabel() : '') +
+        ' · 场景 ' + esc(meta().title) + ' · 状态 ' + state.inject + '</span></div>' +
+      '<div class="legend-line"><span class="t-micro">可用性：焦点可见 / 热区 ≥44px / selected 与 aria-pressed / Esc 关弹层 / 状态双通道</span></div></div>';
+  }
+
+  function renderToolbar() {
+    var views = Object.keys(VIEW_META).map(function (v) {
+      return '<option value="' + v + '"' + (state.view === v ? ' selected' : '') + '>' + esc(VIEW_META[v].title) + '</option>';
+    }).join('');
+    function seg(name, items, cur) {
+      return '<div class="seg" role="group" aria-label="' + name + '">' + items.map(function (it) {
+        return '<button type="button" class="seg-btn' + (cur === it[0] ? ' is-on' : '') + '" data-action="' + it[2] + ':' + it[0] + '" aria-pressed="' + (cur === it[0]) + '">' + it[1] + '</button>';
+      }).join('') + '</div>';
+    }
+    return '<div class="toolbar">' +
+      '<div class="toolbar-row"><span class="t-micro">皮肤</span>' + seg('皮肤', [['0', '糖果卡', 'set-dark'], ['1', '墨夜', 'set-dark']], state.dark ? '1' : '0') + '</div>' +
+      '<div class="toolbar-row"><span class="t-micro">材质</span>' + seg('材质', [['glass', '液态玻璃', 'set-material'], ['blur', '背景模糊', 'set-material'], ['solid', '半透明', 'set-material']], state.material) + '</div>' +
+      (state.plan === 'b' ? '<div class="toolbar-row"><span class="t-micro">底栏</span>' + seg('底栏浮法', [['overlay', '覆盖', 'set-dock'], ['inline', '占位', 'set-dock'], ['compact', '收窄', 'set-dock']], state.dock) + '</div>' : '') +
+      (state.plan === 'b' ? '<div class="toolbar-row"><span class="t-micro">圆角</span>' + seg('全局圆角', [['24', '24', 'set-radius'], ['20', '20', 'set-radius'], ['16', '16', 'set-radius']], state.radius) + '</div>' : '') +
+      '<div class="toolbar-row"><span class="t-micro">场景</span><select class="select" id="view-select" aria-label="跳转场景">' + views + '</select></div>' +
+      '<div class="toolbar-row"><span class="t-micro">状态</span>' + seg('状态注入', [['normal', '正常', 'inject'], ['empty', '空态', 'inject'], ['loading', '加载', 'inject'], ['error', '错误', 'inject']], state.inject) + '</div>' +
+      '<div class="toolbar-row"><span class="t-micro">操作</span>' + btn('重置', 'reset', { ghost: true, small: true }) + btn('Toast', 'toast:info', { ghost: true, small: true }) + '</div>' +
+      '</div>';
+  }
+
+  function render() {
+    var root = document.getElementById('app');
+    if (!root) return;
+    // CSS 令牌与三档材质规则挂在 body 属性上，必须与状态同步，否则按钮变了样式不变
+    document.body.setAttribute('data-dark', state.dark ? 'true' : 'false');
+    document.body.setAttribute('data-material', state.material);
+    // 底栏浮法只对方案 B 生效，A/C 不消费该属性
+    document.body.setAttribute('data-dock', state.plan === 'b' ? state.dock : 'none');
+    // 全局圆角单值：只改这一个令牌，卡片/按钮/输入框/弹层/岛一起变（仅 B 消费）
+    if (state.plan === 'b') document.documentElement.style.setProperty('--radius', state.radius + 'px');
+    else document.documentElement.style.removeProperty('--radius');
+    root.innerHTML = renderToolbar() + '<div class="device"><div class="device-inner" id="screen">' + renderScreen() + '</div></div>' + renderPathbar() + renderLegend();
+    var sel = document.getElementById('view-select');
+    if (sel) sel.addEventListener('change', function () { go(sel.value); });
+    if (state.sheet === 'picker') {
+      var input = document.getElementById('picker-input');
+      if (input && state.picker.focus) { input.focus(); try { input.setSelectionRange(input.value.length, input.value.length); } catch (e) {} state.picker.focus = false; }
+    }
+    if (state.sheet === 'nickname') {
+      var ni = document.getElementById('nick-input');
+      if (ni && state.nicknameFocus) { ni.focus(); state.nicknameFocus = false; }
+    }
+  }
+
+  /* ---------- 状态与动作 ---------- */
+  var toastTimer = null;
+  function toast(msg, kind) {
+    state.toast = msg; state.toastKind = kind || 'info';
+    render();
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { state.toast = null; render(); }, 2400);
+  }
+
+  function go(view) {
+    if (!VIEW_META[view]) return;
+    if (state.view !== view) state.history.push(view);
+    state.view = view; state.sheet = null;
+    render();
+    var nc = document.getElementById('content');
+    if (nc) nc.scrollTop = 0;
+  }
+
+  function back() {
+    if (state.sheet) { state.sheet = null; render(); return; }
+    if (state.history.length > 1) {
+      state.history.pop();
+      var v = state.history[state.history.length - 1];
+      state.view = v; render();
+    } else { state.view = 'home'; render(); }
+  }
+
+  function act(a, el) {
+    var parts = a.split(':'); var op = parts[0], arg = parts.slice(1).join(':');
+    switch (op) {
+      case 'tab': go(arg); break;
+      case 'back': back(); break;
+      case 'path-back': {
+        var i = parseInt(arg, 10);
+        state.history = state.history.slice(0, i + 1);
+        state.view = state.history[i] || 'home'; state.sheet = null; render(); break;
+      }
+      case 'open': {
+        if (arg === 'verb' && el) {
+          var m = el.getAttribute('data-module');
+          state.moduleLabel = ({ verb: '动词', adj: '形容词', particle: '助词' })[m] || '动词';
+        }
+        go(arg); break;
+      }
+      case 'planned': toast('规划中，暂未开放（不做假交互）', 'warn'); break;
+      case 'proverb': state.proverb = (state.proverb + 1) % DATA.proverbs.length; render(); toast('已换一句谚语', 'info'); break;
+      case 'option': state.practice.selected = parseInt(arg, 10); render(); break;
+      case 'submit': {
+        var q = DATA.questions[state.practice.index % DATA.questions.length];
+        if (state.practice.selected === null) { toast('请先选择一个答案', 'warn'); break; }
+        state.practice.judged = state.practice.selected === q.answer ? 'correct' : 'wrong';
+        render(); toast(state.practice.judged === 'correct' ? '正确' : '答错了，看看解析', state.practice.judged === 'correct' ? 'ok' : 'warn'); break;
+      }
+      case 'reveal': state.practice.revealed = true; render(); break;
+      case 'next': state.practice.index++; state.practice.selected = null; state.practice.judged = null; state.practice.revealed = false; render(); break;
+      case 'sheet': state.sheet = arg; if (arg === 'nickname') { state.nicknameDraft = state.nick; state.nicknameFocus = true; } render(); break;
+      case 'sheet-close': state.sheet = null; render(); break;
+      case 'picker-select': state.picker.selectedId = arg; render(); break;
+      case 'picker-apply': state.picker.currentId = state.picker.selectedId; state.sheet = null; render(); toast('已切换词条', 'ok'); break;
+      case 'filter': state.filter[arg] = !state.filter[arg]; render(); break;
+      case 'filter-reset': state.filter = { basic: true, advanced: false }; render(); break;
+      case 'save-nickname': {
+        var n = state.nicknameDraft.trim();
+        if (!n) { toast('昵称不能为空', 'warn'); break; }
+        state.nick = n; state.sheet = null; render(); toast('资料卡已更新', 'ok'); break;
+      }
+      case 'bookmark':
+        if (state.read.bookmarked) { toast('这个词已经收藏过了', 'info'); break; }
+        state.read.bookmarked = true; state.bookmarked = true; render(); toast('已收藏这个词', 'ok'); break;
+      case 'analyze': {
+        state.read.status = 'loading'; render();
+        setTimeout(function () {
+          state.read.status = state.inject === 'error' ? 'error' : 'done';
+          render();
+          toast(state.read.status === 'error' ? '解析失败，可重试' : '解析完成（本地模拟）', state.read.status === 'error' ? 'warn' : 'ok');
+        }, 900); break;
+      }
+      case 'toast': {
+        var msg = { ok: '操作成功', warn: '需要注意', info: '这是一条状态提示' }[arg] || '这是一条状态提示';
+        toast(msg, arg); break;
+      }
+      case 'set-dark': state.dark = arg === '1'; render(); break;
+      case 'set-material': state.material = arg; render(); break;
+      case 'set-dock': state.dock = arg; render(); break;
+      case 'set-radius': state.radius = arg; render(); break;
+      case 'set-view': go(arg); break;
+      case 'inject': {
+        state.inject = arg;
+        if (arg === 'loading') state.read.status = 'loading';
+        else if (arg === 'error') state.read.status = 'error';
+        else if (arg === 'empty') state.read.status = 'idle';
+        else state.read.status = 'idle';
+        render(); toast('已注入状态：' + arg, 'info'); break;
+      }
+      case 'reset': {
+        state.view = 'home'; state.history = ['home']; state.sheet = null; state.dark = false;
+        state.material = 'glass'; state.inject = 'normal'; state.toast = null; state.dock = 'overlay'; state.radius = '24';
+        state.proverb = 0; state.moduleLabel = '动词'; state.nick = '关子'; state.nicknameDraft = '关子';
+        state.practice = { index: 0, selected: null, judged: null, revealed: false };
+        state.picker = { query: '', selectedId: 'kaku', currentId: 'kaku' };
+        state.read = { status: 'idle', bookmarked: false, activeWord: false };
+        state.bookmarked = false; state.filter = { basic: true, advanced: false };
+        render(); break;
+      }
+      default: break;
+    }
+  }
+
+  function init() {
+    var body = document.body;
+    state.plan = body.getAttribute('data-plan') || 'a';
+    document.addEventListener('click', function (e) {
+      var el = e.target.closest ? e.target.closest('[data-action]') : null;
+      if (!el) return;
+      var a = el.getAttribute('data-action');
+      if (!a || a === 'picker-input' || a === 'nick-input') return;
+      e.preventDefault();
+      act(a, el);
+    });
+    document.addEventListener('input', function (e) {
+      var t = e.target;
+      if (t && t.id === 'picker-input') { state.picker.query = t.value; state.picker.focus = true; render(); }
+      if (t && t.id === 'nick-input') { state.nicknameDraft = t.value; }
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      if (state.sheet) { state.sheet = null; render(); }
+      else if (isSecondary()) { back(); }
+    });
+    render();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();

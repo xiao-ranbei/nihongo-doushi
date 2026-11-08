@@ -1,14 +1,17 @@
 # 版本目录（D-015 锁定）：与本机 SDK platform 35 同代的稳定组合
-# 版本号均于 2026-10-14 经 Maven metadata 实测核实
+# 版本号均经 Maven metadata / AAR aar-metadata 实测核实（2026-11-08 按 R0.1 结论升级）
 [versions]
 agp = "8.13.2"
-kotlin = "2.2.21"
-composeBom = "2025.08.01"
+kotlin = "2.3.10"
+composeBom = "2026.03.01"
 activityCompose = "1.10.1"
 coreKtx = "1.16.0"
 lifecycleRuntimeCompose = "2.9.0"
 serializationJson = "1.11.0"
 androidxTestExtJunit = "1.2.1"
+# 液态玻璃：1.0.6 编译在 compose 1.10.3 / kotlin 2.3.10 上，minCompileSdk 35，
+# 与 AGP 8.13.2 + compileSdk 35 兼容；2.0.1 要求 compose 1.12（minCompileSdk 37 + AGP 9.1），不可用
+backdrop = "1.0.6"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -21,6 +24,7 @@ compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4
 compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 compose-material-icons = { group = "androidx.compose.material", name = "material-icons-core" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serializationJson" }
+backdrop = { group = "io.github.kyant0", name = "backdrop", version.ref = "backdrop" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 

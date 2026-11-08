@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>言の葉 · 方案 C · 结构化线框 · UI 原型</title>
+<style>
+/* 共享布局骨架：三方案完全一致的信息架构、视图结构与交互热区。
+ * 颜色 / 字号 / 间距 / 圆角 / 阴影 / 材质参数全部走 var(--*)，由 theme-*.css 提供。
+ */
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:"Hiragino Sans","Yu Gothic","Noto Sans CJK SC","Microsoft YaHei",system-ui,sans-serif;background:var(--stage-bg);color:var(--text);-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0;text-align:left}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
+#app{max-width:520px;margin:0 auto;padding:14px 12px 26px;min-height:100vh}
+
+/* 预览控制条（原型工具，非 App UI） */
+.toolbar{display:flex;flex-direction:column;gap:7px;margin-bottom:12px;padding:10px;border:1px solid var(--stage-line);border-radius:10px;background:var(--stage-panel)}
+.toolbar-row{display:flex;align-items:center;gap:8px;min-height:28px}
+.toolbar-row>.t-micro{width:30px;flex:none;color:var(--stage-text)}
+.seg{display:flex;gap:2px;padding:2px;border:1px solid var(--stage-line);border-radius:7px;background:var(--stage-panel)}
+.seg-btn{min-height:28px;padding:3px 9px;border-radius:5px;font-size:11px;color:var(--stage-text);white-space:nowrap}
+.seg-btn.is-on{background:var(--stage-on);color:var(--stage-on-text);font-weight:600}
+.select{min-height:28px;padding:3px 8px;border:1px solid var(--stage-line);border-radius:6px;background:var(--stage-panel);font-size:11px;color:var(--stage-text)}
+.toolbar-row .btn{flex:none}
+
+/* 设备框 */
+.device{width:100%;max-width:390px;margin:0 auto;border:1px solid var(--device-line);border-radius:var(--radius-device);background:var(--bg);box-shadow:var(--shadow-device);overflow:hidden}
+.device-inner{height:720px;position:relative}
+.screen-shell{position:relative;display:flex;flex-direction:column;height:100%;background:var(--bg);overflow:hidden}
+.screen-shell::before{content:"";position:absolute;inset:0;background:var(--screen-texture);pointer-events:none;z-index:0}
+.topbar,.content,.tabbar{position:relative;z-index:1}
+.topbar{flex:none;display:flex;align-items:center;gap:10px;min-height:52px;padding:0 var(--sp-page);border-bottom:var(--border-w) solid var(--line);background:var(--topbar-bg)}
+.topbar-main{display:flex;flex-direction:column;gap:1px}
+.t-brand{font-size:var(--fs-title);font-weight:600;letter-spacing:.08em;color:var(--text)}
+.topbar-spacer{flex:1}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);margin-left:auto;flex:none}
+.back{display:flex;align-items:center;gap:4px;min-height:44px;padding-right:12px;color:var(--brand)}
+.back>span[aria-hidden]{font-size:24px;line-height:1}
+.topbar>.t-title{flex:1;text-align:center;margin-right:44px}
+
+.content{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+.page{display:flex;flex-direction:column;gap:var(--sp-gap);padding:var(--sp-page);padding-bottom:calc(var(--sp-page) + 10px)}
+.page.with-dock{padding-bottom:calc(var(--sp-page) + 4px)}
+.hero{display:flex;flex-direction:column;gap:6px;padding:var(--sp-card) 0 calc(var(--sp-card) / 2)}
+.hero.compact{padding-top:calc(var(--sp-card) / 2)}
+.hero .t-body{color:var(--text-2)}
+.section{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:var(--sp-section);color:var(--text-3)}
+.section-more{font-size:var(--fs-micro);color:var(--text-3)}
+.hint{font-size:var(--fs-micro);line-height:1.6;color:var(--text-3);margin:2px 0 0}
+
+/* 排版层级：三方案各自用 --fs-* 定义节奏 */
+.t-display{font-size:var(--fs-display);line-height:1.25;font-weight:600;letter-spacing:.01em;margin:0;color:var(--text)}
+.t-title{font-size:var(--fs-title);line-height:1.4;font-weight:var(--fw-title);margin:0;color:var(--text)}
+.t-body{font-size:var(--fs-body);line-height:var(--lh-body);margin:0;color:var(--text-2)}
+.t-caption{font-size:var(--fs-caption);line-height:1.5;color:var(--text-3)}
+.t-label{font-size:var(--fs-label);line-height:1.4;letter-spacing:.06em;color:var(--text-3)}
+.t-micro{font-size:var(--fs-micro);line-height:1.4;color:var(--text-3)}
+.t-jp{font-size:var(--fs-jp);line-height:1.65;letter-spacing:.04em;margin:0;color:var(--text)}
+.t-jp.small{font-size:calc(var(--fs-jp) - 3px)}
+.t-number{font-size:var(--fs-number);font-weight:600;line-height:1.1;color:var(--text)}
+b{font-weight:600;color:var(--text)}
+
+/* 卡片 / 网格 */
+.card{position:relative;display:flex;flex-direction:column;gap:6px;padding:var(--sp-card);border:var(--border-w) solid var(--line);border-radius:var(--radius-card);background:var(--surface);box-shadow:var(--shadow-card);color:var(--text)}
+.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-gap)}
+.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-gap)}
+.row-card{flex-direction:row;align-items:center;gap:10px}
+.row-main{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.row-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.proverb{gap:8px}
+.proverb .row-actions{margin-top:2px}
+.entry{flex-direction:row;align-items:center;gap:10px;text-align:left;min-height:74px;width:100%;transition:transform .16s ease,border-color .16s ease}
+.entry:hover,.form:hover{border-color:var(--brand)}
+.entry-main{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.entry-arrow{width:8px;height:8px;border-top:1.5px solid var(--text-3);border-right:1.5px solid var(--text-3);transform:rotate(45deg);flex:none;margin-right:3px}
+.glyph{display:flex;align-items:center;justify-content:center;width:38px;height:38px;flex:none;border-radius:var(--radius-glyph);font-size:15px;font-weight:600;background:var(--brand-soft);color:var(--brand-ink);border:var(--border-w) solid var(--glyph-line)}
+.glyph[data-tone="muted"]{background:var(--surface-2);color:var(--text-3)}
+.badge{display:inline-flex;align-items:center;min-height:20px;padding:1px 8px;border-radius:var(--radius-pill);font-size:var(--fs-micro);line-height:1.3;white-space:nowrap;border:var(--border-w) solid transparent;background:var(--surface-2);color:var(--text-3)}
+.badge[data-kind="ok"]{background:var(--ok-soft);color:var(--ok);border-color:var(--ok-line)}
+.badge[data-kind="warn"]{background:var(--warn-soft);color:var(--warn);border-color:var(--warn-line)}
+.badge[data-kind="soft"]{background:var(--brand-soft);color:var(--brand-ink);border-color:var(--brand-line)}
+.badge[data-kind="muted"]{background:transparent;color:var(--text-3);border-color:var(--line)}
+.planned{flex-direction:row;align-items:center;gap:10px;opacity:.72;cursor:not-allowed}
+.form{align-items:flex-start;min-height:78px;text-align:left;gap:2px}
+.voice-row{display:flex;gap:var(--sp-gap);overflow-x:auto;padding-bottom:2px}
+.voice{flex:1;min-width:92px;gap:4px}
+.stat{align-items:flex-start;gap:4px}
+.stat .t-number{margin-top:2px}
+.profile{flex-direction:row;align-items:center;gap:10px}
+.para{align-items:flex-start;gap:5px;text-align:left;width:100%}
+.para-jp{margin:2px 0}
+.prompt{align-items:flex-start;gap:8px;padding:calc(var(--sp-card) + 4px)}
+.week{display:flex;align-items:flex-end;justify-content:space-between;gap:4px}
+.day{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:0}
+.day-bar{width:10px;min-height:4px;border-radius:3px;background:var(--surface-2)}
+.day.is-today .day-bar{background:var(--brand)}
+.day.is-today .t-micro{color:var(--brand);font-weight:600}
+.stat-line{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-top:8px;border-top:var(--border-w) solid var(--line)}
+.empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:26px 14px;border:var(--border-w) dashed var(--line);border-radius:var(--radius-card);background:var(--surface);text-align:center}
+.empty.slim{border:0;padding:18px 8px;background:transparent}
+.empty-mark{width:34px;height:34px;border:2px solid var(--line);border-radius:8px;position:relative}
+.empty-mark::after{content:"";position:absolute;inset:8px;border:1px solid var(--line);border-radius:3px}
+.empty .t-body{max-width:240px}
+.table{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden}
+.table-row{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px var(--sp-card);border-bottom:var(--border-w) solid var(--line)}
+.table-row:last-child{border-bottom:0}
+.table-row>.t-body{flex:1}
+.table-row>.t-jp{flex:1}
+
+/* 控件 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border:var(--border-w) solid var(--line);border-radius:var(--radius-btn);font-size:var(--fs-body);font-weight:500;background:var(--surface-2);color:var(--text);white-space:nowrap;transition:filter .16s ease,border-color .16s ease}
+.btn:hover{filter:brightness(.97);border-color:var(--brand)}
+.btn:active{transform:translateY(1px)}
+.btn-small{min-height:36px;padding:0 11px;font-size:var(--fs-caption)}
+.btn-primary{background:var(--brand);border-color:var(--brand);color:var(--brand-on)}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--brand)}
+.pill{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 14px;border:var(--border-w) solid var(--line);border-radius:var(--radius-pill);font-size:var(--fs-body);background:var(--surface-2);color:var(--text-2)}
+.pill.is-on{background:var(--brand-soft);border-color:var(--brand);color:var(--brand-ink);font-weight:600}
+.input{width:100%;min-height:44px;padding:8px 12px;border:var(--border-w) solid var(--line);border-radius:var(--radius-btn);background:var(--surface-2);color:var(--text);font-size:var(--fs-body)}
+.input::placeholder{color:var(--text-3)}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+
+/* 答题 */
+.practice-head{display:flex;flex-direction:column;gap:8px}
+.progress{height:5px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.progress>span{display:block;height:100%;background:var(--brand);transition:width .25s ease}
+.options{display:flex;flex-direction:column;gap:var(--sp-gap)}
+.option{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px var(--sp-card);border:var(--border-w) solid var(--line);border-radius:var(--radius-card);background:var(--surface);color:var(--text)}
+.option>.t-body{flex:1}
+.option-key{display:flex;align-items:center;justify-content:center;width:28px;height:28px;flex:none;border-radius:var(--radius-glyph);background:var(--surface-2);color:var(--text-3);font-size:var(--fs-caption);font-weight:600}
+.option-mark{width:14px;height:14px;flex:none;border:1.5px solid var(--line);border-radius:50%}
+.option.is-selected{border-color:var(--brand);background:var(--brand-soft)}
+.option.is-selected .option-key{background:var(--brand);color:var(--brand-on)}
+.option.is-answer{border-color:var(--ok);background:var(--ok-soft)}
+.option.is-answer .option-mark{background:var(--ok);border-color:var(--ok)}
+.option.is-wrong{border-color:var(--danger);background:var(--danger-soft)}
+.option.is-wrong .option-mark{background:var(--danger);border-color:var(--danger)}
+
+/* 底部操作条 / 判定抽屉 */
+.dock{position:sticky;bottom:calc(-1 * var(--sp-page) - 10px);z-index:6;margin:var(--sp-gap) calc(-1 * var(--sp-page)) calc(-1 * var(--sp-page) - 10px);padding:12px var(--sp-page);border-top:var(--border-w) solid var(--line);background:var(--dock-bg);box-shadow:var(--shadow-dock)}
+.dock-inner{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dock-inner>.row-main{flex:1;min-width:120px}
+.dock .row-actions{flex:none}
+.dock.judge[data-state="correct"]{border-top-color:var(--ok)}
+.dock.judge[data-state="wrong"]{border-top-color:var(--danger)}
+
+/* 弹层 */
+.scrim{position:absolute;inset:0;z-index:10;background:var(--scrim)}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:11;display:flex;flex-direction:column;max-height:76%;border-top:var(--border-w) solid var(--line);border-radius:var(--radius-sheet) var(--radius-sheet) 0 0;background:var(--sheet-bg);box-shadow:var(--shadow-sheet);overflow:hidden}
+.sheet-head{display:flex;align-items:center;gap:8px;flex:none;padding:12px var(--sp-page) 8px;border-bottom:var(--border-w) solid var(--line)}
+.sheet-head .t-title{flex:1}
+.sheet-x{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text-3);border-radius:var(--radius-btn)}
+.sheet-body{flex:1;overflow-y:auto;padding:12px var(--sp-page);display:flex;flex-direction:column;gap:10px}
+.sheet-foot{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;padding:10px var(--sp-page);border-top:var(--border-w) solid var(--line)}
+.sheet-search{display:flex;gap:8px}
+.picker-list{display:flex;flex-direction:column;gap:2px}
+.picker-row{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 8px;border-radius:var(--radius-btn);border:var(--border-w) solid transparent}
+.picker-row[aria-selected="true"]{border-color:var(--brand);background:var(--brand-soft)}
+.picker-row>.t-jp{flex:1}
+.detail-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.detail{display:flex;flex-direction:column;gap:0;margin:0}
+.detail>div{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:var(--border-w) solid var(--line)}
+.detail>div:last-child{border-bottom:0}
+.detail dt{margin:0}
+.detail dd{margin:0}
+
+/* 状态反馈 */
+.state-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:44px;padding:8px var(--sp-card);border:var(--border-w) solid var(--line);border-left-width:3px;border-radius:var(--radius-card);background:var(--surface)}
+.state-bar[data-kind="loading"]{border-left-color:var(--brand)}
+.state-bar[data-kind="error"]{border-left-color:var(--danger);background:var(--danger-soft)}
+.state-bar[data-kind="ok"]{border-left-color:var(--ok);background:var(--ok-soft)}
+.state-bar .t-body{flex:1;min-width:120px}
+.skeleton{height:8px;width:70px;border-radius:99px;background:var(--surface-2);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+.toast{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);z-index:20;max-width:86%;padding:10px 16px;border:var(--border-w) solid var(--line);border-radius:var(--radius-pill);font-size:var(--fs-body);text-align:center;background:var(--toast-bg);color:var(--toast-text);box-shadow:var(--shadow-sheet)}
+.toast[data-kind="ok"]{border-color:var(--ok)}
+.toast[data-kind="warn"]{border-color:var(--warn)}
+
+/* 底部标签栏 */
+.tabbar{flex:none;display:flex;align-items:stretch;gap:2px;min-height:64px;padding:6px var(--sp-page);border-top:var(--border-w) solid var(--line);background:var(--tabbar-bg)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:48px;border-radius:var(--radius-btn);color:var(--text-3)}
+.tab-glyph{display:flex;align-items:center;justify-content:center;width:24px;height:24px;font-size:12px;font-weight:600;border-radius:var(--radius-glyph)}
+.tab.is-on{color:var(--brand);background:var(--brand-soft)}
+.tab.is-on .tab-glyph{background:var(--brand);color:var(--brand-on)}
+
+/* 路径 / 说明 */
+.pathbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:390px;margin:12px auto 0}
+.pathbar>.t-micro{width:52px;flex:none;color:var(--stage-text)}
+.path-list{display:flex;align-items:center;gap:4px;flex-wrap:wrap;flex:1}
+.path-chip{min-height:26px;padding:2px 8px;border:1px solid var(--stage-line);border-radius:6px;font-size:10px;background:var(--stage-panel);color:var(--stage-text)}
+.path-chip.is-last{border-color:var(--brand);color:var(--brand);font-weight:600}
+.path-sep{font-size:11px;color:var(--stage-text)}
+.legend{display:flex;flex-direction:column;gap:5px;max-width:390px;margin:10px auto 0;padding:10px;border:1px solid var(--stage-line);border-radius:9px;background:var(--stage-panel)}
+.legend-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--stage-text)}
+.legend-line b{font-size:12px;color:var(--stage-text)}
+@media (min-width:900px){#app{max-width:520px}}
+
+/* ---- 方案 C · 结构化线框 ---- */
+/* 方案 C · 结构化线框（Structured / Reading-first）
+ * 取舍：不追玻璃，用强边界、细线栅格与高密度信息换取可读性、无障碍与全版本一致。
+ * 状态一律文字化，颜色只作辅助通道；材质三档对该路线几乎无影响，这本身就是取舍。
+ */
+:root{
+  --stage-bg:#F2F4F1;--stage-panel:#FFFFFF;--stage-line:#DDE3DC;--stage-text:#5A6B60;--stage-on:#2E9463;--stage-on-text:#FFFFFF;
+  --bg:#F7F8F7;--surface:#FFFFFF;--surface-2:#F0F3F0;--line:#C9D2CD;--line-strong:#8FA69A;
+  --text:#17201B;--text-2:#3C4D43;--text-3:#69796F;
+  --brand:#1F6B4A;--brand-soft:#E6F0E9;--brand-ink:#1F6B4A;--brand-on:#FFFFFF;--brand-line:#A9C7B5;--glyph-line:#C9D2CD;
+  --ok:#1F6B4A;--ok-soft:#E6F0E9;--ok-line:#A9C7B5;
+  --warn:#8A6412;--warn-soft:#F5EEDC;--warn-line:#D9C79A;
+  --danger:#9C3F35;--danger-soft:#F6E9E6;
+  --radius-card:4px;--radius-btn:3px;--radius-pill:3px;--radius-sheet:4px;--radius-glyph:3px;--radius-device:8px;
+  --shadow-card:none;--shadow-sheet:none;--shadow-device:0 6px 18px rgba(23,32,27,.10);--shadow-dock:none;
+  --sp-page:12px;--sp-card:10px;--sp-gap:8px;--sp-section:8px;
+  --fs-display:19px;--fs-title:14px;--fs-body:12px;--fs-caption:11px;--fs-label:10px;--fs-micro:10px;--fs-jp:17px;--fs-number:18px;
+  --lh-body:1.55;--fw-title:700;--border-w:1px;
+  --screen-texture:repeating-linear-gradient(90deg,rgba(31,107,74,.035) 0 1px,transparent 1px 24px),repeating-linear-gradient(0deg,rgba(31,107,74,.035) 0 1px,transparent 1px 24px),linear-gradient(#F7F8F7,#F7F8F7);
+  --topbar-bg:#FFFFFF;--tabbar-bg:#FFFFFF;--dock-bg:#FFFFFF;--sheet-bg:#FFFFFF;
+  --scrim:rgba(23,32,27,.42);--toast-bg:#FFFFFF;--toast-text:#17201B;--device-line:#C9D2CD;
+}
+body[data-dark="true"]{
+  --bg:#101411;--surface:#161C18;--surface-2:#1D2620;--line:#3A4A40;--line-strong:#5E7466;
+  --text:#E9EFE9;--text-2:#B6C6BA;--text-3:#84988A;
+  --brand:#8FC0A6;--brand-soft:#1E3126;--brand-ink:#A9D8BC;--brand-on:#101411;--brand-line:#3E624C;--glyph-line:#3A4A40;
+  --ok:#8FC0A6;--ok-soft:#1E3126;--ok-line:#3E624C;
+  --warn:#D8B978;--warn-soft:#2A2618;--warn-line:#4E4226;
+  --danger:#DE9B90;--danger-soft:#2A1E1B;
+  --screen-texture:repeating-linear-gradient(90deg,rgba(143,192,166,.045) 0 1px,transparent 1px 24px),repeating-linear-gradient(0deg,rgba(143,192,166,.045) 0 1px,transparent 1px 24px),linear-gradient(#101411,#101411);
+  --topbar-bg:#101411;--tabbar-bg:#101411;--dock-bg:#161C18;--sheet-bg:#161C18;
+  --scrim:rgba(0,0,0,.6);--toast-bg:#1D2620;--toast-text:#E9EFE9;--device-line:#3A4A40;
+}
+/* 强边界 + 左侧色条：所有卡片同一套规则 */
+.card{position:relative;border-color:var(--line-strong)}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--line-strong);border-radius:var(--radius-card) 0 0 var(--radius-card)}
+.card>*{position:relative}
+.entry:hover{background:var(--surface-2)}
+.entry:hover::before,.form:hover::before{background:var(--brand);width:4px}
+.entry{min-height:62px}
+.form{min-height:66px}
+.glyph{border-radius:3px;border-width:1px;background:var(--surface-2);color:var(--brand);font-weight:700}
+.badge{border-radius:3px;border:1px solid var(--line-strong);background:transparent;font-weight:600;letter-spacing:.02em}
+.badge[data-kind="ok"]{border-color:var(--ok);background:var(--ok-soft)}
+.badge[data-kind="soft"]{border-color:var(--brand-line);background:var(--brand-soft)}
+.badge[data-kind="warn"]{border-color:var(--warn-line);background:var(--warn-soft)}
+.section{border-top:1px solid var(--line);padding-top:6px;letter-spacing:.08em}
+.proverb,.prompt{border-left:3px solid var(--brand)}
+.empty{border-style:solid}
+.voice-row{flex-direction:column;gap:0}
+.voice{min-width:0;flex-direction:row;align-items:center;justify-content:space-between;border-radius:0;border-bottom:1px solid var(--line)}
+.voice:first-child{border-radius:var(--radius-card) var(--radius-card) 0 0}
+.voice:last-child{border-bottom:0;border-radius:0 0 var(--radius-card) var(--radius-card)}
+.week{gap:2px}
+.day-bar{width:6px;border-radius:0}
+.stat .t-number{letter-spacing:-.02em}
+/* 分区表更密 */
+.table-row{min-height:38px;padding:4px var(--sp-card)}
+/* 控件：方形描边，主按钮深实底 */
+.btn{border-radius:3px;min-height:44px;font-weight:600;border-color:var(--line-strong)}
+.btn-primary{background:var(--brand);border-color:var(--brand)}
+.btn-ghost{border-color:var(--line-strong);background:transparent}
+.pill{border-radius:3px;border-color:var(--line-strong);font-weight:600}
+.pill.is-on{border-left:4px solid var(--brand)}
+.input{border-radius:3px;border-color:var(--line-strong)}
+/* 交互规则：无位移、无装饰动效，hover/active 只换底色 */
+.entry,.form,.btn{transition:background-color .12s linear,border-color .12s linear}
+.entry:hover,.form:hover{transform:none;border-color:var(--brand)}
+.btn:hover{filter:none;background:var(--surface-2);border-color:var(--brand)}
+.btn-primary:hover{background:var(--brand);filter:brightness(1.12)}
+.btn:active{transform:none;background:var(--brand-soft)}
+/* 选项：行式列表 + 左侧色条 */
+.option{position:relative;border-radius:3px;padding-left:calc(var(--sp-card) + 6px)}
+.option::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--line-strong)}
+.option.is-selected::before,.option.is-answer::before{background:var(--ok);width:4px}
+.option.is-wrong::before{background:var(--danger);width:4px}
+.option-key{border-radius:3px;border:1px solid var(--line-strong);background:transparent}
+.option-mark{border-radius:2px}
+.option.is-selected{border-color:var(--brand)}
+/* 平铺线框底栏：上边框 + 格间分隔线 */
+.tabbar{margin:0;padding:4px 0 6px;gap:0;border-top:2px solid var(--line-strong);border-radius:0}
+.tab{border-radius:0;border-right:1px solid var(--line);min-height:46px}
+.tab:last-child{border-right:0}
+.tab.is-on{background:var(--brand-soft);border-bottom:3px solid var(--brand)}
+.tab.is-on .tab-glyph{background:var(--brand);color:var(--brand-on);border-radius:2px}
+.tab-glyph{border-radius:2px;border:1px solid var(--line-strong)}
+/* 判定抽屉：顶部色条 + 文字化状态标签 */
+.dock{border-top:2px solid var(--line-strong);border-radius:0;padding-top:10px}
+.dock.judge[data-state="correct"]{border-top-color:var(--ok)}
+.dock.judge[data-state="wrong"]{border-top-color:var(--danger)}
+.dock.judge[data-state="correct"] .row-main>.t-title::before{content:"[ 正确 ] "}
+.dock.judge[data-state="wrong"] .row-main>.t-title::before{content:"[ 错误 ] "}
+.sheet{border-top:2px solid var(--line-strong);border-radius:0}
+.sheet-head{border-bottom:1px solid var(--line-strong)}
+.sheet-foot{border-top:1px solid var(--line-strong)}
+.picker-row[aria-selected="true"]{border-left:4px solid var(--brand);border-radius:0}
+/* 反馈：文字优先，颜色只作辅助 */
+.state-bar{border-radius:0;border-left-width:3px}
+.state-bar .t-body::before{content:"状态 · ";font-weight:700}
+.toast{border-radius:3px;border-left:3px solid var(--line-strong);font-weight:600}
+.toast::before{content:"提示 · "}
+.toast[data-kind="ok"]{border-left-color:var(--ok)}
+.toast[data-kind="warn"]{border-left-color:var(--warn)}
+/* 材质三档对该路线几乎无影响：仅弹层给极轻模糊，卡片始终实色 */
+body[data-material="glass"] .sheet,body[data-material="glass"] .dock{-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+body[data-material="blur"] .sheet{-webkit-backdrop-filter:blur(1.5px);backdrop-filter:blur(1.5px)}
+body[data-material="solid"] .sheet,body[data-material="solid"] .dock{-webkit-backdrop-filter:none;backdrop-filter:none}
+
+</style>
+</head>
+<body data-plan="c" data-dark="false" data-material="glass">
+<div id="app"></div>
+<script>
+/* 言の葉 · 液体玻璃 UI 原型共享引擎
+ * 三个方案共用同一份信息架构、页面范围、操作路径与状态机。
+ * 差异完全由各自 CSS（配色 / 字体层级 / 间距 / 布局形态 / 控件样式 / 反馈规则）承担。
+ * 这是原型预览代码，不进生产；不发起任何网络调用。
+ */
+(function () {
+  'use strict';
+
+  /* 底部导航矢量图标：由 build.py 从 src/icons/tab-*.svg 内联注入（内联才能继承 currentColor）
+   * 若构建脚本未运行，这里为空对象，渲染自动退回文字字形，不会出现空图标。 */
+  var ICONS = {home:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 10.2 12 3.8l8 6.4V19a1.6 1.6 0 0 1-1.6 1.6H5.6A1.6 1.6 0 0 1 4 19z"/><path d="M9.6 20.6v-6.2h4.8v6.2"/></svg>',mine:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="8.1" r="3.5"/><path d="M5.3 20.2c.9-3.2 3.5-5.2 6.7-5.2s5.8 2 6.7 5.2"/></svg>',read:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 6.6C10.4 5.2 8.1 4.6 5.8 4.6H4v13.1h1.8c2.3 0 4.6.6 6.2 2 1.6-1.4 3.9-2 6.2-2H20V4.6h-1.8c-2.3 0-4.6.6-6.2 2z"/><path d="M12 6.6v13.1"/></svg>',study:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 20h4.4l9.5-9.5a2.2 2.2 0 0 0-3.1-3.1L5.3 16.9z"/><path d="M14.9 5.1l3.1 3.1"/><path d="M4 20l.3-3.1"/></svg>'};
+
+  var PLAN_META = {
+    a: { name: '方案 A · 纸感延续', tag: '局部玻璃 / 渐进', note: '仅在底栏与弹层引入材质，卡片维持纸感。' },
+    b: { name: '方案 B · 全量液态玻璃', tag: '全局玻璃 / 沉浸', note: '卡片、控件、弹层统一玻璃语言，背景带光斑。' },
+    c: { name: '方案 C · 结构化线框', tag: '无玻璃 / 阅读优先', note: '强边界线框与高密度栅格，状态以文字为主。' },
+  };
+
+  var DATA = {
+    proverbs: [
+      { jp: '七転び八起き', zh: '七次跌倒，八次站起' },
+      { jp: '塵も積もれば山となる', zh: '积尘成山' },
+      { jp: '継続は力なり', zh: '坚持即是力量' },
+    ],
+    week: [
+      { d: '一', n: 8 }, { d: '二', n: 12 }, { d: '三', n: 0 },
+      { d: '四', n: 15 }, { d: '五', n: 9 }, { d: '六', n: 12 }, { d: '日', n: 12, today: true },
+    ],
+    suggestions: [
+      { tag: '薄弱形式', title: 'て形 · 促音便', body: '最近 3 次答错「待って」，建议再练一组。', action: '去练习' },
+      { tag: '间隔复习', title: '使役形已到期', body: '「行かせる」距上次答对 4 天，进入复习窗口。', action: '去复习' },
+      { tag: '掌握度', title: '基础形 12/18', body: '再完成 6 个形式即可点亮基础层。', action: '查看' },
+    ],
+    entries: [
+      { id: 'verb', label: '动词', sub: '79 词 · 6 种活用形', glyph: '動', desc: '形式 / 语态 / 速查' },
+      { id: 'adj', label: '形容词', sub: '15 词 · 7 种形式', glyph: '形', desc: 'い / な 与特例' },
+      { id: 'particle', label: '助词', sub: '9 个专题', glyph: '助', desc: '专题地图与练习' },
+      { id: 'mistakes', label: '错题本', sub: '按模块分组', glyph: '誤', desc: '重练与间隔复习' },
+    ],
+    forms: [
+      { k: 'ます形', v: '書きます', lv: '基础' }, { k: 'て形', v: '書いて', lv: '基础' },
+      { k: 'た形', v: '書いた', lv: '基础' }, { k: 'ない形', v: '書かない', lv: '基础' },
+      { k: 'ば形', v: '書けば', lv: '进阶' }, { k: '可能形', v: '書ける', lv: '进阶' },
+    ],
+    voices: [
+      { k: '受身', v: '書かれる' }, { k: '使役', v: '書かせる' }, { k: '使役受身', v: '書かせられる' },
+    ],
+    questions: [
+      { jp: '昨日、手紙を＿＿＿。', kana: 'きのう、てがみを', options: ['書きます', '書きました', '書いて', '書かない'], answer: 1, note: '「昨日」要求过去形，ます形的过去为「ました」。' },
+      { jp: '宿題を＿＿＿から、遊びに行きます。', kana: 'しゅくだいを', options: ['書く', '書いて', '書いた', '書けば'], answer: 2, note: '「〜てから」表示先后顺序，用た形。' },
+      { jp: '毎日、日記を＿＿＿。', kana: 'まいにち、にっきを', options: ['書いた', '書いて', '書きます', '書かせる'], answer: 2, note: '「毎日」是习惯，用现在形。' },
+    ],
+    lexicon: [
+      { id: 'kaku', jp: '書く', kana: 'かく', mean: '写', group: '五段' },
+      { id: 'taberu', jp: '食べる', kana: 'たべる', mean: '吃', group: '一段' },
+      { id: 'iku', jp: '行く', kana: 'いく', mean: '去', group: '五段' },
+      { id: 'miru', jp: '見る', kana: 'みる', mean: '看', group: '一段' },
+      { id: 'kuru', jp: '来る', kana: 'くる', mean: '来', group: 'カ変' },
+    ],
+    article: [
+      '春になると、公園の桜が咲きます。',
+      '朝早く起きて、近所を散歩しました。',
+      '小さな川のそばで、本を読む人がいました。',
+    ],
+    word: { jp: '散歩', kana: 'さんぽ', pos: '名詞 · サ変接続', mean: '散步', sent: '朝早く起きて、近所を散歩しました。', gram: '「を」标记动作对象；「散歩しました」为サ变名词 + する的ます形过去。' },
+  };
+
+  var VIEW_META = {
+    home: { title: '主页', primary: true },
+    study: { title: '学习', primary: true },
+    read: { title: '阅读', primary: true },
+    mine: { title: '我的', primary: true },
+    verb: { title: '动词', primary: false },
+    practice: { title: '综合练习', primary: false },
+    reference: { title: '活用速查', primary: false },
+    reader: { title: '文章阅读', primary: false },
+    mistakes: { title: '错题本', primary: false },
+  };
+
+  var state = {
+    plan: 'a', view: 'home', history: ['home'], dark: false, material: 'glass', dock: 'overlay', radius: '24',
+    sheet: null, toast: null, toastKind: 'info', inject: 'normal',
+    proverb: 0, nick: '关子', nicknameDraft: '关子', moduleLabel: '动词',
+    practice: { index: 0, selected: null, judged: null, revealed: false },
+    picker: { query: '', selectedId: 'kaku', currentId: 'kaku' },
+    read: { status: 'idle', bookmarked: false, activeWord: false },
+    bookmarked: false, filter: { basic: true, advanced: false },
+  };
+
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function $(sel) { return document.querySelector(sel); }
+  function meta() { return VIEW_META[state.view] || VIEW_META.home; }
+  function isSecondary() { return !meta().primary; }
+
+  /* ---------- 通用片段 ---------- */
+  function btn(label, action, opt) {
+    opt = opt || {};
+    var cls = 'btn ' + (opt.primary ? 'btn-primary ' : '') + (opt.ghost ? 'btn-ghost ' : '') + (opt.small ? 'btn-small' : '');
+    var dis = opt.disabled ? ' aria-disabled="true"' : '';
+    var extra = opt.aria ? ' ' + opt.aria : '';
+    return '<button type="button" class="' + cls.trim() + '" data-action="' + action + '"' + dis + extra + '>' + esc(label) + '</button>';
+  }
+  function glyph(ch, tone) { return '<span class="glyph" data-tone="' + (tone || 'main') + '" aria-hidden="true">' + esc(ch) + '</span>'; }
+  function section(label, more) {
+    return '<div class="section"><span class="t-label">' + esc(label) + '</span>' +
+      (more ? '<span class="section-more">' + esc(more) + '</span>' : '') + '</div>';
+  }
+  function badge(text, kind) { return '<span class="badge" data-kind="' + (kind || 'neutral') + '">' + esc(text) + '</span>'; }
+  function empty(title, body, action, label) {
+    return '<div class="empty"><div class="empty-mark" aria-hidden="true"></div>' +
+      '<p class="t-title">' + esc(title) + '</p><p class="t-body">' + esc(body) + '</p>' +
+      (action ? btn(label || '去练习', action, { primary: true }) : '') + '</div>';
+  }
+
+  /* ---------- 视图 ---------- */
+  function viewHome() {
+    var p = DATA.proverbs[state.proverb];
+    var week = DATA.week.map(function (w) {
+      return '<div class="day' + (w.today ? ' is-today' : '') + '" aria-label="' + w.d + ' ' + w.n + ' 题">' +
+        '<span class="t-caption">' + w.d + '</span><span class="day-bar" style="height:' + (4 + w.n * 1.6) + 'px"></span>' +
+        '<span class="t-micro">' + (w.n || '–') + '</span></div>';
+    }).join('');
+    var sug = DATA.suggestions.map(function (s) {
+      return '<div class="card row-card"><div class="row-main">' + badge(s.tag, 'soft') +
+        '<p class="t-title">' + esc(s.title) + '</p><p class="t-body">' + esc(s.body) + '</p></div>' +
+        btn(s.action, 'open:practice', { ghost: true, small: true }) + '</div>';
+    }).join('');
+    return '<div class="page">' +
+      '<div class="hero"><p class="t-caption">11 月 7 日 · 星期六</p><h1 class="t-display">こんにちは，' + esc(state.nick) + '</h1>' +
+      '<p class="t-body">今天也把一点日语，攒成自己的东西。</p></div>' +
+      section('今日一句', '谚语卡') +
+      '<div class="card proverb"><span class="t-label">諺 · ことわざ</span>' +
+      '<p class="t-jp">' + esc(p.jp) + '</p><p class="t-body">' + esc(p.zh) + '</p>' +
+      '<div class="row-actions">' + btn('换一句', 'proverb', { ghost: true, small: true }) + '</div></div>' +
+      section('今日概览', '本周') +
+      '<div class="card"><div class="week">' + week + '</div>' +
+      '<div class="stat-line"><span class="t-body">今日 <b>12</b> 题</span><span class="t-body">连续 <b>5</b> 天</span>' + badge('打卡完成', 'ok') + '</div></div>' +
+      section('知识点建议', '按掌握度排序') + sug + '</div>';
+  }
+
+  function viewStudy() {
+    var cards = DATA.entries.map(function (e) {
+      var act = e.id === 'mistakes' ? 'open:mistakes' : 'open:verb';
+      return '<button type="button" class="card entry" data-action="' + act + '" data-module="' + e.id + '">' +
+        glyph(e.glyph) + '<span class="entry-main"><span class="t-title">' + esc(e.label) + '</span>' +
+        '<span class="t-caption">' + esc(e.sub) + '</span><span class="t-micro">' + esc(e.desc) + '</span></span>' +
+        '<span class="entry-arrow" aria-hidden="true"></span></button>';
+    }).join('');
+    return '<div class="page"><div class="hero compact"><h1 class="t-display">学习</h1>' +
+      '<p class="t-body">选一个模块，从形式到练习走一遍。</p></div>' +
+      section('学习模块', '4 个') + '<div class="grid-2">' + cards + '</div>' +
+      section('更多工具', '规划中') +
+      '<div class="card planned" data-action="planned" aria-disabled="true">' + glyph('詞', 'muted') +
+      '<span class="entry-main"><span class="t-title">独立查词</span><span class="t-caption">词典源待接入</span></span>' +
+      badge('规划中', 'muted') + '</div>' +
+      '<p class="hint">规划中位可见、已标注、不可点击，不做假交互（D-026）。</p></div>';
+  }
+
+  function viewRead() {
+    return '<div class="page"><div class="hero compact"><h1 class="t-display">阅读</h1>' +
+      '<p class="t-body">把一篇文章拆成能读懂的片段。</p></div>' +
+      section('阅读工具', '1 个可用') +
+      '<button type="button" class="card entry" data-action="open:reader">' + glyph('読') +
+      '<span class="entry-main"><span class="t-title">AI 文章解析</span>' +
+      '<span class="t-caption">点段解析 · 逐词 · 注音</span><span class="t-micro">客户端直连模型接口</span></span>' +
+      '<span class="entry-arrow" aria-hidden="true"></span></button>' +
+      '<div class="card planned" data-action="planned" aria-disabled="true">' + glyph('排', 'muted') +
+      '<span class="entry-main"><span class="t-title">排版与导出</span></span>' + badge('规划中', 'muted') + '</div>' +
+      '<div class="card planned" data-action="planned" aria-disabled="true">' + glyph('書', 'muted') +
+      '<span class="entry-main"><span class="t-title">撰写辅助</span></span>' + badge('规划中', 'muted') + '</div>' +
+      section('状态反馈演示', '本地模拟 · 无网络调用') +
+      '<div class="card"><div class="row-actions">' +
+      btn('触发加载态', 'inject:loading', { ghost: true, small: true }) +
+      btn('触发错误态', 'inject:error', { ghost: true, small: true }) +
+      btn('触发成功提示', 'toast:ok', { ghost: true, small: true }) + '</div>' +
+      '<p class="hint">状态注入只改原型状态，不发起任何请求。</p></div></div>';
+  }
+
+  function viewMine() {
+    var book = state.inject === 'empty'
+      ? empty('还没有书签', '阅读时收藏的词或段落会出现在这里。', 'open:reader', '去读一篇')
+      : '<div class="card row-card"><div class="row-main"><span class="t-title">散歩 · さんぽ</span>' +
+        '<span class="t-caption">朝早く起きて、近所を散歩しました。</span></div>' + badge('词', 'soft') + '</div>';
+    return '<div class="page"><div class="hero compact"><h1 class="t-display">我的</h1></div>' +
+      '<div class="card profile">' + glyph('葉') + '<div class="row-main"><span class="t-title">' + esc(state.nick) + '</span>' +
+      '<span class="t-caption">资料卡 · profile-v1</span></div>' + btn('编辑', 'sheet:nickname', { ghost: true, small: true }) + '</div>' +
+      section('学习统计', '本周') + '<div class="grid-3">' +
+      '<div class="card stat"><span class="t-micro">累计答题</span><span class="t-number">486</span></div>' +
+      '<div class="card stat"><span class="t-micro">连续天数</span><span class="t-number">5</span></div>' +
+      '<div class="card stat"><span class="t-micro">已掌握</span><span class="t-number">31</span></div></div>' +
+      section('书签收藏', state.inject === 'empty' ? '空态' : '1 条') + book +
+      section('更多设置', '') +
+      '<div class="card row-card"><div class="row-main"><span class="t-title">外观材质</span>' +
+      '<span class="t-caption">当前：' + materialLabel() + ' · ' + (state.dark ? '墨夜' : '糖果卡') + '</span></div>' +
+      badge('原型预览', 'soft') + '</div>' +
+      '<div class="card planned" data-action="planned" aria-disabled="true"><div class="row-main">' +
+      '<span class="t-title">发音音色 / 词库导入导出</span></div>' + badge('规划中', 'muted') + '</div></div>';
+  }
+
+  function viewVerb() {
+    var forms = DATA.forms.map(function (f) {
+      return '<button type="button" class="card form" data-action="toast:info" aria-label="查看 ' + esc(f.k) + '">' +
+        '<span class="t-micro">' + esc(f.lv) + '</span><span class="t-title">' + esc(f.k) + '</span>' +
+        '<span class="t-jp small">' + esc(f.v) + '</span></button>';
+    }).join('');
+    var voices = DATA.voices.map(function (v) {
+      return '<div class="card voice"><span class="t-caption">' + esc(v.k) + '</span><span class="t-jp small">' + esc(v.v) + '</span></div>';
+    }).join('');
+    return '<div class="page with-dock"><div class="hero compact"><h1 class="t-display">' + esc(state.moduleLabel) + '</h1>' +
+      '<p class="t-body">形式、语态、速查、练习，一条线走通。</p></div>' +
+      section('活用形式', '6 种') + '<div class="grid-2">' + forms + '</div>' +
+      section('语态', '3 种') + '<div class="voice-row">' + voices + '</div>' +
+      section('今日卡', '') + '<div class="card row-card"><div class="row-main">' +
+      '<span class="t-title">書く · かく</span><span class="t-caption">五段 · 写</span></div>' +
+      btn('速查', 'open:reference', { ghost: true, small: true }) + '</div>' +
+      '<div class="dock"><div class="dock-inner">' +
+      '<div class="row-main"><span class="t-title">综合练习</span><span class="t-caption">3 题 · 跨形式随机</span></div>' +
+      btn('开始', 'open:practice', { primary: true }) + '</div></div></div>';
+  }
+
+  function viewReference() {
+    var cur = DATA.lexicon.filter(function (x) { return x.id === state.picker.currentId; })[0] || DATA.lexicon[0];
+    var rows = DATA.forms.map(function (f, i) {
+      return '<div class="table-row"><span class="t-body">' + esc(f.k) + '</span>' +
+        '<span class="t-jp small">' + esc(f.v) + '</span>' +
+        btn('练这题', 'open:practice', { ghost: true, small: true, aria: 'aria-label="练习 ' + esc(f.k) + '"' }) + '</div>';
+    }).join('');
+    return '<div class="page"><div class="hero compact"><h1 class="t-display">活用速查</h1>' +
+      '<p class="t-body">' + esc(cur.jp) + '（' + esc(cur.kana) + '） · ' + esc(cur.mean) + ' · ' + esc(cur.group) + '</p></div>' +
+      '<div class="card"><div class="row-actions">' + btn('换词条', 'sheet:picker', { primary: true, small: true }) +
+      badge('当前：' + cur.jp, 'soft') + '</div></div>' +
+      section('语态对照', '3 种') + '<div class="card">' + DATA.voices.map(function (v) {
+        return '<div class="table-row"><span class="t-body">' + esc(v.k) + '</span><span class="t-jp small">' + esc(v.v) + '</span></div>';
+      }).join('') + '</div>' +
+      section('活用表', '任一行可练') + '<div class="card table">' + rows + '</div>' +
+      '<p class="hint">词条行带 selected 语义；长按可查看提示（桌面为 title 提示）。</p></div>';
+  }
+
+  function viewReader() {
+    var status = state.read.status;
+    var paras = DATA.article.map(function (t, i) {
+      return '<button type="button" class="card para" data-action="sheet:word" data-para="' + i + '" aria-label="解析第 ' + (i + 1) + ' 段">' +
+        '<span class="t-micro">段落 ' + (i + 1) + '</span><span class="t-jp para-jp">' + esc(t) + '</span>' +
+        '<span class="t-caption">点按查看词详情与解析</span></button>';
+    }).join('');
+    var banner = '';
+    if (status === 'loading') banner = '<div class="state-bar" data-kind="loading"><span class="t-body">解析中… 正在处理段落 2</span><span class="skeleton"></span></div>';
+    if (status === 'error') banner = '<div class="state-bar" data-kind="error"><span class="t-body">解析失败 · 接口未响应</span>' + btn('重试', 'analyze', { ghost: true, small: true }) + '</div>';
+    if (status === 'done') banner = '<div class="state-bar" data-kind="ok"><span class="t-body">解析完成 · 3 段 / 12 词</span>' + badge('已缓存', 'ok') + '</div>';
+    return '<div class="page"><div class="hero compact"><h1 class="t-display">文章阅读</h1>' +
+      '<p class="t-body">春の散歩 · 点段解析</p></div>' +
+      '<div class="card"><div class="row-actions">' + btn('开始解析', 'analyze', { primary: true, small: true }) +
+      badge(state.bookmarked ? '已收藏本段' : '未收藏', state.bookmarked ? 'ok' : 'muted') + '</div></div>' +
+      banner + section('正文', '3 段') + paras +
+      '<p class="hint">解析为本地模拟状态机，不发起任何网络或模型调用。</p></div>';
+  }
+
+  function viewMistakes() {
+    if (state.inject === 'empty') {
+      return '<div class="page"><div class="hero compact"><h1 class="t-display">错题本</h1></div>' +
+        section('按模块分组', '暂无记录') +
+        empty('错题本是空的', '答错的题会自动进来，按间隔复习排期。', 'open:practice', '去做一题') +
+        '<p class="hint">空态给出明确下一步，不留死路。</p></div>';
+    }
+    return '<div class="page"><div class="hero compact"><h1 class="t-display">错题本</h1></div>' +
+      section('动词 · 2 条', '') +
+      '<div class="card row-card"><div class="row-main"><span class="t-title">書く · て形</span>' +
+      '<span class="t-caption">答错 2 次 · 今日到期</span></div>' + badge('待复习', 'warn') + '</div>' +
+      '<div class="card row-card"><div class="row-main"><span class="t-title">行く · た形</span>' +
+      '<span class="t-caption">答错 1 次 · 3 天后到期</span></div>' + badge('已排期', 'soft') + '</div></div>';
+  }
+
+  function viewPractice() {
+    var q = DATA.questions[state.practice.index % DATA.questions.length];
+    var p = state.practice;
+    var opts = q.options.map(function (o, i) {
+      var cls = 'option';
+      if (p.selected === i) cls += ' is-selected';
+      if (p.judged !== null && i === q.answer) cls += ' is-answer';
+      if (p.judged !== null && p.selected === i && i !== q.answer) cls += ' is-wrong';
+      return '<button type="button" class="' + cls + '" data-action="option:' + i + '" aria-pressed="' + (p.selected === i) + '">' +
+        '<span class="option-key">' + 'ABCD'.charAt(i) + '</span><span class="t-body">' + esc(o) + '</span>' +
+        '<span class="option-mark" aria-hidden="true"></span></button>';
+    }).join('');
+    var dock = '';
+    if (p.judged === null) {
+      dock = '<div class="dock judge" data-state="idle"><div class="dock-inner">' +
+        '<div class="row-main"><span class="t-title">' + (p.selected === null ? '请选择一个答案' : '已选 ' + 'ABCD'.charAt(p.selected)) + '</span>' +
+        '<span class="t-caption">第 ' + (p.index % DATA.questions.length + 1) + ' / ' + DATA.questions.length + ' 题</span></div>' +
+        btn('提交', 'submit', { primary: true, disabled: p.selected === null }) + '</div></div>';
+    } else {
+      var ok = p.judged === 'correct';
+      dock = '<div class="dock judge" data-state="' + p.judged + '"><div class="dock-inner">' +
+        '<div class="row-main"><span class="t-title">' + (ok ? '正确' : '错误') + (p.revealed ? ' · 已揭晓答案' : '') + '</span>' +
+        '<span class="t-caption">' + (p.revealed ? esc(q.note) : (ok ? '答对了，继续保持。' : '再看一眼解析，然后下一题。')) + '</span></div>' +
+        '<div class="row-actions">' + (p.revealed ? '' : btn('看答案', 'reveal', { ghost: true, small: true })) +
+        btn('下一题', 'next', { primary: true, small: true }) + '</div></div></div>';
+    }
+    return '<div class="page with-dock"><div class="practice-head"><div class="row-actions">' +
+      '<span class="t-label">进度 ' + (p.index % DATA.questions.length + 1) + '/' + DATA.questions.length + '</span>' +
+      btn('筛选', 'sheet:filter', { ghost: true, small: true }) + '</div>' +
+      '<div class="progress"><span style="width:' + ((p.index % DATA.questions.length) / DATA.questions.length * 100) + '%"></span></div></div>' +
+      '<div class="card prompt"><span class="t-caption">' + esc(q.kana) + '</span>' +
+      '<p class="t-jp">' + esc(q.jp) + '</p><span class="t-label">选出正确的活用形</span></div>' +
+      section('选项', '单选') + '<div class="options">' + opts + '</div>' + dock + '</div>';
+  }
+
+  var VIEWS = {
+    home: viewHome, study: viewStudy, read: viewRead, mine: viewMine,
+    verb: viewVerb, practice: viewPractice, reference: viewReference,
+    reader: viewReader, mistakes: viewMistakes,
+  };
+
+  /* ---------- 弹层 ---------- */
+  function sheetPicker() {
+    var q = state.picker.query.trim();
+    var list = DATA.lexicon.filter(function (x) { return !q || x.jp.indexOf(q) >= 0 || x.kana.indexOf(q) >= 0 || x.mean.indexOf(q) >= 0; });
+    var rows = list.length ? list.map(function (x) {
+      var sel = state.picker.selectedId === x.id;
+      return '<button type="button" class="picker-row" data-action="picker-select:' + x.id + '" aria-selected="' + sel + '">' +
+        '<span class="t-jp small">' + esc(x.jp) + '</span><span class="t-caption">' + esc(x.kana) + ' · ' + esc(x.mean) + '</span>' +
+        (sel ? badge('已选', 'ok') : '') + '</button>';
+    }).join('') : '<div class="empty slim"><p class="t-body">没有匹配的词条</p><p class="t-caption">换个关键字试试</p></div>';
+    return { title: '选择词条', body: '<div class="sheet-search"><input class="input" id="picker-input" type="text" placeholder="搜索读音或释义" value="' + esc(state.picker.query) + '" aria-label="搜索词条" data-action="picker-input"></div>' +
+      '<div class="picker-list">' + rows + '</div>', foot: btn('取消', 'sheet-close', { ghost: true }) + btn('确定换词', 'picker-apply', { primary: true }) };
+  }
+
+  function sheetWord() {
+    var w = DATA.word;
+    return { title: '词详情', body: '<div class="detail-head"><span class="t-jp">' + esc(w.jp) + '</span>' + badge(w.pos, 'soft') + '</div>' +
+      '<dl class="detail"><div><dt class="t-micro">読み</dt><dd class="t-body">' + esc(w.kana) + '</dd></div>' +
+      '<div><dt class="t-micro">意味</dt><dd class="t-body">' + esc(w.mean) + '</dd></div>' +
+      '<div><dt class="t-micro">文中</dt><dd class="t-body">' + esc(w.sent) + '</dd></div>' +
+      '<div><dt class="t-micro">语法</dt><dd class="t-body">' + esc(w.gram) + '</dd></div></dl>',
+      foot: btn('关闭', 'sheet-close', { ghost: true }) + btn(state.read.bookmarked ? '已收藏' : '收藏这个词', 'bookmark', { primary: true, disabled: state.read.bookmarked }) };
+  }
+
+  function sheetFilter() {
+    return { title: '练习筛选', body: '<p class="t-body">选择本次练习涵盖的形式层级。</p>' +
+      '<div class="filter-row">' +
+      '<button type="button" class="pill' + (state.filter.basic ? ' is-on' : '') + '" data-action="filter:basic" aria-pressed="' + state.filter.basic + '">基础形</button>' +
+      '<button type="button" class="pill' + (state.filter.advanced ? ' is-on' : '') + '" data-action="filter:advanced" aria-pressed="' + state.filter.advanced + '">进阶形</button></div>' +
+      '<p class="hint">胶囊带 aria-pressed，深浅皮肤与三档材质下均保持选中可见。</p>',
+      foot: btn('重置', 'filter-reset', { ghost: true }) + btn('应用', 'sheet-close', { primary: true }) };
+  }
+
+  function sheetNickname() {
+    return { title: '编辑昵称', body: '<label class="t-label" for="nick-input">昵称（1–12 字）</label>' +
+      '<input class="input" id="nick-input" type="text" maxlength="12" value="' + esc(state.nicknameDraft) + '" data-action="nick-input" aria-label="昵称">' +
+      '<p class="hint">保存后会更新资料卡与主页问候语。</p>',
+      foot: btn('取消', 'sheet-close', { ghost: true }) + btn('保存', 'save-nickname', { primary: true }) };
+  }
+
+  var SHEETS = { picker: sheetPicker, word: sheetWord, filter: sheetFilter, nickname: sheetNickname };
+
+  function renderSheet() {
+    if (!state.sheet || !SHEETS[state.sheet]) return '';
+    var s = SHEETS[state.sheet]();
+    return '<div class="scrim" data-action="sheet-close"></div>' +
+      '<div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(s.title) + '">' +
+      '<div class="sheet-head"><span class="t-title">' + esc(s.title) + '</span>' +
+      '<button type="button" class="sheet-x" data-action="sheet-close" aria-label="关闭">×</button></div>' +
+      '<div class="sheet-body">' + s.body + '</div>' +
+      '<div class="sheet-foot">' + s.foot + '</div></div>';
+  }
+
+  /* ---------- 外壳 ---------- */
+  function renderTopbar() {
+    if (!isSecondary()) {
+      return '<div class="topbar"><div class="topbar-main"><span class="t-brand">言の葉</span>' +
+        '<span class="t-caption">' + esc(meta().title) + '</span></div>' +
+        '<span class="status-dot" aria-label="已同步"></span></div>';
+    }
+    var title = state.view === 'verb' ? state.moduleLabel : meta().title;
+    return '<div class="topbar"><button type="button" class="back" data-action="back" aria-label="返回上一级">' +
+      '<span aria-hidden="true">‹</span><span class="t-body">返回</span></button>' +
+      '<span class="t-title">' + esc(title) + '</span><span class="topbar-spacer"></span></div>';
+  }
+
+  function tabGlyph(id, fallback) {
+    // 方案 B 用矢量图标（内联 SVG，颜色走 currentColor）；A / C 保留文字字形不参与改动
+    if (state.plan === 'b' && ICONS[id]) {
+      return '<span class="tab-glyph tab-glyph-icon" aria-hidden="true">' + ICONS[id] + '</span>';
+    }
+    return '<span class="tab-glyph" aria-hidden="true">' + fallback + '</span>';
+  }
+
+  function renderTabbar() {
+    if (isSecondary()) return '';
+    var tabs = [['home', '主页', '主'], ['study', '学习', '学'], ['read', '阅读', '読'], ['mine', '我的', '我']];
+    return '<nav class="tabbar" aria-label="主导航">' + tabs.map(function (t) {
+      var on = state.view === t[0];
+      return '<button type="button" class="tab' + (on ? ' is-on' : '') + '" data-action="tab:' + t[0] + '" aria-current="' + (on ? 'page' : 'false') + '" aria-label="' + t[1] + '">' +
+        tabGlyph(t[0], t[2]) + '<span class="t-micro">' + t[1] + '</span></button>';
+    }).join('') + '</nav>';
+  }
+
+  function renderToast() {
+    if (!state.toast) return '';
+    return '<div class="toast" data-kind="' + state.toastKind + '" role="status">' + esc(state.toast) + '</div>';
+  }
+
+  function renderScreen() {
+    var showTab = !isSecondary();
+    return '<div class="screen-shell">' + renderTopbar() +
+      '<main class="content' + (showTab ? ' has-island' : '') + '" id="content">' + (VIEWS[state.view] || viewHome)() + '</main>' +
+      renderTabbar() + renderSheet() + renderToast() + '</div>';
+  }
+
+  function renderPathbar() {
+    var chips = state.history.map(function (v, i) {
+      return '<button type="button" class="path-chip' + (i === state.history.length - 1 ? ' is-last' : '') + '" data-action="path-back:' + i + '">' +
+        esc((VIEW_META[v] || {}).title || v) + '</button>';
+    }).join('<span class="path-sep" aria-hidden="true">›</span>');
+    return '<div class="pathbar"><span class="t-micro">操作路径</span><div class="path-list">' + chips + '</div></div>';
+  }
+
+  function materialLabel() { return { glass: '液态玻璃', blur: '背景模糊', solid: '半透明' }[state.material]; }
+  function dockLabel() { return { overlay: '覆盖悬浮', inline: '占位悬浮', compact: '收窄居中' }[state.dock]; }
+
+  function renderLegend() {
+    var m = PLAN_META[state.plan];
+    return '<div class="legend"><div class="legend-line"><b>' + esc(m.name) + '</b>' + badge(m.tag, 'soft') +
+      '<span class="t-micro">' + esc(m.note) + '</span></div>' +
+      '<div class="legend-line"><span class="t-micro">皮肤 ' + (state.dark ? '墨夜' : '糖果卡') + ' · 材质 ' + materialLabel() +
+        (state.plan === 'b' ? ' · 底栏 ' + dockLabel() : '') +
+        ' · 场景 ' + esc(meta().title) + ' · 状态 ' + state.inject + '</span></div>' +
+      '<div class="legend-line"><span class="t-micro">可用性：焦点可见 / 热区 ≥44px / selected 与 aria-pressed / Esc 关弹层 / 状态双通道</span></div></div>';
+  }
+
+  function renderToolbar() {
+    var views = Object.keys(VIEW_META).map(function (v) {
+      return '<option value="' + v + '"' + (state.view === v ? ' selected' : '') + '>' + esc(VIEW_META[v].title) + '</option>';
+    }).join('');
+    function seg(name, items, cur) {
+      return '<div class="seg" role="group" aria-label="' + name + '">' + items.map(function (it) {
+        return '<button type="button" class="seg-btn' + (cur === it[0] ? ' is-on' : '') + '" data-action="' + it[2] + ':' + it[0] + '" aria-pressed="' + (cur === it[0]) + '">' + it[1] + '</button>';
+      }).join('') + '</div>';
+    }
+    return '<div class="toolbar">' +
+      '<div class="toolbar-row"><span class="t-micro">皮肤</span>' + seg('皮肤', [['0', '糖果卡', 'set-dark'], ['1', '墨夜', 'set-dark']], state.dark ? '1' : '0') + '</div>' +
+      '<div class="toolbar-row"><span class="t-micro">材质</span>' + seg('材质', [['glass', '液态玻璃', 'set-material'], ['blur', '背景模糊', 'set-material'], ['solid', '半透明', 'set-material']], state.material) + '</div>' +
+      (state.plan === 'b' ? '<div class="toolbar-row"><span class="t-micro">底栏</span>' + seg('底栏浮法', [['overlay', '覆盖', 'set-dock'], ['inline', '占位', 'set-dock'], ['compact', '收窄', 'set-dock']], state.dock) + '</div>' : '') +
+      (state.plan === 'b' ? '<div class="toolbar-row"><span class="t-micro">圆角</span>' + seg('全局圆角', [['24', '24', 'set-radius'], ['20', '20', 'set-radius'], ['16', '16', 'set-radius']], state.radius) + '</div>' : '') +
+      '<div class="toolbar-row"><span class="t-micro">场景</span><select class="select" id="view-select" aria-label="跳转场景">' + views + '</select></div>' +
+      '<div class="toolbar-row"><span class="t-micro">状态</span>' + seg('状态注入', [['normal', '正常', 'inject'], ['empty', '空态', 'inject'], ['loading', '加载', 'inject'], ['error', '错误', 'inject']], state.inject) + '</div>' +
+      '<div class="toolbar-row"><span class="t-micro">操作</span>' + btn('重置', 'reset', { ghost: true, small: true }) + btn('Toast', 'toast:info', { ghost: true, small: true }) + '</div>' +
+      '</div>';
+  }
+
+  function render() {
+    var root = document.getElementById('app');
+    if (!root) return;
+    // CSS 令牌与三档材质规则挂在 body 属性上，必须与状态同步，否则按钮变了样式不变
+    document.body.setAttribute('data-dark', state.dark ? 'true' : 'false');
+    document.body.setAttribute('data-material', state.material);
+    // 底栏浮法只对方案 B 生效，A/C 不消费该属性
+    document.body.setAttribute('data-dock', state.plan === 'b' ? state.dock : 'none');
+    // 全局圆角单值：只改这一个令牌，卡片/按钮/输入框/弹层/岛一起变（仅 B 消费）
+    if (state.plan === 'b') document.documentElement.style.setProperty('--radius', state.radius + 'px');
+    else document.documentElement.style.removeProperty('--radius');
+    root.innerHTML = renderToolbar() + '<div class="device"><div class="device-inner" id="screen">' + renderScreen() + '</div></div>' + renderPathbar() + renderLegend();
+    var sel = document.getElementById('view-select');
+    if (sel) sel.addEventListener('change', function () { go(sel.value); });
+    if (state.sheet === 'picker') {
+      var input = document.getElementById('picker-input');
+      if (input && state.picker.focus) { input.focus(); try { input.setSelectionRange(input.value.length, input.value.length); } catch (e) {} state.picker.focus = false; }
+    }
+    if (state.sheet === 'nickname') {
+      var ni = document.getElementById('nick-input');
+      if (ni && state.nicknameFocus) { ni.focus(); state.nicknameFocus = false; }
+    }
+  }
+
+  /* ---------- 状态与动作 ---------- */
+  var toastTimer = null;
+  function toast(msg, kind) {
+    state.toast = msg; state.toastKind = kind || 'info';
+    render();
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { state.toast = null; render(); }, 2400);
+  }
+
+  function go(view) {
+    if (!VIEW_META[view]) return;
+    if (state.view !== view) state.history.push(view);
+    state.view = view; state.sheet = null;
+    render();
+    var nc = document.getElementById('content');
+    if (nc) nc.scrollTop = 0;
+  }
+
+  function back() {
+    if (state.sheet) { state.sheet = null; render(); return; }
+    if (state.history.length > 1) {
+      state.history.pop();
+      var v = state.history[state.history.length - 1];
+      state.view = v; render();
+    } else { state.view = 'home'; render(); }
+  }
+
+  function act(a, el) {
+    var parts = a.split(':'); var op = parts[0], arg = parts.slice(1).join(':');
+    switch (op) {
+      case 'tab': go(arg); break;
+      case 'back': back(); break;
+      case 'path-back': {
+        var i = parseInt(arg, 10);
+        state.history = state.history.slice(0, i + 1);
+        state.view = state.history[i] || 'home'; state.sheet = null; render(); break;
+      }
+      case 'open': {
+        if (arg === 'verb' && el) {
+          var m = el.getAttribute('data-module');
+          state.moduleLabel = ({ verb: '动词', adj: '形容词', particle: '助词' })[m] || '动词';
+        }
+        go(arg); break;
+      }
+      case 'planned': toast('规划中，暂未开放（不做假交互）', 'warn'); break;
+      case 'proverb': state.proverb = (state.proverb + 1) % DATA.proverbs.length; render(); toast('已换一句谚语', 'info'); break;
+      case 'option': state.practice.selected = parseInt(arg, 10); render(); break;
+      case 'submit': {
+        var q = DATA.questions[state.practice.index % DATA.questions.length];
+        if (state.practice.selected === null) { toast('请先选择一个答案', 'warn'); break; }
+        state.practice.judged = state.practice.selected === q.answer ? 'correct' : 'wrong';
+        render(); toast(state.practice.judged === 'correct' ? '正确' : '答错了，看看解析', state.practice.judged === 'correct' ? 'ok' : 'warn'); break;
+      }
+      case 'reveal': state.practice.revealed = true; render(); break;
+      case 'next': state.practice.index++; state.practice.selected = null; state.practice.judged = null; state.practice.revealed = false; render(); break;
+      case 'sheet': state.sheet = arg; if (arg === 'nickname') { state.nicknameDraft = state.nick; state.nicknameFocus = true; } render(); break;
+      case 'sheet-close': state.sheet = null; render(); break;
+      case 'picker-select': state.picker.selectedId = arg; render(); break;
+      case 'picker-apply': state.picker.currentId = state.picker.selectedId; state.sheet = null; render(); toast('已切换词条', 'ok'); break;
+      case 'filter': state.filter[arg] = !state.filter[arg]; render(); break;
+      case 'filter-reset': state.filter = { basic: true, advanced: false }; render(); break;
+      case 'save-nickname': {
+        var n = state.nicknameDraft.trim();
+        if (!n) { toast('昵称不能为空', 'warn'); break; }
+        state.nick = n; state.sheet = null; render(); toast('资料卡已更新', 'ok'); break;
+      }
+      case 'bookmark':
+        if (state.read.bookmarked) { toast('这个词已经收藏过了', 'info'); break; }
+        state.read.bookmarked = true; state.bookmarked = true; render(); toast('已收藏这个词', 'ok'); break;
+      case 'analyze': {
+        state.read.status = 'loading'; render();
+        setTimeout(function () {
+          state.read.status = state.inject === 'error' ? 'error' : 'done';
+          render();
+          toast(state.read.status === 'error' ? '解析失败，可重试' : '解析完成（本地模拟）', state.read.status === 'error' ? 'warn' : 'ok');
+        }, 900); break;
+      }
+      case 'toast': {
+        var msg = { ok: '操作成功', warn: '需要注意', info: '这是一条状态提示' }[arg] || '这是一条状态提示';
+        toast(msg, arg); break;
+      }
+      case 'set-dark': state.dark = arg === '1'; render(); break;
+      case 'set-material': state.material = arg; render(); break;
+      case 'set-dock': state.dock = arg; render(); break;
+      case 'set-radius': state.radius = arg; render(); break;
+      case 'set-view': go(arg); break;
+      case 'inject': {
+        state.inject = arg;
+        if (arg === 'loading') state.read.status = 'loading';
+        else if (arg === 'error') state.read.status = 'error';
+        else if (arg === 'empty') state.read.status = 'idle';
+        else state.read.status = 'idle';
+        render(); toast('已注入状态：' + arg, 'info'); break;
+      }
+      case 'reset': {
+        state.view = 'home'; state.history = ['home']; state.sheet = null; state.dark = false;
+        state.material = 'glass'; state.inject = 'normal'; state.toast = null; state.dock = 'overlay'; state.radius = '24';
+        state.proverb = 0; state.moduleLabel = '动词'; state.nick = '关子'; state.nicknameDraft = '关子';
+        state.practice = { index: 0, selected: null, judged: null, revealed: false };
+        state.picker = { query: '', selectedId: 'kaku', currentId: 'kaku' };
+        state.read = { status: 'idle', bookmarked: false, activeWord: false };
+        state.bookmarked = false; state.filter = { basic: true, advanced: false };
+        render(); break;
+      }
+      default: break;
+    }
+  }
+
+  function init() {
+    var body = document.body;
+    state.plan = body.getAttribute('data-plan') || 'a';
+    document.addEventListener('click', function (e) {
+      var el = e.target.closest ? e.target.closest('[data-action]') : null;
+      if (!el) return;
+      var a = el.getAttribute('data-action');
+      if (!a || a === 'picker-input' || a === 'nick-input') return;
+      e.preventDefault();
+      act(a, el);
+    });
+    document.addEventListener('input', function (e) {
+      var t = e.target;
+      if (t && t.id === 'picker-input') { state.picker.query = t.value; state.picker.focus = true; render(); }
+      if (t && t.id === 'nick-input') { state.nicknameDraft = t.value; }
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      if (state.sheet) { state.sheet = null; render(); }
+      else if (isSecondary()) { back(); }
+    });
+    render();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+
+</script>
+</body>
+</html>

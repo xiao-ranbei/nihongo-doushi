@@ -1,0 +1,98 @@
+/* 方案 B · 全量液态玻璃（Immersive Glass）
+ * 取舍：卡片 / 控件 / 弹层 / 底栏统一玻璃语言，背景铺光斑让折射与模糊可见。
+ * 浏览器侧用 backdrop-filter + 内高光 + 边缘渐变近似 lens，非 AGSL 真实折射（见对照页说明）。
+ */
+:root{
+  --stage-bg:#F2F4F1;--stage-panel:#FFFFFF;--stage-line:#DDE3DC;--stage-text:#5A6B60;--stage-on:#2E9463;--stage-on-text:#FFFFFF;
+  --bg:#E9F1F3;--surface:rgba(255,255,255,.58);--surface-2:rgba(255,255,255,.40);--line:rgba(255,255,255,.68);--line-strong:rgba(255,255,255,.9);
+  --text:#143036;--text-2:#3D5A60;--text-3:#6D8A8E;
+  --brand:#14857F;--brand-soft:rgba(20,133,127,.14);--brand-ink:#0C645F;--brand-on:#FFFFFF;--brand-line:rgba(20,133,127,.35);--glyph-line:rgba(255,255,255,.7);
+  --ok:#14857F;--ok-soft:rgba(20,133,127,.13);--ok-line:rgba(20,133,127,.35);
+  --warn:#A8761B;--warn-soft:rgba(200,150,40,.16);--warn-line:rgba(190,140,40,.35);
+  --danger:#B4514A;--danger-soft:rgba(190,80,70,.15);
+  /* 全局唯一圆角 24：卡片 / 按钮 / 输入框 / 弹层 / 图片 / 底栏岛共用同一个值，无例外；
+     短边不足 2r 时由形状自身裁切，不引入第二套半径 */
+  --radius:24px;--radius-card:var(--radius);--radius-btn:var(--radius);--radius-sheet:var(--radius);--radius-glyph:var(--radius);--radius-pill:var(--radius);
+  --radius-device:34px; /* 仅原型模拟机外框，不属于产品 UI */
+  --shadow-card:0 10px 30px rgba(20,70,72,.10),inset 0 1px 0 rgba(255,255,255,.75);
+  --shadow-sheet:0 -14px 40px rgba(16,60,66,.18);--shadow-device:0 16px 44px rgba(16,60,66,.18);--shadow-dock:0 -8px 26px rgba(16,60,66,.12);
+  --sp-page:22px;--sp-card:18px;--sp-gap:16px;--sp-section:16px;
+  --fs-display:26px;--fs-title:16px;--fs-body:14px;--fs-caption:12px;--fs-label:11px;--fs-micro:10px;--fs-jp:22px;--fs-number:24px;
+  --lh-body:1.75;--fw-title:600;--border-w:1px;
+  --screen-texture:radial-gradient(190px 230px at 16% 14%,rgba(20,140,132,.24),transparent 70%),radial-gradient(230px 270px at 88% 40%,rgba(70,140,200,.22),transparent 72%),radial-gradient(210px 210px at 28% 88%,rgba(120,200,180,.20),transparent 70%),linear-gradient(165deg,#EAF2F4,#DFEBEE);
+  --topbar-bg:rgba(255,255,255,.46);--tabbar-bg:rgba(255,255,255,.50);--dock-bg:rgba(255,255,255,.55);--sheet-bg:rgba(255,255,255,.62);
+  --scrim:rgba(16,48,54,.26);--toast-bg:rgba(255,255,255,.80);--toast-text:#143036;--device-line:rgba(255,255,255,.8);
+  --glass-surface:rgba(255,255,255,.55);--glass-line:rgba(255,255,255,.82);--solid-surface:#F7FBFB;
+}
+body[data-dark="true"]{
+  --bg:#0A1218;--surface:rgba(24,40,50,.58);--surface-2:rgba(24,40,50,.42);--line:rgba(150,200,215,.20);--line-strong:rgba(150,200,215,.4);
+  --text:#E8F3F5;--text-2:#AFC6CD;--text-3:#7E9AA3;
+  --brand:#7FD3C7;--brand-soft:rgba(127,211,199,.15);--brand-ink:#A6E4DA;--brand-on:#0A1218;--brand-line:rgba(127,211,199,.36);--glyph-line:rgba(150,200,215,.28);
+  --ok:#7FD3C7;--ok-soft:rgba(127,211,199,.13);--ok-line:rgba(127,211,199,.34);
+  --warn:#E0BE79;--warn-soft:rgba(220,180,90,.14);--warn-line:rgba(220,180,90,.30);
+  --danger:#E79B92;--danger-soft:rgba(220,120,110,.14);
+  --shadow-card:0 10px 30px rgba(0,0,0,.28),inset 0 1px 0 rgba(180,220,230,.16);
+  --shadow-sheet:0 -14px 40px rgba(0,0,0,.42);--shadow-device:0 16px 44px rgba(0,0,0,.5);--shadow-dock:0 -8px 26px rgba(0,0,0,.32);
+  --screen-texture:radial-gradient(190px 230px at 16% 14%,rgba(30,120,130,.30),transparent 70%),radial-gradient(230px 270px at 88% 40%,rgba(60,110,170,.30),transparent 72%),radial-gradient(210px 210px at 28% 88%,rgba(40,140,130,.22),transparent 70%),linear-gradient(165deg,#0C1720,#081016);
+  --topbar-bg:rgba(14,28,36,.55);--tabbar-bg:rgba(14,28,36,.58);--dock-bg:rgba(14,28,36,.60);--sheet-bg:rgba(16,32,42,.66);
+  --scrim:rgba(0,0,0,.5);--toast-bg:rgba(24,44,54,.86);--toast-text:#E8F3F5;--device-line:rgba(150,200,215,.22);
+  --glass-surface:rgba(24,40,50,.55);--glass-line:rgba(150,200,215,.28);--solid-surface:#14222C;
+}
+/* 悬浮岛底栏：脱离屏幕边缘、四角同 r、独立浮起，玻璃压住身后内容 */
+.tabbar{margin:0 16px 16px;padding:8px 10px;border:var(--border-w) solid var(--glass-line);border-radius:var(--radius);
+  box-shadow:0 12px 30px rgba(20,70,72,.16),inset 0 1px 0 rgba(255,255,255,.6)}
+.tab{min-height:50px;gap:4px}
+.tab-glyph{width:26px;height:26px}
+/* 图标去底板：不画底色块，颜色完全继承 tab（未选中 --text-3 / 选中 --brand / 墨夜自动跟随） */
+.tab-glyph-icon{background:none;border:0}
+.tab-glyph-icon svg{display:block;width:20px;height:20px}
+.tab.is-on .tab-glyph{background:none;color:inherit}
+.tab.is-on{box-shadow:inset 0 0 0 1px var(--brand-line),0 4px 14px rgba(20,133,127,.16)}
+/* 三种浮法（仅 B 可切）：覆盖 = 压在内容上；占位 = 留在流内；收窄 = 宽度收到 tab 自然宽并居中 */
+body[data-dock="overlay"] .tabbar,body[data-dock="compact"] .tabbar{position:absolute;bottom:16px;z-index:8;margin:0}
+body[data-dock="overlay"] .tabbar{left:16px;right:16px}
+body[data-dock="compact"] .tabbar{left:50%;right:auto;transform:translateX(-50%);padding:8px;max-width:calc(100% - 32px)}
+body[data-dock="compact"] .tab{flex:none;min-width:64px;padding:0 6px}
+body[data-dock="overlay"] .content.has-island .page,
+body[data-dock="compact"] .content.has-island .page{padding-bottom:112px}
+/* 弹层：四角同为 r + 三边离屏 12，浮起而不贴底（底角 r>0 同时满足 lens 的 minCornerRadius 约束） */
+.sheet{left:12px;right:12px;bottom:12px;border:var(--border-w) solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sheet)}
+/* 页内吸底判定条：与岛同一语言，四角同为 r */
+.dock{position:sticky;bottom:0;z-index:6;margin:var(--sp-gap) 0 0;padding:12px 14px;border:var(--border-w) solid var(--line);
+  border-radius:var(--radius);background:var(--dock-bg);box-shadow:0 10px 26px rgba(20,70,72,.14),inset 0 1px 0 rgba(255,255,255,.6)}
+/* 交互规则：光感反馈，无弹跳曲线 */
+.entry,.form{transition:transform .2s ease,box-shadow .2s ease}
+.entry:hover,.form:hover{transform:translateY(-3px);box-shadow:0 16px 34px rgba(20,70,72,.16),inset 0 1px 0 rgba(255,255,255,.8)}
+.btn:active{transform:scale(.98);filter:brightness(.96)}
+.option.is-selected{box-shadow:0 0 0 2px var(--brand-line),inset 0 1px 0 rgba(255,255,255,.7)}
+.pill.is-on{box-shadow:0 0 0 1px var(--brand-line)}
+
+/* glass 档：全量玻璃 + 近似折射高光 */
+body[data-material="glass"] .card,body[data-material="glass"] .option,body[data-material="glass"] .empty,
+body[data-material="glass"] .state-bar,body[data-material="glass"] .tabbar,body[data-material="glass"] .sheet,
+body[data-material="glass"] .dock,body[data-material="glass"] .toast{
+  background:var(--glass-surface);-webkit-backdrop-filter:blur(16px) saturate(1.6);backdrop-filter:blur(16px) saturate(1.6);
+  border-color:var(--glass-line);box-shadow:0 10px 30px rgba(20,70,72,.12),inset 0 1px 0 rgba(255,255,255,.72),inset 0 -1px 0 rgba(255,255,255,.18)}
+body[data-material="glass"] .card::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(150deg,rgba(255,255,255,.38) 0%,rgba(255,255,255,0) 40%,rgba(255,255,255,0) 66%,rgba(255,255,255,.20) 100%)}
+body[data-material="glass"] .card>*{position:relative;z-index:1}
+body[data-material="glass"] .sheet::before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.95),transparent)}
+body[data-material="glass"] .topbar{-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+body[data-dark="true"][data-material="glass"] .card,body[data-dark="true"][data-material="glass"] .option,body[data-dark="true"][data-material="glass"] .tabbar,body[data-dark="true"][data-material="glass"] .sheet,body[data-dark="true"][data-material="glass"] .dock{
+  box-shadow:0 10px 30px rgba(0,0,0,.3),inset 0 1px 0 rgba(180,220,230,.18)}
+body[data-dark="true"][data-material="glass"] .card::before{background:linear-gradient(150deg,rgba(160,215,225,.14),transparent 42%,transparent 66%,rgba(160,215,225,.10) 100%)}
+/* blur 档：保留模糊与半透明，去掉高光/折射/饱和提升（对应 API 31–32） */
+body[data-material="blur"] .card,body[data-material="blur"] .option,body[data-material="blur"] .tabbar,
+body[data-material="blur"] .sheet,body[data-material="blur"] .dock,body[data-material="blur"] .toast{
+  background:var(--glass-surface);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-color:var(--line)}
+body[data-material="blur"] .card{box-shadow:none}
+/* solid 档：纯半透明/实色，无任何 RenderEffect（对应 API 26–30 与降级） */
+body[data-material="solid"]{--surface:var(--solid-surface);--surface-2:rgba(20,133,127,.08);--line:rgba(20,133,127,.18);--topbar-bg:var(--solid-surface);--tabbar-bg:var(--solid-surface);--dock-bg:var(--solid-surface);--sheet-bg:var(--solid-surface);--toast-bg:var(--solid-surface)}
+body[data-material="solid"] .card,body[data-material="solid"] .option,body[data-material="solid"] .tabbar,
+body[data-material="solid"] .sheet,body[data-material="solid"] .dock{-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
+body[data-material="solid"] .card::before{display:none}
+body[data-dark="true"][data-material="solid"]{--surface-2:rgba(127,211,199,.10);--line:rgba(150,200,215,.24)}
+/* 状态反馈：光色 + 文字双通道 */
+.state-bar[data-kind="ok"] .t-body::before{content:"完成 · ";font-weight:600}
+.state-bar[data-kind="error"] .t-body::before{content:"失败 · ";font-weight:600}
+.toast{border-radius:var(--radius-btn);font-weight:500}

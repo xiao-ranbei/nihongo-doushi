@@ -51,6 +51,7 @@ import com.kotonoha.app.ui.common.ModuleGlyphBox
 import com.kotonoha.app.ui.common.ModuleHeader
 import com.kotonoha.app.ui.common.ModuleSectionLabel
 import com.kotonoha.app.ui.common.PlannedRow
+import com.kotonoha.app.ui.theme.GlassTokens
 import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.moduleTone
 import com.kotonoha.app.ui.theme.paperColors
@@ -74,7 +75,13 @@ fun MineScreen(app: AppState, onOpenModelSettings: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            // 底部 112dp 让位给悬浮岛（覆盖浮法下内容会从岛后方穿过，滚到底时最后一项不被遮）
+            .padding(
+                start = 16.dp,
+                end = 16.dp,
+                top = 6.dp,
+                bottom = GlassTokens.islandContentInset,
+            ),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // 页头：大标题「我的」+ 副信息带应用名（改名后 App 内的署名位，模块色取灰蓝）

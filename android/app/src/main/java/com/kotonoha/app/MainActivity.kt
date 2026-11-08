@@ -5,29 +5,32 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,14 +42,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.kotonoha.app.storage.LocalStore
 import com.kotonoha.app.ui.AppState
 import com.kotonoha.app.ui.adjective.AdjectiveFlow
+import com.kotonoha.app.ui.glass.GlassLayer
+import com.kotonoha.app.ui.glass.Layer
+import com.kotonoha.app.ui.glass.GlassShape
+import com.kotonoha.app.ui.glass.GlassSurface
 import com.kotonoha.app.ui.home.HomeScreen
 import com.kotonoha.app.ui.mine.MineScreen
 import com.kotonoha.app.ui.mistakes.MistakesScreen
@@ -62,12 +72,13 @@ import com.kotonoha.app.ui.read.ReadFlow
 import com.kotonoha.app.ui.read.ReadScreen
 import com.kotonoha.app.ui.study.StudyDestination
 import com.kotonoha.app.ui.study.StudyScreen
+import com.kotonoha.app.ui.theme.GlassMotion
+import com.kotonoha.app.ui.theme.GlassTokens
 import com.kotonoha.app.ui.theme.ModuleTone
 import com.kotonoha.app.ui.theme.ModuleTones
 import com.kotonoha.app.ui.theme.KotonohaTheme
 import com.kotonoha.app.ui.theme.ProvideModuleTone
-import com.kotonoha.app.ui.theme.geometry
-import com.kotonoha.app.ui.theme.themedTone
+import com.kotonoha.app.ui.theme.glassColors
 import com.kotonoha.app.ui.theme.paperColors
 import com.kotonoha.app.ui.verb.VerbFlow
 
@@ -151,37 +162,39 @@ private fun AppRoot(
     // 二级页用系统返回键回到一级页
     BackHandler(enabled = sub != null) { sub = null }
 
+    // Tab 内容入场位移（8dp）换算成像素：slideInVertically 的偏移量是像素 int，不在密度作用域里
+    val pageShiftPx = with(LocalDensity.current) { GlassMotion.pageShift.dp.roundToPx() }
+
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            if (sub == null) {
-                ProvideModuleTone(toneOf(AppTab.valueOf(tab))) {
-                    AppBottomBar(
-                        current = AppTab.valueOf(tab),
-                        onSelect = { tab = it.name },
-                    )
-                }
-            }
-        },
+        // 底色透明：屏幕底由 GlassLayer 的录制层绘制（渐变 + 三团光斑）。
+        // Scaffold 再铺一层不透明色会把光斑盖掉，玻璃就只剩模糊、没有可折射的内容
+        containerColor = Color.Transparent,
+        // 底栏不放进 bottomBar：它要浮在内容之上、被内容折射（覆盖浮法），
+        // 而且必须在 GlassLayer 之外——放进录制层会与 drawBackdrop 形成绘制环
     ) { innerPadding ->
         // 带底部抽屉/操作条的二级页自己处理底部内边距：白条要一直铺到导航栏下方，
         // 不能留出 Scaffold 的底色缝；错题本没有底部条，仍用 Scaffold 的内边距
         val layoutDirection = LocalLayoutDirection.current
-        val bottomInset = if (sub == SubPage.MISTAKES || sub == null) {
-            innerPadding.calculateBottomPadding()
-        } else {
-            0.dp
+        val bottomInset = when (sub) {
+            // 一级页：内容一直铺到屏幕底，从悬浮岛后方穿过，岛下留白由各页自己加
+            null -> 0.dp
+            SubPage.MISTAKES -> innerPadding.calculateBottomPadding()
+            else -> 0.dp
         }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    start = innerPadding.calculateStartPadding(layoutDirection),
-                    top = innerPadding.calculateTopPadding(),
-                    end = innerPadding.calculateEndPadding(layoutDirection),
-                    bottom = bottomInset,
-                ),
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // 录制层：屏幕底 + 页面内容。悬浮岛是本层的兄弟节点（见下方），
+            // 它采样 Layer.Content 才能做出「内容从岛后方穿过并被折射」的覆盖浮法
+            GlassLayer(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(
+                            start = innerPadding.calculateStartPadding(layoutDirection),
+                            top = innerPadding.calculateTopPadding(),
+                            end = innerPadding.calculateEndPadding(layoutDirection),
+                            bottom = bottomInset,
+                        ),
+                ) {
             when (sub) {
                 SubPage.VERB -> VerbFlow(
                     app = appState,
@@ -238,51 +251,93 @@ private fun AppRoot(
                     onBack = { sub = null },
                 )
                 // 一级页统一包一层模块色块：页面内的页头/图标底盒/区块标题
-                // 通过 moduleTone() 取到本标签的颜色，不必层层传参
-                else -> ProvideModuleTone(toneOf(AppTab.valueOf(tab))) {
-                    when (AppTab.valueOf(tab)) {
-                        AppTab.HOME -> HomeScreen(
-                            app = appState,
-                            onSelectTab = { tab = it.name },
-                            onOpen = { dest -> sub = dest.subPage() },
+                // 通过 moduleTone() 取到本标签的颜色，不必层层传参。
+                // 切换标签时内容淡入 + 8dp 上移（M17）：只动 alpha 与位移，不做共享元素、不做弹跳
+                else -> AnimatedContent(
+                    targetState = AppTab.valueOf(tab),
+                    transitionSpec = {
+                        (
+                            fadeIn(tween(GlassMotion.base, easing = GlassMotion.enter)) +
+                                slideInVertically(tween(GlassMotion.base, easing = GlassMotion.enter)) { pageShiftPx }
+                            ).togetherWith(
+                            fadeOut(tween(GlassMotion.exit, easing = GlassMotion.exitEasing)),
                         )
-                        AppTab.STUDY -> StudyScreen(
-                            app = appState,
-                            onOpen = { dest -> sub = dest.subPage() },
-                        )
-                        AppTab.READ -> ReadScreen(
-                            app = appState,
-                            onOpen = { tool -> if (tool.id == "ai-reading") sub = SubPage.READ_AI },
-                        )
-                        AppTab.MINE -> MineScreen(
-                            app = appState,
-                            onOpenModelSettings = { sub = SubPage.MODEL_SETTINGS },
-                        )
+                    },
+                    label = "tab-content",
+                ) { current ->
+                    ProvideModuleTone(toneOf(current)) {
+                        when (current) {
+                            AppTab.HOME -> HomeScreen(
+                                app = appState,
+                                onSelectTab = { tab = it.name },
+                                onOpen = { dest -> sub = dest.subPage() },
+                            )
+                            AppTab.STUDY -> StudyScreen(
+                                app = appState,
+                                onOpen = { dest -> sub = dest.subPage() },
+                            )
+                            AppTab.READ -> ReadScreen(
+                                app = appState,
+                                onOpen = { tool -> if (tool.id == "ai-reading") sub = SubPage.READ_AI },
+                            )
+                            AppTab.MINE -> MineScreen(
+                                app = appState,
+                                onOpenModelSettings = { sub = SubPage.MODEL_SETTINGS },
+                            )
+                        }
                     }
                 }
+                }
+                }
+            }
+            // 悬浮岛：贴底浮起，左右与底部各 16dp。它采样 Layer.Content（内容层），
+            // 且必须是 GlassLayer 的兄弟节点——放进录制层会与 drawBackdrop 形成绘制环
+            if (sub == null) {
+                AppBottomBar(
+                    current = AppTab.valueOf(tab),
+                    onSelect = { tab = it.name },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(
+                            start = GlassTokens.islandInset,
+                            end = GlassTokens.islandInset,
+                            bottom = GlassTokens.islandInset,
+                        ),
+                )
             }
         }
     }
 }
 
 /**
- * 底栏（视觉重设计）：纸白底 + 1dp 细边，四个等宽格。
- * 选中格是模块浅底色胶囊（图标与文字同为主色/深字色），未选中格只有 muted 图标与文字。
+ * 悬浮岛底栏（方案 B / D-052）：满宽减边距、四角 24dp、玻璃折射 + 1dp 玻璃边 + 外投影。
  *
- * 为什么不用 M3 的 NavigationBar + NavigationBarItem：M3 的选中态是靠指示条 + 填充色阶，
- * 与「纸白 + 模块色块」的配色规则对不上（它的 label 颜色由 NavigationBar 内部 token 强制），
- * 这里换成自绘一行，选中态就是一枚实心色块，规则与页面里的图标底盒同源。
+ * 三条与旧实现的差异，都是「必须」而不是偏好：
+ * 1. **脱离屏幕**：左右与底部各 16dp，岛不再铺到导航栏下方；内容从岛后方穿过并被折射（覆盖浮法）。
+ * 2. **四角同 r**：取消「顶圆角 + 底部直角」，也不再按皮肤切换悬浮/平铺——两套皮肤同形，只换配色。
+ * 3. **选中态只剩颜色与字重**：不再有 pale 底色块/胶囊高亮，图标与文字直接换 brand 色（关子第 6 轮要求）。
  *
- * 读屏口径与原先一致：整格一个焦点站（selectable 自带合并子语义），role=Tab 供读屏报「标签页」。
+ * 为什么不用 M3 NavigationBar：它的选中态由指示条 + 填充色阶驱动，label 颜色还被内部 token 强制，
+ * 与「玻璃岛 + 单色强调」的口径对不上。
+ *
+ * 读屏口径与原先一致：整格一个焦点站（`selectable` 自带合并子语义，禁手工 mergeDescendants）、
+ * role = Tab 供读屏报「标签页」，选中态由 selected 语义而非颜色表达。
  */
 @Composable
-private fun AppBottomBar(current: AppTab, onSelect: (AppTab) -> Unit) {
-    val g = geometry()
+private fun AppBottomBar(current: AppTab, onSelect: (AppTab) -> Unit, modifier: Modifier = Modifier) {
+    val colors = glassColors()
     val paper = paperColors()
-    // 底栏内的一条格子行：两种外壳共用它，点击热区与间距完全一致，切换只换外壳。
-    val tabs: @Composable (Modifier) -> Unit = { rowModifier ->
+    GlassSurface(
+        // navigationBarsPadding 在玻璃之内：岛整体抬到导航栏上方，玻璃不铺到导航栏区域
+        modifier = modifier.fillMaxWidth().navigationBarsPadding(),
+        // 采内容层：滚动中的页面内容会从岛后方穿过并被折射，这是覆盖浮法的核心
+        layer = Layer.Content,
+        elevation = GlassTokens.islandElevation,
+    ) {
         Row(
-            modifier = rowModifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 6.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = GlassTokens.islandPaddingH, vertical = GlassTokens.islandPaddingV),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             AppTab.entries.forEach { entry ->
@@ -291,89 +346,75 @@ private fun AppBottomBar(current: AppTab, onSelect: (AppTab) -> Unit) {
                     selected = current == entry,
                     onClick = { onSelect(entry) },
                     muted = paper.muted,
+                    brand = colors.brand,
                     modifier = Modifier.weight(1f),
                 )
             }
         }
     }
-    if (g.navFloating) {
-        // 糖果卡：悬浮药丸。导航栏内边距垫在外层，药丸整体浮在内容之上，不画上边线。
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 7.dp, vertical = 8.dp),
-        ) {
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(g.pillRadius),
-                shadowElevation = g.cardShadow,
-            ) {
-                tabs(Modifier)
-            }
-        }
-    } else {
-        // 墨夜：平铺全宽，白底一直铺到导航栏下方，靠一条 1dp 细线与内容分隔，无圆角无阴影。
-        Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
-            Column {
-                HorizontalDivider(thickness = 1.dp, color = paper.line)
-                tabs(Modifier.navigationBarsPadding())
-            }
-        }
-    }
 }
 
-/** 底栏单格：选中 = 模块浅底胶囊 + 主色图标/文字；未选中 = muted 图标/文字，无底色。 */
+/** 标签 → 矢量图标。四枚都是 24 viewBox 描边图标，与原型 `src/icons/tab-*.svg` 同形。 */
+private val AppTab.iconRes: Int
+    get() = when (this) {
+        AppTab.HOME -> R.drawable.ic_tab_home
+        AppTab.STUDY -> R.drawable.ic_tab_study
+        AppTab.READ -> R.drawable.ic_tab_read
+        AppTab.MINE -> R.drawable.ic_tab_mine
+    }
+
+/**
+ * 底栏单格：26dp 图标槽 + 10sp 标签，选中态只换颜色与字重（无底板、无胶囊）。
+ *
+ * 动效（M17 / 计划 §4.4）：颜色 160ms、图标缩放 220ms，都走标准缓动，不做弹跳。
+ * 缩放只作用在图标本体（graphicsLayer），不参与测量，因此不会引起文字与格宽的重排。
+ */
 @Composable
 private fun BottomTabItem(
     entry: AppTab,
     selected: Boolean,
     onClick: () -> Unit,
     muted: Color,
+    brand: Color,
     modifier: Modifier = Modifier,
 ) {
-    val g = geometry()
-    val tone = themedTone(toneOf(entry))
+    val tint by animateColorAsState(
+        targetValue = if (selected) brand else muted,
+        animationSpec = tween(GlassMotion.fast, easing = GlassMotion.standard),
+        label = "tab-tint",
+    )
+    val glyphScale by animateFloatAsState(
+        targetValue = if (selected) 1.06f else 1f,
+        animationSpec = tween(GlassMotion.base, easing = GlassMotion.enter),
+        label = "tab-glyph-scale",
+    )
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(g.smallRadius))
-            .background(if (selected) tone.pale else Color.Transparent)
-            .selectable(selected = selected, role = Role.Tab, onClick = onClick)
-            .padding(vertical = 7.dp),
+            .height(GlassTokens.tabHeight)
+            .clip(GlassShape.corner)
+            .selectable(selected = selected, role = Role.Tab, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(3.dp),
+        verticalArrangement = Arrangement.Center,
     ) {
-        when (entry) {
-            AppTab.HOME -> Icon(
-                imageVector = Icons.Filled.Home,
+        Box(modifier = Modifier.size(GlassTokens.tabGlyphSlot), contentAlignment = Alignment.Center) {
+            Icon(
+                painter = painterResource(entry.iconRes),
                 contentDescription = entry.label,
-                tint = if (selected) tone.main else muted,
-                modifier = Modifier.size(22.dp),
-            )
-            AppTab.STUDY -> Icon(
-                painter = painterResource(R.drawable.ic_tab_study),
-                contentDescription = entry.label,
-                tint = if (selected) tone.main else muted,
-                modifier = Modifier.size(22.dp),
-            )
-            AppTab.READ -> Icon(
-                painter = painterResource(R.drawable.ic_tab_read),
-                contentDescription = entry.label,
-                tint = if (selected) tone.main else muted,
-                modifier = Modifier.size(22.dp),
-            )
-            AppTab.MINE -> Icon(
-                imageVector = Icons.Filled.Person,
-                contentDescription = entry.label,
-                tint = if (selected) tone.main else muted,
-                modifier = Modifier.size(22.dp),
+                tint = tint,
+                modifier = Modifier
+                    .size(GlassTokens.tabIcon)
+                    .graphicsLayer {
+                        scaleX = glyphScale
+                        scaleY = glyphScale
+                    },
             )
         }
+        Spacer(Modifier.height(2.dp))
         Text(
             text = entry.label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            color = if (selected) tone.deep else muted,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, lineHeight = 12.sp),
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = tint,
         )
     }
 }

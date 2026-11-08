@@ -46,6 +46,7 @@ import com.kotonoha.app.ui.particleMasteredCount
 import com.kotonoha.app.ui.todayActivity
 import com.kotonoha.app.ui.verbModulePercent
 import com.kotonoha.app.ui.study.StudyDestination
+import com.kotonoha.app.ui.theme.GlassTokens
 import com.kotonoha.app.ui.theme.geometry
 import com.kotonoha.app.ui.theme.paperColors
 import java.time.LocalDate
@@ -86,7 +87,13 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            // 底部 112dp 让位给悬浮岛（覆盖浮法下内容会从岛后方穿过，滚到底时最后一项不被遮）
+            .padding(
+                start = 16.dp,
+                end = 16.dp,
+                top = 6.dp,
+                bottom = GlassTokens.islandContentInset,
+            ),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // 段① 页头：大标题 + 副信息（日期与本周进度），模块色取墨绿

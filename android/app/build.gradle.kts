@@ -15,12 +15,12 @@ val keystoreProps = Properties().apply {
 
 android {
     namespace = "com.kotonoha.app"
-    compileSdk = 35
-    buildToolsVersion = "35.0.1"
+    compileSdk = 36
+    buildToolsVersion = "36.0.0"
 
     defaultConfig {
         applicationId = "com.kotonoha.app"
-        minSdk = 26
+        minSdk = 33
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
@@ -76,6 +76,8 @@ dependencies {
     implementation(libs.compose.material.icons)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.kotlinx.serialization.json)
+    // 液态玻璃（Backdrop）：drawBackdrop / layerBackdrop / blur / lens / Highlight / Shadow
+    implementation(libs.backdrop)
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 

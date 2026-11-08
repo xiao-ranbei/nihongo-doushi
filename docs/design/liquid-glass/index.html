@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>言の葉 · 安卓端 UI 翻新 · 三方案并列对照</title>
+<style>
+:root{
+  --bg:#F4F6F3;--panel:#FFFFFF;--line:#DDE4DD;--line-strong:#C2CEC3;
+  --text:#1C2A22;--text-2:#4A5C51;--text-3:#74857A;
+  --accent:#2E9463;--accent-soft:#E9F7EF;--warn:#9A6A15;--warn-soft:#F8F0DC;
+  --a:#2E9463;--b:#14857F;--c:#1F6B4A;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Hiragino Sans","Yu Gothic","Noto Sans CJK SC","Microsoft YaHei",system-ui,sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1520px;margin:0 auto;padding:28px 22px 60px}
+h1{font-size:26px;margin:0 0 6px;font-weight:600;letter-spacing:.01em}
+h2{font-size:18px;margin:34px 0 12px;font-weight:600;padding-bottom:8px;border-bottom:1px solid var(--line-strong)}
+h3{font-size:15px;margin:0 0 8px;font-weight:600}
+p{margin:0 0 10px;color:var(--text-2);font-size:13px}
+.lead{font-size:14px;color:var(--text-2);max-width:960px}
+.kicker{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border:1px solid var(--line-strong);border-radius:99px;font-size:11px;color:var(--text-3);background:var(--panel);margin-bottom:12px}
+.notice{margin:16px 0 0;padding:12px 14px;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:6px;background:var(--panel);font-size:13px;color:var(--text-2)}
+.notice.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+.notice b{color:var(--text)}
+ul{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--text-2)}
+li{margin:3px 0}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.col{min-width:0;display:flex;flex-direction:column;gap:10px}
+.col-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--line);border-top:3px solid var(--tone);border-radius:8px 8px 0 0;background:var(--panel)}
+.col[data-p="a"]{--tone:var(--a)}.col[data-p="b"]{--tone:var(--b)}.col[data-p="c"]{--tone:var(--c)}
+.col-head h3{margin:0;font-size:15px}
+.tag{font-size:10px;padding:2px 8px;border:1px solid var(--line-strong);border-radius:99px;color:var(--text-3);white-space:nowrap}
+.open{margin-left:auto;font-size:11px;color:var(--accent);text-decoration:none;border-bottom:1px solid currentColor;white-space:nowrap}
+.open:hover{color:var(--text)}
+.frame{border:1px solid var(--line);border-top:0;border-radius:0 0 8px 8px;background:var(--panel);overflow:hidden}
+.frame iframe{display:block;width:100%;height:1080px;border:0;background:var(--bg)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+.card h3{color:var(--tone)}
+.card dl{margin:0;display:flex;flex-direction:column;gap:8px}
+.card dt{font-size:11px;color:var(--text-3);letter-spacing:.05em}
+.card dd{margin:0;font-size:12.5px;color:var(--text-2);line-height:1.6}
+.card dd ul{padding-left:16px;margin:2px 0 0;font-size:12.5px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:940px;font-size:12.5px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;color:var(--text-2)}
+th{background:#F8FAF7;font-weight:600;color:var(--text);white-space:nowrap}
+thead th:nth-child(2){border-top:2px solid var(--a)}thead th:nth-child(3){border-top:2px solid var(--b)}thead th:nth-child(4){border-top:2px solid var(--c)}
+tbody th{font-weight:600;color:var(--text);white-space:nowrap;width:120px}
+tr:last-child th,tr:last-child td{border-bottom:0}
+.risk{color:#9C3F35}.good{color:#1F6B4A}
+.baseline{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.baseline .card h3{color:var(--text)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.chip{font-size:10.5px;padding:2px 8px;border:1px solid var(--line-strong);border-radius:4px;background:#FAFCF9;color:var(--text-2)}
+.decision{margin-top:30px;padding:16px 18px;border:1px solid var(--line-strong);border-left:4px solid var(--accent);border-radius:8px;background:var(--panel)}
+.decision h2{margin:0 0 8px;border:0;padding:0;font-size:17px}
+.decision ol{margin:6px 0 0;padding-left:20px;font-size:13px;color:var(--text-2)}
+.foot{margin-top:26px;font-size:11.5px;color:var(--text-3);border-top:1px solid var(--line);padding-top:12px}
+@media (max-width:1120px){.grid3{grid-template-columns:1fr}.baseline{grid-template-columns:1fr}.frame iframe{height:1060px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">2026-11-07 · 安卓端全量 UI 翻新 · 三方案并列 · 2026-11-08 已定为方案 B</div>
+  <h1>言の葉 · UI 翻新三方案对照</h1>
+  <p class="lead">三个方案共用<strong>同一份信息架构、9 个视图、同一套操作路径与状态机</strong>，差异只落在视觉外观、布局形态、控件样式与交互反馈。下方三个预览可直接点击操作：切标签、进模块、答题判定、开弹层、换皮肤、切三档材质、注入空态/加载/错误。请任选一个单独打开细看。</p>
+  <div class="notice"><b>决策已闭环（2026-11-08）：</b>关子选定<strong>方案 B</strong>，并在其基础上追加两条硬要求 —— ① 底部区域改<strong>悬浮岛</strong>；② <strong>全局统一圆角 24dp，无例外</strong>（卡片 / 按钮 / 输入框 / 弹层 / 图片 / 底栏岛同值）。A、C 自此仅作历史对照保留，不再作为候选。B 的落地计划见 <code>docs/android-liquid-glass-plan-b.md</code>。</div>
+  <div class="notice warn"><b>B 的两处修订（2026-11-08 已落进原型）：</b>底栏由「全宽玻璃条 + 24dp 顶圆角」改为<strong>四角同 r 的悬浮岛</strong>，原型控制条可切<strong>覆盖 / 占位 / 收窄</strong>三种浮法；圆角由 28/18/32/14/999 五套值收敛为<strong>单值 24</strong>，控制条可切 24 / 20 / 16 直观看差异。弹层同步改为<strong>四角同 r + 三边离屏 12</strong>。</div>
+
+  <h2>一、三方案并列预览</h2>
+  <div class="grid3">
+    <div class="col" data-p="a">
+      <div class="col-head"><h3>A · 纸感延续</h3><span class="tag">局部玻璃 / 渐进</span><a class="open" href="option-a.html" target="_blank">单独打开</a></div>
+      <div class="frame"><iframe src="option-a.html" title="方案 A 原型预览" loading="lazy"></iframe></div>
+    </div>
+    <div class="col" data-p="b">
+      <div class="col-head"><h3>B · 全量液态玻璃</h3><span class="tag">全局玻璃 / 沉浸</span><a class="open" href="option-b.html" target="_blank">单独打开</a></div>
+      <div class="frame"><iframe src="option-b.html" title="方案 B 原型预览" loading="lazy"></iframe></div>
+    </div>
+    <div class="col" data-p="c">
+      <div class="col-head"><h3>C · 结构化线框</h3><span class="tag">无玻璃 / 阅读优先</span><a class="open" href="option-c.html" target="_blank">单独打开</a></div>
+      <div class="frame"><iframe src="option-c.html" title="方案 C 原型预览" loading="lazy"></iframe></div>
+    </div>
+  </div>
+  <div class="notice warn"><b>预览边界（诚实声明）：</b>浏览器里用 <code>backdrop-filter</code> 做模糊、用内高光与边缘渐变<strong>近似</strong> lens 折射与色散，<strong>不是</strong> Android AGSL / RuntimeShader 的真实折射；性能开销、API 26–30 无效果、玻璃上叠玻璃的 SIGSEGV 风险、真机帧率与对比度都<strong>未在本原型中验证</strong>。原型字体为系统字体栈预览，实际走霞鹜臻楷子集（D-029）。</div>
+  <div class="notice"><b>怎么看：</b>设备内容区可滚动 —— 首屏只显示上半部分，向下滚动能看到知识点建议、错题本、书签等完整内容。三方案在同一屏高下可见的信息量不同（C 明显更多），这正是信息密度取舍本身，不是缺页。预览控制条里的「皮肤 / 材质 / 场景 / 状态」是原型工具，不是 App UI；实际 D-041 是完全跟随系统、无手动开关，是否新增材质开关属于待拍板项 Q2。</div>
+  <div class="notice"><b>实测验证：</b>已用本地无头浏览器对三个原型各跑 37 项断言（共 111 项，0 失败）：底栏四标签、模块入口、答题四态、筛选弹层与 Esc、速查搜索换词、解析加载/完成、词详情收藏、空态注入、深浅皮肤与三档材质切换、重置、零 JS 运行时错误；对照页 3 个 iframe 全部渲染。主题令牌差异也经 computed style 实测：卡片圆角 20/24/4px、标题字号 22/26/19px、页边距 18/22/12px、底栏形态「悬浮胶囊 / 悬浮岛 / 平铺线框」、底栏模糊「有 / 有 / 无」。<br>B 的悬浮岛与统一圆角另跑 <b>34 项断言 0 失败</b>：<code>--radius</code> 与五个别名同解 24px、<code>.card/.btn/.tab/.tabbar</code> 计算圆角均 24px、无 999px 残留、覆盖浮法左右底各 16px（宽 = 屏宽 − 32）、占位浮法 position=relative 且内容不重叠、收窄浮法宽度 280px 水平居中（320/390/496 三档屏宽均不溢出）、弹层四角 24px 且离屏 12px、墨夜与三档材质下岛形与模糊不丢、A/C 两方案未被 B 的岛形污染。<br>B 的底栏矢量图标再跑 <b>30 项断言 0 失败</b>：4 枚内联 SVG、无文字字形残留、glyph 槽位仍 26×26、图标渲染 20×20、viewBox 24 等比、四 tab 等宽 50dp 高、glyph 无底色块、选中/未选中图标颜色与同 tab 文字色一致且互为不同值、墨夜 <code>#7FD3C7</code>、blur/solid 档描边不被吃掉、三种浮法下图标不丢、A/C 仍保留文字字形；另在 DPR 1/2/3 × 屏宽 320/390/600 下复核图标恒为 20×20、无线条溢出与位图化。</div>
+
+  <h2>二、设计特点 / 适用场景 / 优缺点 / 取舍</h2>
+  <div class="grid3">
+    <div class="col" data-p="a">
+      <div class="card" style="--tone:var(--a)">
+        <h3>A · 纸感延续</h3>
+        <dl>
+          <dt>设计特点</dt><dd>保留现有糖果卡／墨夜双皮肤纸卡体系（白卡 + 1dp 细边 + 柔影 / 墨夜零阴影靠细线分层），仅在<strong>底栏、弹层、判定抽屉</strong>引入玻璃材质。浅色底栏仍是悬浮药丸，深色平铺。</dd>
+          <dt>适用场景</dt><dd>渐进上线、低版本用户占比高、回归预算有限、优先保住读屏与可读性基线。</dd>
+          <dt>优点</dt><dd><ul><li>改动面最小，可沿用 Theme.kt / ModuleGeometry / 双皮肤全部资产</li><li>API 26–30 与 33+ 观感差距最可控</li><li>玻璃面数量固定，GPU 开销与崩溃风险最低</li><li>纸卡实底，文字对比度与 TalkBack 语义最稳</li></ul></dd>
+          <dt>缺点</dt><dd><ul><li>视觉新意有限，「全量翻新」感知弱</li><li>玻璃只出现在少数位置，材质语言不成体系</li><li>与酷安那种整体玻璃观感差距最大</li></ul></dd>
+          <dt>核心取舍</dt><dd><strong>用视觉冲击力换稳定性、低版本一致性与最低回归成本。</strong></dd>
+        </dl>
+      </div>
+    </div>
+    <div class="col" data-p="b">
+      <div class="card" style="--tone:var(--b)">
+        <h3>B · 全量液态玻璃</h3>
+        <dl>
+          <dt>设计特点</dt><dd>所有卡片、控件、弹层、底栏统一玻璃语言；背景铺柔和光斑让模糊与折射可见；<strong>全局唯一圆角 24dp</strong>（卡片 / 按钮 / 输入框 / 弹层 / 图片 / 岛同值）、宽松间距、浮起层级；底栏为<strong>四角同 r 的悬浮岛</strong>，脱离屏幕三边、玻璃压住身后内容；底栏四枚导航项用<strong>线性矢量图标</strong>（1.75 描边、无底板、颜色继承文字色）。三档材质切换的效果差异在这一方案里最明显。</dd>
+          <dt>适用场景</dt><dd>品牌视觉升级、以中高端机为主的目标用户、愿意承担性能与兼容成本、追求与酷安／iOS 液态玻璃同代质感。</dd>
+          <dt>优点</dt><dd><ul><li>视觉最统一、辨识度最高，翻新感知最强</li><li>一套材质语言贯通页面／弹层／控件</li><li>三档降级有完整可演示的表达</li></ul></dd>
+          <dt>缺点</dt><dd><ul><li>玻璃效果依赖 <code>RenderEffect</code>（API 31）与 lens 的 AGSL（API 33）；要让结果与原型一致，<code>minSdk</code> 必须提到 33，等于放弃 Android 8–12（计划 §0.6 / D-051）</li><li>同屏多玻璃面 + 滚动 + 弹层叠加的 GPU 开销最大</li><li>玻璃上叠玻璃有 RenderThread SIGSEGV 风险（需 exportedBackdrop）</li><li>墨夜零阴影细线体系与玻璃高光语言相冲；子集字体在半透明上的对比度待验</li><li><strong>统一 24 的几何副作用（实测）</strong>：44dp 高按钮与 36dp 小按钮在 r=24 时被形状自身裁到上限（22 / 18），即完全胶囊；卡片与弹层是真正的 24 圆角。要「看起来同一种圆角」需把 r 收到 16，或把按钮加高到 ≥52dp —— 待关子确认（原型控制条可切 24/20/16 直看）</li></ul></dd>
+          <dt>核心取舍</dt><dd><strong>用性能、兼容性与可读性风险换视觉一致性与品牌冲击。</strong></dd>
+        </dl>
+      </div>
+    </div>
+    <div class="col" data-p="c">
+      <div class="card" style="--tone:var(--c)">
+        <h3>C · 结构化线框</h3>
+        <dl>
+          <dt>设计特点</dt><dd>不做玻璃：强边界线框、细线栅格背景、4dp 直角、紧凑间距、高密度两列栅格；语态区改为纵向行表；底栏平铺带上边框；胶囊全部改为方形标签。状态一律文字化（「状态 · 」「[ 正确 ]」「提示 · 」），颜色只作辅助通道。</dd>
+          <dt>适用场景</dt><dd>长文阅读、TalkBack／无障碍优先、低端机与成本敏感、信息密集型学习、要求全 API 档表现完全一致。</dd>
+          <dt>优点</dt><dd><ul><li>可读性、无障碍与焦点可见性最好</li><li>无 backdrop-filter，性能最省、跨 API 表现一致</li><li>状态双通道最明确，空态／错误态都给下一步</li><li>不受 lens 形状约束与玻璃叠加崩溃影响</li></ul></dd>
+          <dt>缺点</dt><dd><ul><li>视觉最保守，品牌质感与「翻新」感知最弱</li><li>与「液体玻璃」这一诉求本身偏离，本质是第三条路</li><li>信息密度高，对小屏与低视力用户可能偏挤</li></ul></dd>
+          <dt>核心取舍</dt><dd><strong>用观感与材质诉求换可用性、性能与全版本一致性。</strong></dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <h2>三、逐维度细节对照</h2>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>维度</th><th>A · 纸感延续</th><th>B · 全量液态玻璃</th><th>C · 结构化线框</th></tr></thead>
+    <tbody>
+      <tr><th>材质作用域</th><td>仅底栏 / 弹层 / 判定抽屉；卡片永远实色</td><td>卡片 / 选项 / 弹层 / 底栏 / Toast / 顶栏全量</td><td>基本不启用，仅弹层极轻模糊</td></tr>
+      <tr><th>布局形态</th><td>常规卡片网格，悬浮药丸底栏（浅）</td><td>浮起层叠、宽松留白、四角同 r 的悬浮岛底栏（三边离屏 16）</td><td>紧凑两列栅格、纵向行表、平铺线框底栏</td></tr>
+      <tr><th>底栏</th><td>浅色悬浮胶囊 / 墨夜平铺，跟随现有 D-041</td><td>悬浮岛：左右底各 16dp、四角 24dp 同 r、独立浮起；两皮肤同形</td><td>平铺 + 2px 上边框 + 格间分隔线</td></tr>
+      <tr><th>配色</th><td>纸白 + 竹绿 #2E9463 / 墨黑 + 冷蓝 #9FBBD3</td><td>冷白青 + 光斑，主色 #14857F / 深墨蓝</td><td>冷灰白 + 深竹绿 #1F6B4A / 墨绿黑</td></tr>
+      <tr><th>字体层级</th><td>中等（display 22 / body 13 / 日文 19），行高 1.65</td><td>大而松（26 / 14 / 22），行高 1.75</td><td>小而密（19 / 12 / 17），行高 1.55，标题 700</td></tr>
+      <tr><th>间距</th><td>页 18 / 卡 14 / 间隙 12</td><td>页 22 / 卡 18 / 间隙 16</td><td>页 12 / 卡 10 / 间隙 8</td></tr>
+      <tr><th>圆角 / 阴影</th><td>20dp 卡 / 12dp 按钮 / 柔影</td><td><b>全局单值 24dp</b>（卡 / 按钮 / 输入框 / 弹层 / 图片 / 岛同值，短边不足由形状裁切）/ 内高光 + 大柔影</td><td>4dp 卡 / 3dp 按钮 / 零阴影</td></tr>
+      <tr><th>弹层形态</th><td>贴底，顶圆角 20dp</td><td>四角同 24dp + 三边离屏 12dp，浮起而非贴底</td><td>贴底直角，仅顶部一条 2px 边线</td></tr>
+      <tr><th>控件样式</th><td>实底主按钮 + 描边幽灵按钮 + 胶囊筛选</td><td>半透明玻璃按钮 + 边缘高光 + 光晕选中</td><td>方形描边按钮 + 左侧色条选中 + 文字标签</td></tr>
+      <tr><th>交互规则</th><td>克制单步，hover 轻位移，无层叠动画</td><td>光感反馈，hover 浮起 3px，active 轻缩放，无弹跳曲线</td><td>零位移动效，hover/active 只换底色，焦点最醒目</td></tr>
+      <tr><th>状态反馈</th><td>小胶囊 Toast + 淡底状态条 + 轻描边判定抽屉</td><td>玻璃 Toast + 光色判定 + 内发光</td><td>方形文字化 Toast + 顶部色条 + 「[ 正确 ] / [ 错误 ]」前缀</td></tr>
+      <tr><th>三档降级表现</th><td>只影响少数面，三档差异温和，跨档观感稳定</td><td>原型里 glass / blur / solid 三档差异最剧烈；<b>产品最终只保留 glass</b>（minSdk 33），三档仅用于演示降级代价</td><td>三档几乎无差别，跨档最一致</td></tr>
+      <tr><th>兼容性风险</th><td class="good">低：低版本仍有完整纸卡 UI</td><td class="risk">高：结果一致 ⇒ minSdk 26→33，放弃 Android 8–12；库为 alpha，依赖需先解析验证（R0.1）</td><td class="good">最低：不依赖 RenderEffect</td></tr>
+      <tr><th>性能风险</th><td class="good">低：固定玻璃面数量</td><td class="risk">高：多面 + 滚动 + 弹层叠加</td><td class="good">最低：无离屏模糊</td></tr>
+      <tr><th>无障碍</th><td>实底 + 现有 selected 语义，最易守住</td><td>半透明对比度与语义重绘需实测</td><td>文字化状态 + 强焦点，最稳</td></tr>
+      <tr><th>改造工作量</th><td>小：主题层加材质令牌 + 3 类容器</td><td>大：根 backdrop 层、组件层重建、弹层规格收敛</td><td>中：令牌与形状体系整体替换，无渲染管线改动</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>四、共同基准（三者完全对等，保证可比）</h2>
+  <div class="baseline">
+    <div class="card"><h3>页面范围 · 9 个视图</h3><p>一级 4 + 二级 5，三方案逐个都实现，无缺页。</p><div class="chips"><span class="chip">主页</span><span class="chip">学习</span><span class="chip">阅读</span><span class="chip">我的</span><span class="chip">模块首页</span><span class="chip">综合练习</span><span class="chip">活用速查</span><span class="chip">文章阅读</span><span class="chip">错题本</span></div></div>
+    <div class="card"><h3>操作路径</h3><ul><li>底栏四标签互切，路径面包屑可回退</li><li>学习 → 模块 → 综合练习 → 选项 → 提交 → 判定 → 看答案 → 下一题</li><li>模块 → 速查 → 换词条弹层 → 搜索 / 选中 / 确定 → 练这题</li><li>阅读 → 阅读器 → 解析 → 点段落 → 词详情 → 收藏</li><li>我的 → 编辑昵称 → 保存；错题本空态 → 去练习；规划中位 → 明确提示不假交互</li></ul></div>
+    <div class="card"><h3>状态反馈与可用性</h3><ul><li>Toast 三态、空态、加载骨架、错误 + 重试、选中、禁用</li><li>答题四态：未选 / 已选 / 正确 / 错误 + 揭晓</li><li>焦点可见环、热区 ≥44px、aria-pressed / aria-selected / aria-current / role=dialog</li><li>Esc 关弹层 / 返回上一级、点遮罩关闭、状态颜色与文字双通道</li><li>三档材质 + 双皮肤 + 状态注入均为原型预览开关</li></ul></div>
+  </div>
+
+  <h2>五、实现与复现</h2>
+  <p>三个原型自包含，可单独双击打开，无构建、无依赖、无网络请求。<code>src/</code> 下是共享骨架 <code>base.css</code>、三套主题 <code>theme-*.css</code>、共享引擎 <code>engine.js</code> 与模板 <code>shell.html</code>；<code>build.py</code> 把三者内联成三个 HTML。因为引擎与骨架共用，三方案的 IA、页面范围、操作路径、状态机严格一致，差异只由主题层承担。<br>底栏图标源文件是 <code>src/icons/tab-{home,study,read,mine}.svg</code>（24 viewBox、1.75 描边、<code>stroke="currentColor"</code>），<code>build.py</code> 会把它压成一行注入 <code>engine.js</code> 的 <code>ICONS</code> 占位——必须内联而不是 <code>&lt;img src&gt;</code>，否则深浅皮肤与选中态的颜色继承要维护第二套资源；若构建脚本未跑，<code>ICONS</code> 为空，底栏自动回退文字字形，不会出现空白图标。</p>
+
+  <div class="decision">
+    <h2>决策结果</h2>
+    <p><strong>2026-11-08 已闭环：采用方案 B</strong>，并追加两条硬要求：底部改悬浮岛、全局统一圆角（无例外）。原 Q1–Q6 的处置：</p>
+    <ol>
+      <li><strong>最终采用</strong>：B，且不得混入 A / C 的任何形态（含 A 的纸卡、C 的直角线框）。</li>
+      <li>Q1 三档降级 → <strong>关闭</strong>：要让结果与原型一致，产品只保留 <code>glass</code> 一档、<code>minSdk 33</code>，不留 <code>blur</code> / <code>solid</code> 分支（计划 §0.6）。</li>
+      <li>Q2 材质开关 → <strong>关闭</strong>：只有液态玻璃，不提供手动开关；D-041「完全跟随系统深浅色」保留。</li>
+      <li>Q3 双皮肤 → <strong>已定</strong>：两套皮肤同形，只换配色与光源，不降档、不改几何。</li>
+      <li>Q4 纸感层次 → <strong>废止</strong>：旧纸卡三级层次与 <code>ModuleGeometry</code> 双套几何一并作废，改单套 <code>GlassTokens</code>。</li>
+      <li>Q5 性能不达标 → <strong>关闭</strong>：只允许优化实现，不允许改外观降档；阈值见计划 §4.3（T1–T10）。</li>
+      <li>Q6 验收阈值 → <strong>已定</strong>：P95 ≤16.7ms、严重掉帧 ≤1%、同屏玻璃面 ≤8、对比度 ≥4.5:1 等，见计划 §4.3。</li>
+    </ol>
+    <p><strong>仍待确认的唯一一项</strong>：统一圆角取 24 时，44dp 按钮与 36dp 小按钮会被形状裁到上限（22 / 18）而呈完全胶囊，与卡片真正的 24 圆角在视觉上不是同一种转角。若要求「看起来同一种圆角」，应改 16（原型控制条可一键切换对比）。</p>
+  </div>
+
+  <p class="foot">关联文档：<a href="../../android-liquid-glass-assessment.md">docs/android-liquid-glass-assessment.md</a>（调研评估：酷安与 AndroidLiquidGlass 关系澄清、系统能力、复用评估、全量重构规划）· 原型不进生产，不含真实 AGSL / RenderEffect 实现，也不发起任何模型或网络调用。</p>
+</div>
+</body>
+</html>

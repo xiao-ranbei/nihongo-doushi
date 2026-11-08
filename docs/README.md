@@ -33,6 +33,9 @@
 | [design/home-mine-prototypes.html](design/home-mine-prototypes.html) | 主页/我的 三版可交互原型（框内底栏可切换） | 讨论用原型，不是正式页面 |
 | [web-read-analyzer-plan.md](web-read-analyzer-plan.md) | Web 端文章分析分批实施计划：参考项目全能力逐项适配、四次调用契约、成本与隐私口径、B0～B9 批次与验收、闸门清单 | 已实现（B0–B9 收口，2026-11-06；Web 396/396） |
 | [design/icon-concepts/](design/icon-concepts/) | 应用图标方向 1「あ・纸页」资产（已轮廓化，含 VectorDrawable）与生成/自检脚本 | 可接入 |
+| [android-liquid-glass-assessment.md](android-liquid-glass-assessment.md) | 酷安「液体玻璃」与 AndroidLiquidGlass 关系澄清：视觉/模块边界/系统能力/性能兼容性，复用评估与全量 UI 翻新重构规划 | 调研评估（2026-11-07，不含实现与 UX 定案） |
+| [design/liquid-glass/index.html](design/liquid-glass/index.html) | 安卓端 UI 翻新三方案可交互原型并列对照（纸感延续 / 全量液态玻璃 / 结构化线框），9 视图同一 IA 与操作路径，含特点/场景/优缺点/取舍 | 可预览原型（2026-11-07；已选定方案 B；2026-11-08 追加悬浮岛 + 统一圆角 24） |
+| [android-liquid-glass-plan-b.md](android-liquid-glass-plan-b.md) | **方案 B 唯一基准**的全量 UI 翻新与底层重构计划：目标范围、模块与交付物、R0–R3 任务与依赖、风险、Q-B 决策、性能阈值 T1–T10、验证方式与 AC-01～AC-14 验收；含基准冻结、规格基线、A/C 禁止清单与旧决策废止 | **执行中**（2026-11-08：R0.1 + R1.1–R1.5 已落地并通过实机走查，进度表见 §3.7；Q-B1/B2/B3/B7 已确认，Q-B8 覆盖浮法 / Q-B9 圆角 24 已冻结） |
 
 ## 信息来源与更新规则
 

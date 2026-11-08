@@ -36,9 +36,10 @@ Android 应用是日语学习工具集的原生客户端，与现有网页共同
 
 当前网页客户端已位于 `web/`。Android 工程开始时，在仓库根目录新建 `android/`，与 `web/` 并列维护。
 
-## 5. 工程选项（2026-10-14 确定，见 decisions.md D-015）
+## 5. 工程选项（2026-10-14 确定，见 decisions.md D-015；工具链已由 D-054 修订）
 
-- 最低支持版本：minSdk 26（Android 8.0+）；compileSdk / targetSdk 35。
+- 最低支持版本：**minSdk 33**（Android 13+；2026-11-08 由 26 上调，理由见 D-051——液态玻璃的 `lens` 折射依赖 API 33 的 `RuntimeShader`，低于 33 呈现不出方案 B）；compileSdk **36**、targetSdk 35。
+- 工具链：Kotlin 2.3.10 / Compose BOM 2026.03.01 / buildTools 36.0.0 / `io.github.kyant0:backdrop:1.0.6`（D-054）。
 - UI 工具包：Jetpack Compose（Material 3），配色 Token 从 `web/styles.css` 的 `:root` 语义令牌移植；图标统一使用 Material Icons，不用 emoji。首版页面切换用状态管理实现，不引入 Navigation 库。
 - 应用包名：`com.kotonoha.app`（2026-10-21 由 `com.nihongodoushi.app` 改名，见 D-039）；应用名为「言の葉」（D-038）；应用图标与签名分发细节在出签名 APK 前确定。
 - 本地存储：kotlinx-serialization 版本化 JSON 文件（对应 Web 端 localStorage 各键的结构），错题、统计、每日练习各一个文件；今日活动计数直接复用该结构。

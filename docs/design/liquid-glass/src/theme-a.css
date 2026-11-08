@@ -1,0 +1,60 @@
+/* 方案 A · 纸感延续（Paper + Accent Glass）
+ * 取舍：保留现有糖果卡/墨夜纸感卡片，只在底栏、弹层、判定抽屉引入材质。
+ * 材质降级作用域刻意收窄 —— 卡片永远是实色纸卡，可读性与跨版本一致性优先。
+ */
+:root{
+  --stage-bg:#F2F4F1;--stage-panel:#FFFFFF;--stage-line:#DDE3DC;--stage-text:#5A6B60;--stage-on:#2E9463;--stage-on-text:#FFFFFF;
+  --bg:#FAFAF8;--surface:#FFFFFF;--surface-2:#F2F5F0;--line:#E3E8E2;--line-strong:#C9D4CA;
+  --text:#1D2B24;--text-2:#4A5C51;--text-3:#7A8A80;
+  --brand:#2E9463;--brand-soft:#E9F7EF;--brand-ink:#1E6F49;--brand-on:#FFFFFF;--brand-line:#BFE3CE;--glyph-line:#D8EADD;
+  --ok:#2E9463;--ok-soft:#E9F7EF;--ok-line:#BFE3CE;
+  --warn:#B27A18;--warn-soft:#FBF2DE;--warn-line:#EBDBAE;
+  --danger:#B34A3F;--danger-soft:#FBEAE7;
+  --radius-card:20px;--radius-btn:12px;--radius-pill:999px;--radius-sheet:20px;--radius-glyph:11px;--radius-device:26px;
+  --shadow-card:0 1px 2px rgba(29,43,36,.05),0 6px 16px rgba(29,43,36,.04);
+  --shadow-sheet:0 -8px 28px rgba(29,43,36,.10);--shadow-device:0 12px 34px rgba(29,43,36,.12);--shadow-dock:0 -4px 14px rgba(29,43,36,.06);
+  --sp-page:18px;--sp-card:14px;--sp-gap:12px;--sp-section:12px;
+  --fs-display:22px;--fs-title:15px;--fs-body:13px;--fs-caption:11px;--fs-label:11px;--fs-micro:10px;--fs-jp:19px;--fs-number:20px;
+  --lh-body:1.65;--fw-title:600;--border-w:1px;
+  --screen-texture:repeating-linear-gradient(0deg,rgba(46,148,99,.018) 0 1px,transparent 1px 6px);
+  --topbar-bg:rgba(250,250,248,.92);--tabbar-bg:rgba(255,255,255,.94);--dock-bg:#FFFFFF;--sheet-bg:#FFFFFF;
+  --scrim:rgba(20,32,26,.34);--toast-bg:#25382C;--toast-text:#FFFFFF;--device-line:#DDE4DC;
+  --glass-surface:rgba(255,255,255,.72);--glass-line:rgba(255,255,255,.85);
+}
+body[data-dark="true"]{
+  --bg:#0F1114;--surface:#171A1F;--surface-2:#20252B;--line:#2C343C;--line-strong:#3D4852;
+  --text:#E6ECF1;--text-2:#A9B7C2;--text-3:#778791;
+  --brand:#9FBBD3;--brand-soft:#1D2A34;--brand-ink:#BBD5E8;--brand-on:#0F1114;--brand-line:#31465A;--glyph-line:#31465A;
+  --ok:#8FC3A5;--ok-soft:#1A2A22;--ok-line:#2C4A38;
+  --warn:#D9B166;--warn-soft:#2A2418;--warn-line:#4A3D22;
+  --danger:#DE8C81;--danger-soft:#2C1E1D;
+  --shadow-card:none;--shadow-sheet:0 -8px 24px rgba(0,0,0,.35);--shadow-device:0 12px 34px rgba(0,0,0,.45);--shadow-dock:none;
+  --screen-texture:none;--topbar-bg:#0F1114;--tabbar-bg:#0F1114;--dock-bg:#171A1F;--sheet-bg:#171A1F;
+  --scrim:rgba(0,0,0,.55);--toast-bg:#2A333C;--toast-text:#E6ECF1;--device-line:#2C343C;
+  --glass-surface:rgba(23,26,31,.78);--glass-line:rgba(159,187,211,.22);
+}
+/* 卡片保持纸感：任何材质档都不玻璃化 .card —— 这是方案 A 的核心边界 */
+.card,.prompt,.option,.empty,.state-bar{background:var(--surface)}
+/* 悬浮药丸底栏（浅色）；墨夜按现有规范平铺 */
+.tabbar{margin:8px 10px 10px;border:1px solid var(--line);border-top:1px solid var(--line);border-radius:999px;box-shadow:0 4px 14px rgba(29,43,36,.08)}
+.tab{padding:0 2px}
+body[data-dark="true"] .tabbar{margin:0;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none}
+/* 交互规则：克制、单步、无层叠动画 */
+.btn:active{transform:translateY(1px)}
+.entry:hover,.form:hover{transform:translateY(-1px)}
+.tab.is-on .tab-glyph{box-shadow:none}
+
+/* 三档材质：只作用于底栏 / 弹层 / 判定抽屉 */
+body[data-material="glass"] .tabbar,body[data-material="glass"] .sheet,body[data-material="glass"] .dock{
+  background:var(--glass-surface);-webkit-backdrop-filter:blur(14px) saturate(1.45);backdrop-filter:blur(14px) saturate(1.45);
+  border-color:var(--glass-line);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 -4px 18px rgba(29,43,36,.08)}
+body[data-material="glass"] .sheet::before{content:"";position:absolute;inset:0 0 auto;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent)}
+body[data-material="blur"] .tabbar,body[data-material="blur"] .sheet,body[data-material="blur"] .dock{
+  background:var(--glass-surface);-webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);border-color:var(--line)}
+body[data-material="solid"] .tabbar,body[data-material="solid"] .sheet,body[data-material="solid"] .dock{
+  background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none;border-color:var(--line)}
+body[data-dark="true"][data-material="glass"] .tabbar,body[data-dark="true"][data-material="glass"] .sheet,body[data-dark="true"][data-material="glass"] .dock{box-shadow:inset 0 1px 0 rgba(159,187,211,.14)}
+/* 状态反馈：轻描边 + 淡底，颜色与文字双通道 */
+.state-bar[data-kind="ok"] .t-body::before{content:"完成 · ";font-weight:600}
+.state-bar[data-kind="error"] .t-body::before{content:"失败 · ";font-weight:600}
+.toast{letter-spacing:.01em}

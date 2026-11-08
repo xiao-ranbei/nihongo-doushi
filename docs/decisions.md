@@ -18,7 +18,7 @@
 | D-012 | 目标仓库为 `web/` 与 `android/` 并列；Android 工程开始时直接新增到 `android/` | 已落地（`web/` 与 `android/` 并列） |
 | D-013 | 当前不做插件注册框架，先用统一模块约定显式接入 | 已确认 |
 | D-014 | Android 保留品牌纸感配色，同时遵循原生系统交互；Android 导航样式留待原型决定 | ~~已确认原则；部分细节待定~~ → 配色部分被 D-041 修订（2026-10-22 改为糖果卡/墨夜双皮肤跟随系统）；「遵循原生系统交互」仍然有效 |
-| D-015 | Android MVP 工程选型：minSdk 26（Android 8.0+）、UI 用 Jetpack Compose（Material 3）、本地存储用 kotlinx-serialization 版本化 JSON 文件（结构对齐 Web localStorage 键）、applicationId ~~`com.nihongodoushi.app`~~ → `com.kotonoha.app`（见 D-039）；工具链 AGP 8.13.2 + Gradle 8.14.3 + Kotlin 2.2.21 + Compose BOM 2025.08.01（与本机 SDK platform 35 同代） | 已确认 |
+| D-015 | Android MVP 工程选型：minSdk 26（Android 8.0+）、UI 用 Jetpack Compose（Material 3）、本地存储用 kotlinx-serialization 版本化 JSON 文件（结构对齐 Web localStorage 键）、applicationId ~~`com.nihongodoushi.app`~~ → `com.kotonoha.app`（见 D-039）；工具链 AGP 8.13.2 + Gradle 8.14.3 + Kotlin 2.2.21 + Compose BOM 2025.08.01（与本机 SDK platform 35 同代） | 已确认；**minSdk 与工具链部分已由 D-051 / D-054 修订**（minSdk 33、Kotlin 2.3.10、BOM 2026.03.01、compileSdk 36） |
 | D-016 | Android 助词模块接入形态：主页第三张入口卡 → 助词二级模块（专题地图首页 → 专题讲解 → 练习屏）；不新增底栏标签 | 已实现（2026-10-17，8b9d040；D-022 补错题排期，四标签改版后入口迁至「学习」页） |
 | D-017 | ~~助词错题沿用纯题目 ID 数组、不做排期~~ → 被 D-022 修订 | 已被 D-022 取代 |
 | D-018 | 助词练习不做难度分层：48 题同池，取消入门／进阶选择器；题目 `level` 只决定解析深度（答对给入门解析，答错补进阶） | 已实现（2026-10-17） |
@@ -54,6 +54,13 @@
 | D-047 | 成本口径：每段 2 次请求（analyze+translate）；词详情 LRU 80（命中零请求）；`grammar` 严格按需且按段缓存；每篇 20 次 / 每日 100 次硬预算，一键全文二次确认（写明段数/请求数）+ 预算预检只按未缓存块计；换模型缓存失效重新请求；本地埋点（`japanese-read-analyzer-stats-v1`，7 组错误归并）不出网、不含原文与密钥 | 已实现（B4/B5/B7/B8，成本报告见 [web-read-analyzer-plan.md](web-read-analyzer-plan.md) B9） |
 | D-048 | 今日活动口径（Q8）：从文章进入的题走既有判题通道，自动进既有错题与间隔复习——**不把解析结果直接写进错题本**；新增仅 `japanese-read-analyzer-activity-v1`（今日阅读段数/收藏词数）+ 主页卡最小摘要；书签复用 `japanese-verb-practice-bookmarks-v1`（word/sentence 两类） | 已实现（B6） |
 | D-049 | `grammar` 能力定位（G3 按 §4.4 草案）：结构化语法分析（patterns/structure/style/engineRefs），不产题、不做依存树或主谓宾可视化；`engineRefs` 由模型给 `type/surface/span`，词库 `id` 由 `resolveEngineRef` 本地反查（模型不可能知道本项目词库 id）；默认不发请求，只由「看语法」触发；反查成功提供「练这组词／练这个词」进既有练习 | 已实现（B5/B6） |
+
+| D-050 | **视觉基准锁定方案 B**：`docs/design/liquid-glass/option-b.html`（Golden v2：悬浮岛底栏 + 全局单值 24dp 圆角 + 矢量描边图标）是唯一基准，最终呈现必须与它一致；A / C 两版与 `blur` / `solid` 两档材质只保留在 Golden 作对照，**不进产品**。四条不可协商：结果一致优先、双皮肤同形、遇阻上报不自行简化、性能只靠优化不改外观 | 已确认（2026-11-08，关子「确认方案无误」） |
+| D-051 | **材质唯一 + minSdk 33**：产品内只有一套 `glass` 材质（`vibrancy → blur → lens`），不实现 `blur` / `solid` 档、无 `SDK_INT` 材质分支、不做性能降档；`lens` 依赖 `RuntimeShader`（API 33 起），故 `minSdk` 由 26 升到 **33**（targetSdk 35 不变）。项目未正式发布、只装过 debug 包，不做旧数据迁移 | 已实现（`app/build.gradle.kts` minSdk 33） |
+| D-052 | **玻璃分层与采样口径**（事故驱动）：必须两层 backdrop —— `Layer.Background` 只录屏幕底（渐变 + 三团光斑），供内容流里的卡片/弹层/Toast 采样；`Layer.Content` 录屏幕底 + 页面内容，供悬浮岛/吸底条采样。**悬浮类玻璃面必须是录制层的兄弟节点，不能放进 `GlassLayer` 的 content 里**：放进去 `drawBackdrop` 会采样到包含自己的那一层，形成绘制环，RenderThread 在 `RenderNode::prepareTreeImpl` 里无限递归并 native 崩溃（实测一启动就闪退，栈帧 500+）。同理 `Scaffold.containerColor` 必须透明，否则光斑被盖掉、玻璃只剩模糊没有可折射的内容 | 已实现（`ui/glass/Glass.kt`、`MainActivity` 层结构） |
+| D-053 | **旧规范废止清单**：D-041 的形态条款（糖果卡 20dp 圆角柔影悬浮药丸 / 墨夜 13dp 圆角零阴影细线平铺、双皮肤不同几何）废止，只保留「完全跟随系统深浅色、无手动开关」；D-042 的 `ModuleGeometry` 取值收成单值（`cardRadius = smallRadius = pillRadius = GlassTokens.radius = 24dp`，`navFloating` 恒 true 仅兼容保留，`RoundedCornerShape(<数字>.dp)` 在全 `ui/` 下 0 命中）；`ModuleTones` 四实例色值收进青绿家族（B 只有一个强调色 `--brand`），实例仍保留四个以便将来按模块上辅色；禁止 `HorizontalDivider` 分隔底栏、禁止旧主题色 `#2E9463` / `#9FBBD3` / `#FAFAF8` / `#0F1114` | 已实现（`Theme.kt`） |
+| D-054 | **工具链矩阵**（D-015 修订，Q-B1 已授权全量升级）：Kotlin **2.3.10** / Compose BOM **2026.03.01**（ui 1.10.6、material3 1.4.0）/ `compileSdk 36` + `buildToolsVersion 36.0.0` / `minSdk 33` / `targetSdk 35` / AGP 8.13.2 + Gradle 8.14.3 不变 / `io.github.kyant0:backdrop:1.0.6`。**backdrop 2.0.1 不可用**：它依赖 `org.jetbrains.compose.* 1.12.0` → `ui 1.12.x` 的 aar-metadata 要求 `minCompileSdk=37` 且 `minAndroidGradlePluginVersion=9.1.0`；`1.0.6` 自身与 `shapes-android:1.2.0` 要求 `minCompileSdk=36`（故 compileSdk 必须 36）。D-031 的 `testInstrumentationRunner` 显式声明继续有效 | 已实现（`libs.versions.toml`、`app/build.gradle.kts`） |
+| D-055 | **过渡动效（M17）**：动画只表达「谁进来了 / 谁被选中 / 谁在加载」，不做装饰性弹跳。令牌集中在 `ui/theme/Motion.kt`（instant 100 / fast 160 / base 220 / emphasized 320 / exit 240ms；standard·enter·exit 三条 CubicBezier；spring 只用于弹层回弹）；位移距离 `tabShift / pageShift 8dp`、`toastShift 6dp`。六条硬约束：尊重系统「动画时长缩放=0」、只动 alpha/translate/scale、禁共享元素转场、禁 spring 弹跳、时长不叠加、受性能阈值约束。首批落地：Tab 内容淡入 +8dp 上移、底栏选中态换色 160ms + 图标缩放 220ms（缩放走 graphicsLayer，不参与测量） | 已实现（首批） |
 
 ## 明确延后的决定
 

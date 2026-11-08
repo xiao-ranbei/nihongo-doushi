@@ -27,6 +27,22 @@ import com.kotonoha.app.R
  */
 internal data class Palette(
     val dark: Boolean,
+    // ── 方案 B 玻璃层（D-050）。值逐条摘自 docs/design/liquid-glass/src/theme-b.css ──
+    val screenTop: Color,         // --screen-texture 的 linear-gradient 起点
+    val screenBottom: Color,      // --screen-texture 的 linear-gradient 终点
+    val blobTeal: Color,          // radial 1 · 16% / 14%
+    val blobBlue: Color,          // radial 2 · 88% / 40%
+    val blobMint: Color,          // radial 3 · 28% / 88%
+    val glassSurface: Color,      // --glass-surface：卡片 / 岛 / 弹层的玻璃底
+    val glassLine: Color,         // --glass-line：1dp 玻璃边
+    val glassHighlight: Color,    // inset 1dp 顶部高光
+    val brand: Color,             // --brand
+    val brandOn: Color,           // --brand-on
+    val brandSoft: Color,         // --brand-soft
+    val scrim: Color,             // --scrim
+    val toastSurface: Color,      // --toast-bg
+    val dockShadow: Color,        // 悬浮岛投影 0 12 30
+    val sheetShadow: Color,       // 弹层投影 0 -14 40
     val paper: Color,             // --paper
     val surface: Color,           // --surface
     val ink: Color,               // --ink
@@ -73,36 +89,51 @@ internal data class Palette(
 /** 浅色 = 糖果卡：白卡 + 大圆角 + 柔投影 + 竹绿强调色。 */
 private val CandyPalette = Palette(
     dark = false,
-    paper = Color(0xFFFAFAF8),
-    surface = Color(0xFFFFFFFF),
-    ink = Color(0xFF212430),
-    muted = Color(0xFF8A8D9C),
-    line = Color(0xFFEFF0F4),
-    lineControl = Color(0xFFE4E7EE),
-    green = Color(0xFF2E9463),
-    greenDark = Color(0xFF1F6B47),
-    greenPale = Color(0xFFE9F7EF),
-    lineAccent = Color(0xFFCFE9DA),
+    screenTop = Color(0xFFEAF2F4),
+    screenBottom = Color(0xFFDFEBEE),
+    blobTeal = Color(0x3D148C84),
+    blobBlue = Color(0x38468CC8),
+    blobMint = Color(0x3378C8B4),
+    glassSurface = Color(0x8CFFFFFF),
+    glassLine = Color(0xD1FFFFFF),
+    glassHighlight = Color(0xB8FFFFFF),
+    brand = Color(0xFF14857F),
+    brandOn = Color(0xFFFFFFFF),
+    brandSoft = Color(0x2414857F),
+    scrim = Color(0x42103036),
+    toastSurface = Color(0xCCFFFFFF),
+    dockShadow = Color(0x28144648),
+    sheetShadow = Color(0x2E103C42),
+    paper = Color(0xFFE9F1F3),
+    surface = Color(0xFFF7FBFB),
+    ink = Color(0xFF143036),
+    muted = Color(0xFF6D8A8E),
+    line = Color(0xFFE4EBEC),
+    lineControl = Color(0xFFD3E0E2),
+    green = Color(0xFF14857F),
+    greenDark = Color(0xFF0C645F),
+    greenPale = Color(0xFFDEEFED),
+    lineAccent = Color(0xFFADD4D2),
     orange = Color(0xFFD98243),
     orangePale = Color(0xFFFFE6D1),
     orangeTextDeep = Color(0xFF9A5A2A),
     orangeLine = Color(0xFFF3D3B8),
-    red = Color(0xFFD2544C),
-    redPale = Color(0xFFFFE7E3),
-    textRed = Color(0xFFB05048),
-    readingText = Color(0xFF8A8D9C),
-    meaningText = Color(0xFF6C7D72),
-    textStrong = Color(0xFF6E7180),
-    textGreen = Color(0xFF4E8C74),
-    statCorrectText = Color(0xFF2E9463),
-    statIncorrectText = Color(0xFFB4635B),
-    bgPaleGreen = Color(0xFFF4F8F4),
-    bgPaleStrong = Color(0xFFEAF2EC),
+    red = Color(0xFFB4514A),
+    redPale = Color(0xFFF8E9E6),
+    textRed = Color(0xFFA8504A),
+    readingText = Color(0xFF6D8A8E),
+    meaningText = Color(0xFF3D5A60),
+    textStrong = Color(0xFF3D5A60),
+    textGreen = Color(0xFF0C645F),
+    statCorrectText = Color(0xFF14857F),
+    statIncorrectText = Color(0xFFB4514A),
+    bgPaleGreen = Color(0xFFF2F8F8),
+    bgPaleStrong = Color(0xFFE3F0F0),
     slateBlue = Color(0xFF5E7392),
     slateBluePale = Color(0xFFE7EDF6),
     slateBlueDeep = Color(0xFF3A4B63),
     slateBlueLine = Color(0xFFD3DEEC),
-    surfaceVariant = Color(0xFFEEF0F5),
+    surfaceVariant = Color(0xFFE7EEEF),
     posNoun = Color(0xFFDBF2E4),
     posPronoun = Color(0xFFD9EEF0),
     posVerb = Color(0xFFFFE6D1),
@@ -117,36 +148,51 @@ private val CandyPalette = Palette(
 /** 深色 = 墨夜：墨黑底 + 冷蓝强调 + 小圆角 + 零阴影。 */
 private val InkNightPalette = Palette(
     dark = true,
-    paper = Color(0xFF0F1114),
-    surface = Color(0xFF181C21),
-    ink = Color(0xFFE9E7E2),
-    muted = Color(0xFF8B93A0),
-    line = Color(0xFF262B33),
-    lineControl = Color(0xFF333A44),
-    green = Color(0xFF9FBBD3),
-    greenDark = Color(0xFFCFE0EE),
-    greenPale = Color(0xFF1D2831),
-    lineAccent = Color(0xFF3B4A57),
+    screenTop = Color(0xFF0C1720),
+    screenBottom = Color(0xFF081016),
+    blobTeal = Color(0x4D1E7882),
+    blobBlue = Color(0x4D3C6EAA),
+    blobMint = Color(0x38288C82),
+    glassSurface = Color(0x8C182832),
+    glassLine = Color(0x4796C8D7),
+    glassHighlight = Color(0x3DFFFFFF),
+    brand = Color(0xFF7FD3C7),
+    brandOn = Color(0xFF0A1218),
+    brandSoft = Color(0x267FD3C7),
+    scrim = Color(0x80000000),
+    toastSurface = Color(0xDB182C36),
+    dockShadow = Color(0x52000000),
+    sheetShadow = Color(0x6B000000),
+    paper = Color(0xFF0A1218),
+    surface = Color(0xFF14222C),
+    ink = Color(0xFFE8F3F5),
+    muted = Color(0xFF7E9AA3),
+    line = Color(0xFF1E3038),
+    lineControl = Color(0xFF2C4250),
+    green = Color(0xFF7FD3C7),
+    greenDark = Color(0xFFA6E4DA),
+    greenPale = Color(0xFF1B2E36),
+    lineAccent = Color(0xFF3B6264),
     orange = Color(0xFFC9927A),
     orangePale = Color(0xFF2E2119),
     orangeTextDeep = Color(0xFFEFCDBA),
     orangeLine = Color(0xFF4A3A2E),
-    red = Color(0xFFD98B80),
+    red = Color(0xFFE79B92),
     redPale = Color(0xFF2A1D1B),
     textRed = Color(0xFFD09186),
-    readingText = Color(0xFF8490A0),
-    meaningText = Color(0xFF93A8A2),
-    textStrong = Color(0xFFA9B4BE),
-    textGreen = Color(0xFF9CC0B4),
-    statCorrectText = Color(0xFF8FC0A0),
-    statIncorrectText = Color(0xFFD0928A),
-    bgPaleGreen = Color(0xFF14181A),
-    bgPaleStrong = Color(0xFF1C2226),
+    readingText = Color(0xFF7E9AA3),
+    meaningText = Color(0xFFAFC6CD),
+    textStrong = Color(0xFFAFC6CD),
+    textGreen = Color(0xFFA6E4DA),
+    statCorrectText = Color(0xFF7FD3C7),
+    statIncorrectText = Color(0xFFE79B92),
+    bgPaleGreen = Color(0xFF0F1C22),
+    bgPaleStrong = Color(0xFF16262E),
     slateBlue = Color(0xFF9FB3CC),
     slateBluePale = Color(0xFF202A38),
     slateBlueDeep = Color(0xFFC3D3E6),
     slateBlueLine = Color(0xFF36465A),
-    surfaceVariant = Color(0xFF20262E),
+    surfaceVariant = Color(0xFF1B2830),
     posNoun = Color(0x299FBBD3),
     posPronoun = Color(0x249FBBD3),
     posVerb = Color(0x38CE6E58),
@@ -162,12 +208,17 @@ private val InkNightPalette = Palette(
 internal fun paletteFor(dark: Boolean): Palette = if (dark) InkNightPalette else CandyPalette
 
 /**
- * 几何令牌：两套皮肤的圆角与阴影差异。
- * - [cardRadius] 一级卡片/入口卡圆角
- * - [smallRadius] 行/小色块/图标盒圆角
- * - [cardShadow] Surface 的 shadowElevation
- * - [pillRadius] 胶囊圆角
- * - [navFloating] 底栏是否悬浮药丸
+ * 几何令牌：两套皮肤的圆角与阴影。
+ *
+ * **圆角已收敛成单值**（D-051 / 计划 §0.2.1）：[cardRadius] / [smallRadius] / [pillRadius]
+ * 三个别名同源于 [GlassTokens.radius] = 24dp，不再随皮肤或组件变化。
+ * 短边不足 48dp 的元素（20dp 徽标、34dp 小按钮）由形状自身裁到短边一半，属几何事实而非第二套值。
+ *
+ * @param cardRadius 卡片 / 分组容器 / 弹层圆角（= 24dp）
+ * @param smallRadius 行内小色块 / 图标盒 / 徽标圆角（= 24dp，短边不足时自动裁）
+ * @param cardShadow Surface 的 shadowElevation
+ * @param pillRadius 胶囊圆角（= 24dp，纯圆仅剩功能性圆形：头像 / 状态点 / 开关滑块）
+ * @param navFloating 历史字段：底栏是否悬浮。方案 B 起两套皮肤都是悬浮岛，恒 true，仅为兼容保留
  */
 data class ModuleGeometry(
     val cardRadius: Dp,
@@ -178,19 +229,19 @@ data class ModuleGeometry(
 )
 
 private val CandyGeometry = ModuleGeometry(
-    cardRadius = 20.dp,
-    smallRadius = 12.dp,
+    cardRadius = GlassTokens.radius,
+    smallRadius = GlassTokens.radius,
     cardShadow = 3.dp,
-    pillRadius = 999.dp,
+    pillRadius = GlassTokens.radius,
     navFloating = true,
 )
 
 private val InkNightGeometry = ModuleGeometry(
-    cardRadius = 13.dp,
-    smallRadius = 9.dp,
-    cardShadow = 0.dp,
-    pillRadius = 999.dp,
-    navFloating = false,
+    cardRadius = GlassTokens.radius,
+    smallRadius = GlassTokens.radius,
+    cardShadow = 3.dp,
+    pillRadius = GlassTokens.radius,
+    navFloating = true,
 )
 
 /** 纯函数取几何：不依赖 Composable，单测可直接钉住两套皮肤的圆角与阴影。 */
@@ -242,6 +293,61 @@ internal fun paperColorsFor(palette: Palette): PaperColors = PaperColors(
     lineControl = palette.lineControl,
     lineAccent = palette.lineAccent,
     bgPaleGreen = palette.bgPaleGreen,
+)
+
+/**
+ * 方案 B 的玻璃层令牌（D-050）：卡片 / 悬浮岛 / 弹层 / Toast 的玻璃底、描边、高光与投影。
+ *
+ * 与 [PaperColors] 分开的理由：纸色是「墨落在纸上」，玻璃色是「光穿过玻璃」，
+ * 两者取值口径不同（玻璃多为带 alpha 的白 / 冷蓝），混一张表会让以后调折射时误改正文色。
+ */
+data class GlassColors(
+    /** 屏幕底：光斑所在的两段渐变 + 三团径向光斑，全部由根 backdrop 绘制 */
+    val screenTop: Color,
+    val screenBottom: Color,
+    val blobTeal: Color,
+    val blobBlue: Color,
+    val blobMint: Color,
+    /** 玻璃面板底：浅 `rgba(255,255,255,.55)` / 墨夜 `rgba(24,40,50,.55)` */
+    val surface: Color,
+    /** 1dp 玻璃边：浅 `rgba(255,255,255,.82)` / 墨夜 `rgba(150,200,215,.28)` */
+    val line: Color,
+    /** 内顶高光：1dp，往下渐隐 */
+    val highlight: Color,
+    /** 主色：浅 `#14857F` / 墨夜 `#7FD3C7` */
+    val brand: Color,
+    val brandOn: Color,
+    val brandSoft: Color,
+    /** 遮罩：弹层 / 抽屉背后 */
+    val scrim: Color,
+    val toastSurface: Color,
+    /** 悬浮岛投影与弹层投影（只取色，尺寸在 [GlassTokens]） */
+    val dockShadow: Color,
+    val sheetShadow: Color,
+)
+
+private val LocalGlassColors = staticCompositionLocalOf { glassColorsFor(CandyPalette) }
+
+/** 玻璃层令牌访问入口：glassColors().brand 等（仅限 Composable 上下文） */
+@Composable
+fun glassColors(): GlassColors = LocalGlassColors.current
+
+internal fun glassColorsFor(palette: Palette): GlassColors = GlassColors(
+    screenTop = palette.screenTop,
+    screenBottom = palette.screenBottom,
+    blobTeal = palette.blobTeal,
+    blobBlue = palette.blobBlue,
+    blobMint = palette.blobMint,
+    surface = palette.glassSurface,
+    line = palette.glassLine,
+    highlight = palette.glassHighlight,
+    brand = palette.brand,
+    brandOn = palette.brandOn,
+    brandSoft = palette.brandSoft,
+    scrim = palette.scrim,
+    toastSurface = palette.toastSurface,
+    dockShadow = palette.dockShadow,
+    sheetShadow = palette.sheetShadow,
 )
 
 /**
@@ -379,64 +485,33 @@ data class ModuleTone(
 )
 
 /**
- * 四标签 + 主页的模块色块实例，取浅色糖果卡的值。
- * 深色墨夜的对应值由 [ProvideModuleTone] 按同一族自动换表，页面侧无需分支。
- * 主页是总览页，与学习同族（品牌绿）。
+ * 四标签的模块色块实例。
+ *
+ * 方案 B / D-044 处置：四个实例的色值全部收进青绿家族——原型 `theme-b.css` 只有一个强调色
+ * `--brand`（浅 `#14857F` / 墨夜 `#7FD3C7`），页面里没有第二种强调色，因此四实例同值。
+ * 保留四个实例而不是删成一个，是因为页面侧仍按标签取 `moduleTone()`（机制不变，未来要给
+ * 单个模块换辅色时只改这里一行，不必回头改页面）。
  */
 object ModuleTones {
-    val Home = ModuleTone(
+    private val brand = ModuleTone(
         main = CandyPalette.green,
         pale = CandyPalette.greenPale,
         deep = CandyPalette.greenDark,
         line = CandyPalette.lineAccent,
     )
-    val Study = ModuleTone(
-        main = CandyPalette.green,
-        pale = CandyPalette.greenPale,
-        deep = CandyPalette.greenDark,
-        line = CandyPalette.lineAccent,
-    )
-    val Read = ModuleTone(
-        main = CandyPalette.orange,
-        pale = CandyPalette.orangePale,
-        deep = CandyPalette.orangeTextDeep,
-        line = CandyPalette.orangeLine,
-    )
-    val Mine = ModuleTone(
-        main = CandyPalette.slateBlue,
-        pale = CandyPalette.slateBluePale,
-        deep = CandyPalette.slateBlueDeep,
-        line = CandyPalette.slateBlueLine,
-    )
+
+    val Home = brand
+    val Study = brand
+    val Read = brand
+    val Mine = brand
 }
 
-private val InkNightHomeTone = ModuleTone(
+private val InkNightBrandTone = ModuleTone(
     main = InkNightPalette.green,
     pale = InkNightPalette.greenPale,
     deep = InkNightPalette.greenDark,
     line = InkNightPalette.lineAccent,
 )
-
-private val InkNightReadTone = ModuleTone(
-    main = InkNightPalette.orange,
-    pale = InkNightPalette.orangePale,
-    deep = InkNightPalette.orangeTextDeep,
-    line = InkNightPalette.orangeLine,
-)
-
-private val InkNightMineTone = ModuleTone(
-    main = InkNightPalette.slateBlue,
-    pale = InkNightPalette.slateBluePale,
-    deep = InkNightPalette.slateBlueDeep,
-    line = InkNightPalette.slateBlueLine,
-)
-
-/** 浅色色块 → 墨夜同族色块；Home 与 Study 同族（数据相等），一并落到绿系。 */
-private fun inkNightToneOf(tone: ModuleTone): ModuleTone = when (tone) {
-    ModuleTones.Read -> InkNightReadTone
-    ModuleTones.Mine -> InkNightMineTone
-    else -> InkNightHomeTone
-}
 
 /** 当前模块色块访问入口：moduleTone().main 等（仅限 Composable 上下文） */
 private val LocalModuleTone = staticCompositionLocalOf { ModuleTones.Home }
@@ -450,7 +525,8 @@ fun moduleTone(): ModuleTone = LocalModuleTone.current
  */
 @Composable
 fun themedTone(tone: ModuleTone): ModuleTone =
-    if (LocalPalette.current.dark) inkNightToneOf(tone) else tone
+    // 方案 B 起四模块同族，墨夜只需换成冷调那一份；浅色直接原样返回
+    if (LocalPalette.current.dark) InkNightBrandTone else tone
 
 /**
  * 给一段 UI 指定模块色块。一级页在 AppRoot 里按当前标签包一层，
@@ -472,6 +548,7 @@ fun KotonohaTheme(
         LocalPalette provides palette,
         LocalGeometry provides geometryFor(darkTheme),
         LocalPaperColors provides paperColorsFor(palette),
+        LocalGlassColors provides glassColorsFor(palette),
     ) {
         MaterialTheme(
             colorScheme = colorSchemeFor(palette),
