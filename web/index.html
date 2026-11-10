@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="font/fonts.js" defer></script>
   <script src="verb-engine.js" defer></script>
+  <script src="honorific-engine.js" defer></script>
   <script src="adjective-engine.js" defer></script>
   <script src="particle-engine.js" defer></script>
   <script src="read-engine.js" defer></script>
@@ -46,6 +47,9 @@
         </button>
         <button class="nav-item" type="button" data-view="particle" aria-label="助词学习" title="助词学习">
           <span class="nav-icon" aria-hidden="true">助</span><span class="nav-label">助词学习</span>
+        </button>
+        <button class="nav-item" type="button" data-view="verb" data-verb-subview="honorific" aria-label="敬语" title="敬语">
+          <span class="nav-icon" aria-hidden="true">敬</span><span class="nav-label">敬语</span>
         </button>
         <p class="sidebar-section-label">阅读</p>
         <button class="nav-item" type="button" data-view="read" aria-label="文章阅读" title="文章阅读">
@@ -150,6 +154,16 @@
               <span class="home-module-count" id="home-particle-today">0 题</span>
               <span class="home-module-arrow" aria-hidden="true">→</span>
             </button>
+            <button class="home-module-card" type="button" data-open-view="verb" data-verb-subview="honorific">
+              <span class="home-module-mark" aria-hidden="true">敬</span>
+              <span class="home-module-copy">
+                <strong>敬语</strong>
+                <small>先判主体，再选尊敬語、謙譲語或丁寧語</small>
+                <span class="home-module-status" id="home-honorific-status">三层对照与二重敬语检查</span>
+              </span>
+              <span class="home-module-count" id="home-honorific-today">0 题</span>
+              <span class="home-module-arrow" aria-hidden="true">→</span>
+            </button>
             <button class="home-module-card" type="button" data-open-view="read">
               <span class="home-module-mark" aria-hidden="true">読</span>
               <span class="home-module-copy">
@@ -177,6 +191,7 @@
         <nav class="module-subnav" id="verb-subnav" aria-label="动词模块功能">
           <button class="module-subtab is-active" type="button" data-verb-subview="practice" aria-selected="true">练习</button>
           <button class="module-subtab" type="button" data-verb-subview="reference" aria-selected="false">活用速查</button>
+          <button class="module-subtab" type="button" data-verb-subview="honorific" aria-selected="false">敬语</button>
         </nav>
       <section class="module-subview" id="view-practice" aria-labelledby="verb-practice-view-title">
         <div class="section-heading">
@@ -428,6 +443,154 @@
             <tbody id="reference-table-body"></tbody>
           </table>
         </div>
+      </section>
+
+      <section class="module-subview" id="view-honorific" aria-labelledby="honorific-title" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">HONORIFIC</p>
+            <h2 id="honorific-title">敬语</h2>
+            <p>先判断动作是谁做的：对方做的用尊敬語，自己做的用謙譲語，只是把话说体面用丁寧語。</p>
+          </div>
+        </div>
+
+        <article class="practice-card honorific-practice" id="honorific-practice-card">
+          <div class="practice-card-head">
+            <div class="card-topline">
+              <div>
+                <p class="eyebrow">敬语练习</p>
+                <h2 id="honorific-practice-title">把普通形换成敬语</h2>
+              </div>
+              <span class="target-pill" id="honorific-level-pill">准备中</span>
+            </div>
+          </div>
+          <div class="verb-prompt" id="honorific-prompt" role="button" tabindex="0" aria-expanded="false">
+            <div class="verb-meta">
+              <span class="class-pill" id="honorific-question-level">敬语</span>
+              <span class="meaning" id="honorific-question-meaning"></span>
+            </div>
+            <h3 id="honorific-question-word"></h3>
+            <p class="reading" id="honorific-question-reading">假名</p>
+          </div>
+          <p class="question-instruction" id="honorific-question-instruction"></p>
+          <form class="answer-form" id="honorific-answer-form">
+            <label for="honorific-answer-input">写出日语答案</label>
+            <div class="answer-row">
+              <input
+                id="honorific-answer-input"
+                name="honorific-answer"
+                type="text"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                placeholder="可输入汉字、假名或罗马字"
+                required
+              >
+              <button class="primary-button" id="honorific-submit" type="submit">检查答案</button>
+            </div>
+            <div class="answer-help">
+              <span>例：お書きになります、おかきになります或 okakininarimasu</span>
+              <button class="inline-button" id="honorific-hint-button" type="button" aria-expanded="false">显示规律提示</button>
+              <button class="inline-button" id="honorific-reveal" type="button">查看答案</button>
+            </div>
+            <p class="hint-text" id="honorific-rule-hint" hidden></p>
+          </form>
+          <section class="feedback-panel" id="honorific-feedback" aria-live="polite" hidden>
+            <div class="feedback-heading">
+              <span class="feedback-mark" id="honorific-feedback-mark" aria-hidden="true"></span>
+              <strong id="honorific-feedback-title"></strong>
+            </div>
+            <p class="feedback-user-answer" id="honorific-feedback-user"></p>
+            <div class="correct-answer">
+              <span>正确形态</span>
+              <strong id="honorific-feedback-answer"></strong>
+              <small id="honorific-feedback-reading"></small>
+            </div>
+            <div class="feedback-meaning">
+              <strong>这一类的使用场合</strong>
+              <p id="honorific-feedback-meaning"></p>
+            </div>
+            <p class="feedback-rule" id="honorific-feedback-rule"></p>
+            <button class="primary-button next-button" id="honorific-next" type="button">
+              下一题 <span aria-hidden="true">→</span>
+            </button>
+          </section>
+        </article>
+
+        <section class="honorific-section" aria-labelledby="honorific-table-title">
+          <div class="honorific-section-head">
+            <div>
+              <h3 id="honorific-table-title">同一个动词的三层说法</h3>
+              <p>特殊说法优先于规则形；标「特殊」的需要整词记忆。</p>
+            </div>
+          </div>
+          <div class="reference-controls">
+            <label class="search-control">
+              <span>搜索动词</span>
+              <input id="honorific-search" type="search" placeholder="输入汉字、假名或中文意思">
+            </label>
+            <label>
+              <span>动词</span>
+              <select id="honorific-verb"></select>
+            </label>
+          </div>
+          <div class="table-wrap">
+            <table class="reference-table honorific-table">
+              <thead>
+                <tr>
+                  <th scope="col">敬语类别</th>
+                  <th scope="col">ます形</th>
+                  <th scope="col">构成</th>
+                  <th scope="col">使用场合</th>
+                  <th scope="col" class="reference-practice-col">练一练</th>
+                </tr>
+              </thead>
+              <tbody id="honorific-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="honorific-section" aria-labelledby="honorific-tools-title">
+          <div class="honorific-section-head">
+            <div>
+              <h3 id="honorific-tools-title">判断与自查</h3>
+              <p>先判主体选类别，再检查有没有把两种敬语叠在一起。</p>
+            </div>
+          </div>
+          <div class="honorific-tool-grid">
+            <article class="learning-card honorific-tool">
+              <h4>敬语诊断</h4>
+              <label>
+                <span>这个动作是谁做的？</span>
+                <select id="honorific-subject"></select>
+              </label>
+              <label class="honorific-checkbox">
+                <input id="honorific-in-group" type="checkbox">
+                <span>听话人是公司外部的人（本公司的人算己方）</span>
+              </label>
+              <p class="honorific-result" id="honorific-diagnose-result" role="status"></p>
+            </article>
+            <article class="learning-card honorific-tool">
+              <h4>二重敬语检查</h4>
+              <label class="search-control" for="honorific-check-input">
+                <span>粘贴一句话</span>
+                <input id="honorific-check-input" type="text" autocomplete="off" spellcheck="false" placeholder="例如：おっしゃられました">
+              </label>
+              <p class="honorific-result" id="honorific-check-result" role="status" aria-live="polite"></p>
+            </article>
+          </div>
+        </section>
+
+        <section class="honorific-section" aria-labelledby="honorific-examples-title">
+          <div class="honorific-section-head">
+            <div>
+              <h3 id="honorific-examples-title">对谁说，决定怎么说</h3>
+              <p>六类场景，每类四句；句子标注了「谁对谁」。</p>
+            </div>
+          </div>
+          <div class="honorific-scene-filter" id="honorific-scene-filter" role="group" aria-label="场景筛选"></div>
+          <div class="honorific-example-list" id="honorific-example-list"></div>
+        </section>
       </section>
       </section>
 

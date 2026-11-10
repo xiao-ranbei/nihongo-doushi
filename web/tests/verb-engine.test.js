@@ -175,6 +175,77 @@ test("所有内置动词都能生成全部变形组合", function () {
   }
 });
 
+test("词库结构完整：id 与词形唯一、分组取值合法、五段词尾全覆盖", function () {
+  const ids = new Set();
+  const words = new Set();
+  const ALLOWED_GROUPS = new Set(["godan", "ichidan", "irregular"]);
+  const ALLOWED_KINDS = new Set(["godan", "iku", "ichidan", "suru", "kuru"]);
+  const endings = new Set();
+
+  for (const verb of engine.VERBS) {
+    assert.ok(!ids.has(verb.id), "动词 id 重复：" + verb.id);
+    ids.add(verb.id);
+    const word = verb.dictionary + "|" + verb.reading;
+    assert.ok(!words.has(word), "动词词形重复：" + word);
+    words.add(word);
+    assert.ok(ALLOWED_GROUPS.has(verb.group), verb.id + " 的分组非法：" + verb.group);
+    assert.ok(ALLOWED_KINDS.has(verb.kind), verb.id + " 的 kind 非法：" + verb.kind);
+    if (verb.kind === "godan" || verb.kind === "iku") {
+      endings.add(verb.dictionary.slice(-1));
+    }
+  }
+
+  // 「ぬ」结尾的五段动词在现代日语中只有「死ぬ」，其余词尾应各有多个样本，
+  // 保证音便练习不会只覆盖少数词尾。
+  ["う", "く", "ぐ", "す", "つ", "ぬ", "ぶ", "む", "る"].forEach(function (ending) {
+    assert.ok(endings.has(ending), "词库缺少以「" + ending + "」结尾的五段动词");
+  });
+});
+
+test("扩容动词的音便与语态抽样正确", function () {
+  const cases = [
+    ["arau", "te", "洗って"], ["arau", "past", "洗った"],
+    ["nugu", "te", "脱いで"], ["nugu", "past", "脱いだ"],
+    ["migaku", "te", "磨いて"], ["migaku", "past", "磨いた"],
+    ["kasu", "te", "貸して"], ["kasu", "past", "貸した"],
+    ["katsu", "te", "勝って"], ["katsu", "past", "勝った"],
+    ["hakobu", "te", "運んで"], ["hakobu", "past", "運んだ"],
+    ["sumu", "te", "住んで"], ["sumu", "past", "住んだ"],
+    ["noboru", "te", "登って"], ["noboru", "past", "登った"],
+    ["mitsukaru", "negative", "見つからない"],
+    ["katadzukeru", "masu", "片付けます"],
+    ["umareru", "te", "生まれて"],
+    ["sentaku-suru", "masu", "洗濯します"],
+    ["sentaku-suru", "negative", "洗濯しない"],
+    ["shutchou-suru", "past", "出張した"]
+  ];
+
+  cases.forEach(function (item) {
+    const verb = VERB_BY_ID.get(item[0]);
+    assert.ok(verb, "找不到动词：" + item[0]);
+    assert.equal(
+      engine.conjugate(verb, "base", item[1]).written,
+      item[2],
+      item[0] + " / " + item[1]
+    );
+  });
+
+  const voiceCases = [
+    ["katadzukeru", "potential", "片付けられる"],
+    ["sentaku-suru", "potential", "洗濯できる"],
+    ["kasu", "passive", "貸される"],
+    ["nugu", "causative", "脱がせる"]
+  ];
+  voiceCases.forEach(function (item) {
+    const verb = VERB_BY_ID.get(item[0]);
+    assert.equal(
+      engine.conjugate(verb, item[1], "dictionary").written,
+      item[2],
+      item[0] + " / " + item[1]
+    );
+  });
+});
+
 test("罗马字输入可转换为平假名", function () {
   assert.equal(engine.toHiraganaFromRomaji("kakimasu"), "かきます");
   assert.equal(engine.toHiraganaFromRomaji("yomimashita"), "よみました");

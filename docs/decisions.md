@@ -66,6 +66,8 @@
 | D-057 | **浅色 `--text-3` 加深一档（无障碍修正）**：Golden 原值 `#6D8A8E` 在纸底 `#E9F1F3` 上只有 3.23:1、玻璃卡上 3.49:1，够不上 WCAG AA 正文 4.5（`muted` 承担的是 11–12sp 的 labelSmall/labelMedium）。改为 `#587175`：玻璃卡 4.91:1、纸底 4.55:1，色相不变（仍是青灰绿），Golden `--text-3` 与 `Theme.kt` 同步改。`--brand #14857F` **不动**（4.22:1）：它只用于 ≥14sp 粗体标题、区块标题与图标，按大字号 3.0 判定合规；正文绿字一律走 `textGreen`（`--brand-ink #0C645F`，6.60:1）。判定口径与全量结果见 `android/tools/contrast-check.py`（11 组 × 双皮肤） | 已实现（2026-11-08，全绿） |
 | D-058 | **弹层玻璃的三段式做法（IK-23 收口）**：① `ModalBottomSheet` / `AlertDialog` 各自跑在 Dialog 窗口上，跨窗口采不到主窗口 `LayerBackdrop` 的 RenderNode——所以**不能**把 `glassPanel` 挂在 `ModalBottomSheet` 的 `modifier` 上（实测那个 modifier 落在 Dialog 的全屏根 Box 上，玻璃铺满整屏、抽屉内容反被盖住）；正确位置是 content 层自己那层 Column。② 采样源换成 `ScreenTextureBackdrop`：自己实现 `Backdrop`，按 `positionInWindow()` 反向平移后重画屏幕底纹理，玻璃就拿得到同一条渐变与同一批光斑（`rememberCanvasBackdrop` 不行，它拿不到玻璃在窗口里的位置，纹理会被压进每块玻璃自己的矩形）。③ 容器自身 `containerColor` 透明、`tonalElevation` 归零，玻璃只由 `glassPanel` 画。抽屉（`ModalNavigationDrawer`）在主窗口内，直接采 `Layer.Background`，不走静态副本，但同样要 `glassPanel` + 透明容器。附带约束：抽屉高度上限 0.78 屏高，列表用 `weight(fill = false)` 吃剩余空间、分组内容加 `verticalScroll`，否则会被直接裁断 | 已实现（`ui/glass/GlassDialog.kt`、`ui/glass/Glass.kt`） |
 
+| D-059 | **敬语模块（Web）**：入口复用 `verb` 视图——动词模块第三子页 + 侧栏独立入口，不新增顶层 view id；切回「动词活用」时落回练习，避免与敬语项同时高亮。规则形按 `kind` 派生（和語「お + ます词干 + になる／する」、サ変「ご + 漢語 + になる／する」，謙譲語另收 `いたす` 变体）；**15 条特殊敬语动词整词记忆，特殊形优先且规则形不参与判题**（「お行きになります」判错）；9 个无意志动词（降る・咲く・分かる・見つかる・始まる・終わる・開く・閉まる）只出丁寧語并说明原因，不编造敬语形；判题只认ます形（敬语几乎只在礼貌体使用），裁辞书形输入判错；二重敬语按词表匹配 10 类，`severity` 分错误／冗余。首版**不接全局错题本**（答错进当前会话重练队列，题 key `hon::<verbId>::<levelId>` 已备好），**配置面板与场景判断题延后** | 已实现（2026-11-10）；取舍与偏差见 [web-honorific-module-spec.md](web-honorific-module-spec.md) |
+
 ## 明确延后的决定
 
 - Android 最低支持版本、Kotlin UI 框架、本地存储技术和包名。

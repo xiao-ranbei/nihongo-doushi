@@ -39,6 +39,9 @@
 | IK-21 | Web 书签只有写入/取消，无浏览页 | web/（B6 收藏动作已落，浏览 UI 未做） | P3 |
 | IK-22 | 朗读仅 speechSynthesis，无第三方 TTS 端点（计划 B8 可选项） | web/read-tts.js | P3 |
 | ~~IK-23~~ | ~~弹层窗口拿不到主窗口 backdrop~~ → 已关闭（2026-11-08，`ScreenTextureBackdrop` + `glassPanel`，见 D-058） | android/ui/**（4 sheet + 7 dialog + 1 drawer） | P2·已关闭 |
+| IK-24 | 敬语可配置项未做：设计列了 8 项设置（显示层级、练习方向、目标形式、特殊形标注、规则形替代、二重敬语开关、场景筛选、错题并入），首版全部按默认值运行，无设置面板与 `japanese-honorific-config-v1` | web/app.js（敬语子页）／设计 §3.5 | P2 |
+| IK-25 | 敬语错题未接入全局错题本：答错只进当前页面会话的重练队列，刷新即丢；题 key `hon::<verbId>::<levelId>` 已按模块边界备好，缺的是错题本第三分组与 `questionFromMistake` 分支 | web/app.js（`honorificReviewQueue`）、`renderMistakes` | P2 |
+| IK-26 | 敬语场景判断题未做：场景目前只做例句筛选与「练这句里的动词」，没有「这句话该用哪类敬语」的选择题 | web/honorific-engine.js（`judgeLevel` 已有，缺题目形态） | P3 |
 
 ## 明细
 

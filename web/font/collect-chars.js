@@ -13,6 +13,7 @@
 const fs = require("fs");
 const path = require("path");
 const engine = require(path.join(__dirname, "..", "verb-engine.js"));
+const honorificEngine = require(path.join(__dirname, "..", "honorific-engine.js"));
 const adjEngine = require(path.join(__dirname, "..", "adjective-engine.js"));
 
 const chars = new Set();
@@ -60,6 +61,50 @@ for (const adjective of adjEngine.ADJECTIVES) {
       .join("");
     for (const char of texts) {
       chars.add(char);
+    }
+  }
+}
+
+// 敬语引擎数据：三层定义、场景、特殊敬语动词表、场景例句与二重敬语提示。
+// honorific-engine.js 不进下面「页面与脚本」白名单——那里有大量中文注释，
+// 只按结构化数据收集，字符表不会被注释散文撑大。
+for (const level of honorificEngine.LEVELS) {
+  chars.add(level.label + level.topic + level.question + level.pattern + level.meaning);
+}
+for (const scene of honorificEngine.SCENES) {
+  chars.add(scene.label + scene.who + scene.note);
+}
+for (const subject of honorificEngine.SUBJECTS) {
+  chars.add(subject.label);
+}
+for (const verbId of Object.keys(honorificEngine.SPECIAL_HONORIFIC)) {
+  const entry = honorificEngine.SPECIAL_HONORIFIC[verbId];
+  for (const levelId of Object.keys(entry)) {
+    for (const form of entry[levelId]) {
+      chars.add(form.written + form.kana + form.masu + form.masuKana);
+    }
+  }
+}
+for (const verbId of Object.keys(honorificEngine.LIMITED_VERBS)) {
+  chars.add(honorificEngine.LIMITED_VERBS[verbId]);
+}
+for (const example of honorificEngine.EXAMPLES) {
+  chars.add(example.jp + example.kana + example.zh + example.who);
+}
+for (const entry of honorificEngine.DOUBLE_PATTERNS) {
+  chars.add(entry.phrase + entry.suggestion + entry.reason);
+}
+// 敬语派生结果：不可用层的说明文字同样是界面文案
+for (const verb of engine.VERBS) {
+  for (const level of honorificEngine.LEVELS) {
+    const forms = honorificEngine.getHonorificForms(verb, level.id);
+    if (!forms.available) {
+      chars.add(forms.reason);
+      continue;
+    }
+    const all = [forms.primary].concat(forms.alternatives);
+    for (const form of all) {
+      chars.add(form.written + form.kana + form.masu + form.masuKana);
     }
   }
 }

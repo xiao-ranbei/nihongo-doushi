@@ -32,6 +32,7 @@
 | [workflow-review-two-increments.md](workflow-review-two-increments.md) | 两次追加功能的工作流复盘：目标、步骤、模块依赖、异同与演进、注意事项与可复用模板 | 参考文档 |
 | [design/home-mine-prototypes.html](design/home-mine-prototypes.html) | 主页/我的 三版可交互原型（框内底栏可切换） | 讨论用原型，不是正式页面 |
 | [web-read-analyzer-plan.md](web-read-analyzer-plan.md) | Web 端文章分析分批实施计划：参考项目全能力逐项适配、四次调用契约、成本与隐私口径、B0～B9 批次与验收、闸门清单 | 已实现（B0–B9 收口，2026-11-06；Web 396/396） |
+| [web-honorific-module-spec.md](web-honorific-module-spec.md) | Web 端动词词库扩容（79→126）与敬语模块：教学口径（主体判定/内外规则/无意志动词）、六场景、触发方式、展示形式、可配置项、引擎数据结构、应用位置与预期效果 | 已实现（2026-11-10）：词库扩容、三层对照、练习、诊断、二重敬语检查、24 条例句；配置面板与错题本接入延后 |
 | [design/icon-concepts/](design/icon-concepts/) | 应用图标方向 1「あ・纸页」资产（已轮廓化，含 VectorDrawable）与生成/自检脚本 | 可接入 |
 | [android-liquid-glass-assessment.md](android-liquid-glass-assessment.md) | 酷安「液体玻璃」与 AndroidLiquidGlass 关系澄清：视觉/模块边界/系统能力/性能兼容性，复用评估与全量 UI 翻新重构规划 | 调研评估（2026-11-07，不含实现与 UX 定案） |
 | [design/liquid-glass/index.html](design/liquid-glass/index.html) | 安卓端 UI 翻新三方案可交互原型并列对照（纸感延续 / 全量液态玻璃 / 结构化线框），9 视图同一 IA 与操作路径，含特点/场景/优缺点/取舍 | 可预览原型（2026-11-07；已选定方案 B；2026-11-08 追加悬浮岛 + 统一圆角 24） |

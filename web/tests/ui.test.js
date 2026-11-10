@@ -10,6 +10,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const engine = require("../verb-engine.js");
+const honorificEngine = require("../honorific-engine.js");
 const adjEngine = require("../adjective-engine.js");
 const particleEngine = require("../particle-engine.js");
 const { createApp } = require("./helpers/dom-stub.js");
@@ -77,7 +78,7 @@ function tab(app, viewId) {
     app.click(homeLink);
     return homeLink;
   }
-  if (viewId === "practice" || viewId === "reference") {
+  if (viewId === "practice" || viewId === "reference" || viewId === "honorific") {
     const moduleTab = app.document.querySelectorAll("[data-view]").filter(function (node) {
       return node.dataset.view === "verb";
     })[0];
@@ -125,7 +126,7 @@ test("初始化：注入字体、渲染首题并默认显示学习主页", funct
   assert.equal(app.$("view-particle").hidden, true);
   assert.equal(app.$("view-mistakes").hidden, true);
   assert.equal(app.document.querySelectorAll(".module-subnav").length, 3, "三个模块应共用页签导航");
-  assert.equal(app.document.querySelectorAll(".module-subtab").length, 7);
+  assert.equal(app.document.querySelectorAll(".module-subtab").length, 8, "动词三页签 + 形容词两页签 + 助词三页签");
   assert.equal(app.document.querySelectorAll(".subtabs").length, 0, "不应保留形容词专属页签样式");
   assert.equal(app.$("particle-view-practice").hidden, false);
   assert.equal(app.$("particle-view-learn").hidden, true);
@@ -1515,7 +1516,7 @@ test("主页：昨日活动不冒充今日答题量，连续天数保留到当�
   } });
 
   assert.equal(app.$("home-today-total").textContent, "0 题");
-  assert.equal(app.$("home-today-breakdown").textContent, "动词 0 题 · 形容词 0 题 · 助词 0 题");
+  assert.equal(app.$("home-today-breakdown").textContent, "动词 0 题 · 形容词 0 题 · 助词 0 题 · 敬语 0 题");
   assert.equal(app.$("home-active-module-count").textContent, "0");
   assert.equal(app.$("home-streak-count").textContent, "4");
 });
@@ -1561,7 +1562,7 @@ test("主页：汇总今日答题并提供独立模块入口", function () {
   assert.equal(stored.verbAnswers, 1);
   assert.equal(stored.adjectiveAnswers, 1);
   assert.equal(app.$("home-today-total").textContent, "2 题");
-  assert.equal(app.$("home-today-breakdown").textContent, "动词 1 题 · 形容词 1 题 · 助词 0 题");
+  assert.equal(app.$("home-today-breakdown").textContent, "动词 1 题 · 形容词 1 题 · 助词 0 题 · 敬语 0 题");
   assert.equal(app.$("home-active-module-count").textContent, "2");
   assert.equal(app.$("home-adjective-status").textContent, "今日已练");
 });
@@ -3271,4 +3272,145 @@ test("静态守卫：生产代码禁用 dom-stub 专属 API（dispatch），只�
     assert.equal(hits.length, 0,
       name + " 含 dom-stub 专属 .dispatch() 调用（真浏览器不存在该 API，应改用 dispatchEvent）");
   });
+});
+
+// ---------------- 敬语子页 ----------------
+
+// 从页面当前展示反推敬语答案：题干动词 + 目标 pill（敬语类别）。
+function currentHonorificAnswer(app) {
+  const word = app.$("honorific-question-word").textContent;
+  const verb = engine.VERBS.filter(function (item) {
+    return item.dictionary === word;
+  })[0];
+  assert.ok(verb, "敬语题目动词应存在于动词表：" + word);
+
+  const label = app.$("honorific-level-pill").textContent;
+  const level = honorificEngine.LEVELS.filter(function (item) {
+    return item.label === label;
+  })[0];
+  assert.ok(level, "敬语类别标签应可解析：" + label);
+
+  const question = honorificEngine.buildQuestion(verb, level.id);
+  assert.ok(question, "该动词在此敬语类别下应可出题");
+  return question.display;
+}
+
+test("敬语：侧栏入口打开动词模块的敬语子页并渲染三层对照", function () {
+  const app = createApp();
+  tab(app, "honorific");
+
+  assert.equal(app.$("view-verb").hidden, false);
+  assert.equal(app.$("view-honorific").hidden, false);
+  assert.equal(app.$("view-practice").hidden, true);
+  assert.equal(app.$("view-reference").hidden, true);
+
+  app.$("honorific-verb").value = "kaku";
+  app.$("honorific-verb").dispatch("change");
+  const rows = app.$("honorific-table-body").childNodes;
+  assert.equal(rows.length, 3, "三层敬语应各占一行");
+  assert.match(rows[0].textContent, /尊敬語/);
+  assert.match(rows[0].textContent, /お書きになります/);
+  assert.match(rows[1].textContent, /お書きします/);
+  assert.match(rows[2].textContent, /書きます/);
+
+  // 切回练习子页后敬语视图隐藏
+  tab(app, "practice");
+  assert.equal(app.$("view-honorific").hidden, true);
+  assert.equal(app.$("view-practice").hidden, false);
+});
+
+test("敬语：对照表标出特殊说法与不适用层", function () {
+  const app = createApp();
+  tab(app, "honorific");
+
+  app.$("honorific-verb").value = "iku";
+  app.$("honorific-verb").dispatch("change");
+  const ikuRows = app.$("honorific-table-body").childNodes;
+  assert.match(ikuRows[0].textContent, /いらっしゃいます/);
+  assert.match(ikuRows[0].textContent, /特殊/);
+
+  app.$("honorific-verb").value = "furu";
+  app.$("honorific-verb").dispatch("change");
+  const furuRows = app.$("honorific-table-body").childNodes;
+  assert.match(furuRows[0].textContent, /不适用/);
+  assert.match(furuRows[0].textContent, /自然现象|天气/);
+  assert.match(furuRows[2].textContent, /降ります/);
+});
+
+test("敬语：答对显示反馈并计入每日统计，答错在下一题重现", function () {
+  const app = createApp();
+  tab(app, "honorific");
+
+  app.$("honorific-answer-input").value = currentHonorificAnswer(app);
+  app.$("honorific-answer-form").dispatch("submit");
+  assert.equal(app.$("honorific-feedback").hidden, false);
+  assert.match(app.$("honorific-feedback-title").textContent, /答对/);
+  assert.ok(app.$("honorific-feedback-answer").textContent.length > 0);
+  assert.ok(app.$("honorific-feedback-rule").textContent.length > 0);
+
+  const stored = JSON.parse(app.window.localStorage.getItem(DAILY_KEY));
+  assert.equal(stored.honorificAnswers, 1);
+
+  app.click(app.$("honorific-next"));
+  assert.equal(app.$("honorific-feedback").hidden, true);
+
+  const wrongWord = app.$("honorific-question-word").textContent;
+  app.$("honorific-answer-input").value = "ちがう";
+  app.$("honorific-answer-form").dispatch("submit");
+  assert.match(app.$("honorific-feedback-title").textContent, /没答对/);
+  assert.equal(JSON.parse(app.window.localStorage.getItem(DAILY_KEY)).honorificAnswers, 2);
+
+  app.click(app.$("honorific-next"));
+  assert.equal(app.$("honorific-question-word").textContent, wrongWord, "答错的题应在下一题重现");
+});
+
+test("敬语：二重敬语检查给出纠正，正确说法不误报", function () {
+  const app = createApp();
+  tab(app, "honorific");
+
+  const input = app.$("honorific-check-input");
+  input.value = "おっしゃられました";
+  input.dispatch("input");
+  assert.match(app.$("honorific-check-result").textContent, /おっしゃる/);
+  assert.equal(app.$("honorific-check-result").classList.contains("is-warning"), true);
+
+  input.value = "おっしゃいました";
+  input.dispatch("input");
+  assert.match(app.$("honorific-check-result").textContent, /没有检测到/);
+  assert.equal(app.$("honorific-check-result").classList.contains("is-ok"), true);
+});
+
+test("敬语：诊断器按主体与内外关系给出敬语类别", function () {
+  const app = createApp();
+  tab(app, "honorific");
+
+  const subject = app.$("honorific-subject");
+  subject.value = "self";
+  subject.dispatch("change");
+  assert.match(app.$("honorific-diagnose-result").textContent, /謙譲語/);
+
+  subject.value = "other";
+  subject.dispatch("change");
+  assert.match(app.$("honorific-diagnose-result").textContent, /尊敬語/);
+
+  subject.value = "third";
+  subject.dispatch("change");
+  assert.match(app.$("honorific-diagnose-result").textContent, /尊敬語/);
+
+  app.$("honorific-in-group").checked = true;
+  app.$("honorific-in-group").dispatch("change");
+  assert.match(app.$("honorific-diagnose-result").textContent, /謙譲語/);
+  assert.match(app.$("honorific-diagnose-result").textContent, /己方/);
+});
+
+test("敬语：场景筛选切换例句列表", function () {
+  const app = createApp();
+  tab(app, "honorific");
+
+  assert.equal(app.$("honorific-example-list").querySelectorAll(".honorific-example").length, 24);
+
+  const buttons = app.$("honorific-scene-filter").querySelectorAll(".honorific-scene-button");
+  assert.equal(buttons.length, 7, "全部 + 六个场景");
+  app.click(buttons[1]);
+  assert.equal(app.$("honorific-example-list").querySelectorAll(".honorific-example").length, 4);
 });

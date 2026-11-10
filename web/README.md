@@ -8,7 +8,8 @@
 
 ## 练习内容
 
-- 五段、一段和不规则动词
+- 五段、一段和不规则动词，共 126 词（五段 70／一段 39／不规则 17）；练习目标为 7 种语态 × 18 种活用形式
+- 敬语子页：三层（尊敬語／謙譲語／丁寧語）对照与填空练习、15 条特殊敬语动词、敬语诊断、二重敬语检查、6 个场景各 4 句手写例句；侧栏有独立入口
 - 学习主页汇总今日答题量、连续学习天数和各模块今日状态
 - 动词、形容词和助词作为独立模块，通过侧栏导航切换；窄屏使用左侧抽屉
 - 助词模块默认进入练习：综合模式交替出“选择合适助词”和“判断目标助词在句中作用”两类题；层级与题型可用下拉框切换，学习地图与错题复习作为辅助入口
@@ -36,14 +37,15 @@
 安装 Node.js 后，在 `web/` 目录运行：
 
 ```text
-node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/read-engine.test.js tests/read-client.test.js tests/read-ocr.test.js tests/read-stats.test.js tests/read-tts.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
+node --test tests/verb-engine.test.js tests/honorific-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/read-engine.test.js tests/read-client.test.js tests/read-ocr.test.js tests/read-stats.test.js tests/read-tts.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
 ```
 
 Windows 下 `node --test` 需要显式列出文件，不能只传 `tests/` 目录。
 
 | 测试文件 | 覆盖内容 |
 | --- | --- |
-| `verb-engine.test.js` | 变形规则、答案归一化、罗马字转换 |
+| `verb-engine.test.js` | 变形规则、答案归一化、罗马字转换、词表完整性与音便抽样 |
+| `honorific-engine.test.js` | 三层敬语规则派生、15 条特殊动词表、无意志动词限制、判题变体、二重敬语命中与不误报、场景判定、24 条例句元数据 |
 | `adjective-engine.test.js` | 形容词变形、特殊形式、答案变体与规则说明 |
 | `particle-engine.test.js` | 助词专题、两类题目、句义题目标与综合题量平衡 |
 | `styles.test.js` | 样式契约守卫（令牌必须已定义、组件内禁止硬编码色值） |
@@ -57,7 +59,7 @@ Windows 下 `node --test` 需要显式列出文件，不能只传 `tests/` 目�
 
 ## 字体
 
-页面使用霞鹜楷体（`font/LXGWZhenKaiGB-Regular.ttf`，约 16.7MB）。运行时实际加载的是按当前词库与界面文本生成的子集 `LXGWZhenKaiGB-Regular.subset.woff2`（约 422KB，字符表 1424 项 / cmap 1422 字形，字形轮廓与步进宽度与原字体一致）。同一脚本还会产出 Android 端 TTF `android/app/src/main/res/font/lxgw_zhenkai_subset.ttf`（约 766KB，与 woff2 同一字符表，D-029），两端必须一起重建。新增词库或界面文本后，重新生成子集：
+页面使用霞鹜楷体（`font/LXGWZhenKaiGB-Regular.ttf`，约 16.7MB）。运行时实际加载的是按当前词库与界面文本生成的子集 `LXGWZhenKaiGB-Regular.subset.woff2`（约 453KB，字符表 1508 项 / cmap 1506 字形，字形轮廓与步进宽度与原字体一致）。同一脚本还会产出 Android 端 TTF `android/app/src/main/res/font/lxgw_zhenkai_subset.ttf`（约 821KB，与 woff2 同一字符表，D-029），两端必须一起重建。新增词库或界面文本后，重新生成子集：
 
 ```text
 pip install fonttools brotli

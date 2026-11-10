@@ -39,6 +39,11 @@
     throw new Error("The Japanese particle learning engine did not load.");
   }
 
+  const honorificEngine = window.JapaneseHonorificEngine;
+  if (!honorificEngine) {
+    throw new Error("The honorific engine did not load.");
+  }
+
   const VOICES = engine.VOICES;
   const INFLECTIONS = engine.INFLECTIONS;
   const VERBS = engine.VERBS;
@@ -250,6 +255,12 @@
       accent: "巩固每一次练习。",
       copy: "动词与形容词错题集中保存；助词错题在助词模块内复习。"
     },
+    honorific: {
+      eyebrow: "先判主体，再选类别",
+      main: "对谁说，",
+      accent: "决定怎么说。",
+      copy: "尊敬語抬高对方、謙譲語压低自己、丁寧語只把话说体面；特殊说法整词记忆。"
+    },
     read: {
       eyebrow: "从真实文章里学日语",
       main: "把读不动的长文，",
@@ -363,6 +374,7 @@
     verbSubviewNav: document.getElementById("verb-subnav"),
     verbSubviewPractice: document.getElementById("view-practice"),
     verbSubviewReference: document.getElementById("view-reference"),
+    verbSubviewHonorific: document.getElementById("view-honorific"),
     particleSubviewNav: document.getElementById("particle-subnav"),
     particleViewEyebrow: document.getElementById("particle-view-eyebrow"),
     particleViewTitle: document.getElementById("particle-view-title"),
@@ -489,6 +501,42 @@
     referenceVoiceGuideCaption: document.getElementById("reference-voice-guide-caption"),
     referenceVoiceGuideTableBody: document.getElementById("reference-voice-guide-table-body"),
     referenceTableBody: document.getElementById("reference-table-body"),
+    // —— 敬语子页 ——
+    honorificPracticeCard: document.getElementById("honorific-practice-card"),
+    honorificPrompt: document.getElementById("honorific-prompt"),
+    honorificLevelPill: document.getElementById("honorific-level-pill"),
+    honorificQuestionLevel: document.getElementById("honorific-question-level"),
+    honorificQuestionMeaning: document.getElementById("honorific-question-meaning"),
+    honorificQuestionWord: document.getElementById("honorific-question-word"),
+    honorificQuestionReading: document.getElementById("honorific-question-reading"),
+    honorificQuestionInstruction: document.getElementById("honorific-question-instruction"),
+    honorificAnswerForm: document.getElementById("honorific-answer-form"),
+    honorificAnswerInput: document.getElementById("honorific-answer-input"),
+    honorificSubmit: document.getElementById("honorific-submit"),
+    honorificHintButton: document.getElementById("honorific-hint-button"),
+    honorificReveal: document.getElementById("honorific-reveal"),
+    honorificRuleHint: document.getElementById("honorific-rule-hint"),
+    honorificFeedback: document.getElementById("honorific-feedback"),
+    honorificFeedbackMark: document.getElementById("honorific-feedback-mark"),
+    honorificFeedbackTitle: document.getElementById("honorific-feedback-title"),
+    honorificFeedbackUser: document.getElementById("honorific-feedback-user"),
+    honorificFeedbackAnswer: document.getElementById("honorific-feedback-answer"),
+    honorificFeedbackReading: document.getElementById("honorific-feedback-reading"),
+    honorificFeedbackMeaning: document.getElementById("honorific-feedback-meaning"),
+    honorificFeedbackRule: document.getElementById("honorific-feedback-rule"),
+    honorificNext: document.getElementById("honorific-next"),
+    honorificSearch: document.getElementById("honorific-search"),
+    honorificVerb: document.getElementById("honorific-verb"),
+    honorificTableBody: document.getElementById("honorific-table-body"),
+    honorificSubject: document.getElementById("honorific-subject"),
+    honorificInGroup: document.getElementById("honorific-in-group"),
+    honorificDiagnoseResult: document.getElementById("honorific-diagnose-result"),
+    honorificCheckInput: document.getElementById("honorific-check-input"),
+    honorificCheckResult: document.getElementById("honorific-check-result"),
+    honorificSceneFilter: document.getElementById("honorific-scene-filter"),
+    honorificExampleList: document.getElementById("honorific-example-list"),
+    homeHonorificToday: document.getElementById("home-honorific-today"),
+    homeHonorificStatus: document.getElementById("home-honorific-status"),
     reviewMistakes: document.getElementById("review-mistakes"),
     clearMistakes: document.getElementById("clear-mistakes"),
     verbMistakesList: document.getElementById("verb-mistakes-list"),
@@ -2995,7 +3043,9 @@
   }
 
   function renderIntro(viewId) {
-    const copy = INTRO_COPY[viewId] || INTRO_COPY.verb;
+    // 敬语是 verb 视图下的独立子页，标题文案随子视图切换。
+    const key = viewId === "verb" && currentVerbSubview === "honorific" ? "honorific" : viewId;
+    const copy = INTRO_COPY[key] || INTRO_COPY.verb;
     elements.introEyebrow.textContent = copy.eyebrow;
     const accent = document.createElement("span");
     accent.textContent = copy.accent;
@@ -3008,12 +3058,14 @@
     const verbCount = isToday ? dailyRecord.verbAnswers : 0;
     const adjectiveCount = isToday ? dailyRecord.adjectiveAnswers : 0;
     const particleCount = isToday ? dailyRecord.particleAnswers : 0;
-    const total = verbCount + adjectiveCount + particleCount;
-    const activeModules = Number(verbCount > 0) + Number(adjectiveCount > 0) + Number(particleCount > 0);
+    const honorificCount = isToday ? dailyRecord.honorificAnswers : 0;
+    const total = verbCount + adjectiveCount + particleCount + honorificCount;
+    const activeModules = Number(verbCount > 0) + Number(adjectiveCount > 0)
+      + Number(particleCount > 0) + Number(honorificCount > 0);
 
     elements.homeTodayTotal.textContent = total + " 题";
     elements.homeTodayBreakdown.textContent = "动词 " + verbCount + " 题 · 形容词 "
-      + adjectiveCount + " 题 · 助词 " + particleCount + " 题";
+      + adjectiveCount + " 题 · 助词 " + particleCount + " 题 · 敬语 " + honorificCount + " 题";
     elements.homeStreakCount.textContent = String(getCurrentStreak());
     elements.homeActiveModuleCount.textContent = String(activeModules);
     elements.homeVerbToday.textContent = verbCount + " 题";
@@ -3022,6 +3074,12 @@
     elements.homeAdjectiveStatus.textContent = adjectiveCount > 0 ? "今日已练" : "今日尚未练习";
     elements.homeParticleToday.textContent = particleCount + " 题";
     elements.homeParticleStatus.textContent = particleCount > 0 ? "今日已练" : "今日尚未练习";
+    if (elements.homeHonorificToday) {
+      elements.homeHonorificToday.textContent = honorificCount + " 题";
+      elements.homeHonorificStatus.textContent = honorificCount > 0
+        ? "今日已练"
+        : "三层对照与二重敬语检查";
+    }
     renderHomeReadSummary();
   }
 
@@ -3039,19 +3097,393 @@
   }
 
   function setVerbSubview(subview) {
-    currentVerbSubview = subview === "reference" ? "reference" : "practice";
-    const showPractice = currentVerbSubview === "practice";
-    elements.verbSubviewPractice.hidden = !showPractice;
-    elements.verbSubviewReference.hidden = showPractice;
+    currentVerbSubview = subview === "reference" || subview === "honorific" ? subview : "practice";
+    elements.verbSubviewPractice.hidden = currentVerbSubview !== "practice";
+    elements.verbSubviewReference.hidden = currentVerbSubview !== "reference";
+    elements.verbSubviewHonorific.hidden = currentVerbSubview !== "honorific";
     elements.verbSubtabs.forEach(function (subtab) {
       const active = subtab.dataset.verbSubview === currentVerbSubview;
       subtab.classList.toggle("is-active", active);
       subtab.setAttribute("aria-selected", String(active));
     });
-    if (activeViewId === "verb" && !showPractice) {
+    if (activeViewId === "verb" && currentVerbSubview === "reference") {
       renderReferenceTable();
     }
-    announce("动词 · " + (showPractice ? "练习" : "速查"));
+    if (activeViewId === "verb" && currentVerbSubview === "honorific") {
+      renderHonorificPanel();
+    }
+    announce("动词 · " + (currentVerbSubview === "practice"
+      ? "练习"
+      : currentVerbSubview === "reference" ? "速查" : "敬语"));
+    // 子视图直接切换时同步页面标题文案（敬语有自己的标题组）。
+    if (activeViewId) {
+      renderIntro(activeViewId);
+    }
+  }
+
+  // ---------------- 敬语子页 ----------------
+  //
+  // 题目维度是「动词 × 敬语层」。有限动词（自然现象等）的尊敬語／謙譲語由引擎
+  // 判为不可用，不会进题池；特殊敬语动词走整词对照，不套规则。
+  // 答错的题进本轮重练队列（只存在于当前页面会话，不写全局错题本）。
+
+  const HONORIFIC_STREAK_GUARD = 3;
+  let honorificTargetsCache = null;
+  let currentHonorificQuestion = null;
+  let honorificAnswered = false;
+  let honorificReviewQueue = [];
+  let honorificVerbId = null;
+  let honorificSceneId = "all";
+  let honorificPanelReady = false;
+  let recentHonorificVerbIds = [];
+
+  function getHonorificTargets() {
+    if (honorificTargetsCache) {
+      return honorificTargetsCache;
+    }
+    const targets = [];
+    VERBS.forEach(function (verb) {
+      honorificEngine.LEVELS.forEach(function (level) {
+        if (honorificEngine.getHonorificForms(verb, level.id).available) {
+          targets.push({ verbId: verb.id, levelId: level.id });
+        }
+      });
+    });
+    honorificTargetsCache = targets;
+    return targets;
+  }
+
+  function pickHonorificQuestion() {
+    if (honorificReviewQueue.length) {
+      return honorificReviewQueue.shift();
+    }
+    const targets = getHonorificTargets();
+    if (!targets.length) {
+      return null;
+    }
+    const fresh = targets.filter(function (target) {
+      return recentHonorificVerbIds.indexOf(target.verbId) < 0;
+    });
+    const pool = fresh.length ? fresh : targets;
+    const target = randomItem(pool);
+    recentHonorificVerbIds = [target.verbId].concat(recentHonorificVerbIds.filter(function (id) {
+      return id !== target.verbId;
+    })).slice(0, HONORIFIC_STREAK_GUARD);
+    return honorificEngine.buildQuestion(VERB_BY_ID.get(target.verbId), target.levelId);
+  }
+
+  function startHonorificQuestion(question) {
+    if (!question) {
+      return;
+    }
+    currentHonorificQuestion = question;
+    honorificAnswered = false;
+    elements.honorificPracticeCard.classList.remove("is-answer-correct");
+    elements.honorificPracticeCard.classList.remove("is-answer-incorrect");
+    elements.honorificLevelPill.textContent = question.levelLabel;
+    elements.honorificQuestionLevel.textContent = question.levelLabel;
+    elements.honorificQuestionMeaning.textContent = question.verbMeaning;
+    elements.honorificQuestionWord.textContent = question.verbDictionary;
+    elements.honorificQuestionReading.textContent = "假名";
+    elements.honorificPrompt.setAttribute("aria-expanded", "false");
+    elements.honorificQuestionInstruction.innerHTML = "请把它变成对对方说的 <strong class=\"keyword-highlight\">"
+      + question.levelLabel + "</strong>（ます形）。";
+    elements.honorificAnswerInput.value = "";
+    elements.honorificAnswerInput.disabled = false;
+    elements.honorificSubmit.disabled = false;
+    elements.honorificFeedback.hidden = true;
+    elements.honorificRuleHint.hidden = true;
+    elements.honorificRuleHint.textContent = "";
+    elements.honorificHintButton.setAttribute("aria-expanded", "false");
+  }
+
+  function renderHonorificFeedback(correct, userAnswer, revealed) {
+    const question = currentHonorificQuestion;
+    if (!question) {
+      return;
+    }
+    elements.honorificPracticeCard.classList.toggle("is-answer-correct", correct);
+    elements.honorificPracticeCard.classList.toggle("is-answer-incorrect", !correct);
+    elements.honorificFeedbackMark.textContent = correct ? "○" : "×";
+    elements.honorificFeedbackTitle.textContent = correct
+      ? "答对了"
+      : revealed ? "答案已显示" : "这一题没答对";
+    elements.honorificFeedbackUser.textContent = userAnswer
+      ? "你的答案：" + userAnswer
+      : "未作答";
+    elements.honorificFeedbackAnswer.textContent = question.display;
+    elements.honorificFeedbackReading.textContent = question.displayKana;
+    elements.honorificFeedbackMeaning.textContent = question.levelMeaning;
+    elements.honorificFeedbackRule.textContent = question.explanation
+      + (question.alternatives.length ? "也可以说：" + question.alternatives.join("／") + "。" : "");
+    elements.honorificFeedback.hidden = false;
+  }
+
+  function submitHonorificAnswer(event) {
+    event.preventDefault();
+    if (!currentHonorificQuestion || honorificAnswered) {
+      return;
+    }
+    const value = elements.honorificAnswerInput.value.trim();
+    if (!value) {
+      showToast("先写出答案再检查。", true);
+      return;
+    }
+    const result = honorificEngine.checkAnswer(currentHonorificQuestion, value);
+    honorificAnswered = true;
+    elements.honorificAnswerInput.disabled = true;
+    elements.honorificSubmit.disabled = true;
+    renderHonorificFeedback(result.correct, value, false);
+    updateDailyStreak("honorific");
+    if (!result.correct) {
+      honorificReviewQueue.push(currentHonorificQuestion);
+    }
+  }
+
+  function revealHonorificAnswer() {
+    if (!currentHonorificQuestion || honorificAnswered) {
+      return;
+    }
+    honorificAnswered = true;
+    elements.honorificAnswerInput.disabled = true;
+    elements.honorificSubmit.disabled = true;
+    renderHonorificFeedback(false, elements.honorificAnswerInput.value.trim(), true);
+  }
+
+  function toggleHonorificHint() {
+    if (!currentHonorificQuestion) {
+      return;
+    }
+    const expanded = elements.honorificHintButton.getAttribute("aria-expanded") === "true";
+    elements.honorificHintButton.setAttribute("aria-expanded", String(!expanded));
+    elements.honorificRuleHint.hidden = expanded;
+    elements.honorificRuleHint.textContent = expanded
+      ? ""
+      : currentHonorificQuestion.isSpecial
+        ? "这是特殊敬语动词，整词记忆，不能按「お + ます词干」套。"
+        : "按「" + honorificEngine.levelById(currentHonorificQuestion.levelId).pattern + "」变化。";
+  }
+
+  function advanceHonorificQuestion() {
+    startHonorificQuestion(pickHonorificQuestion());
+    elements.honorificAnswerInput.focus();
+  }
+
+  function populateHonorificVerbs(query) {
+    const normalizedQuery = normalizeText(query || "").toLocaleLowerCase();
+    const previousId = elements.honorificVerb.value || honorificVerbId;
+    const matches = VERBS.filter(function (verb) {
+      const text = normalizeText(verb.dictionary + verb.reading + verb.meaning).toLocaleLowerCase();
+      return text.indexOf(normalizedQuery) >= 0;
+    });
+    elements.honorificVerb.replaceChildren();
+    matches.forEach(function (verb) {
+      addOption(
+        elements.honorificVerb,
+        verb.id,
+        verb.dictionary + "（" + verb.reading + "） · " + verb.meaning
+      );
+    });
+    if (!matches.length) {
+      addOption(elements.honorificVerb, "", "没有匹配的动词");
+      elements.honorificVerb.disabled = true;
+      honorificVerbId = null;
+    } else {
+      elements.honorificVerb.disabled = false;
+      const nextId = matches.some(function (verb) { return verb.id === previousId; })
+        ? previousId
+        : matches[0].id;
+      elements.honorificVerb.value = nextId;
+      honorificVerbId = nextId;
+    }
+    renderHonorificTable();
+  }
+
+  function renderHonorificTable() {
+    elements.honorificTableBody.replaceChildren();
+    const verb = VERB_BY_ID.get(elements.honorificVerb.value);
+    if (!verb) {
+      return;
+    }
+    honorificEngine.LEVELS.forEach(function (level) {
+      const forms = honorificEngine.getHonorificForms(verb, level.id);
+      const row = document.createElement("tr");
+
+      const nameCell = document.createElement("td");
+      const badge = document.createElement("span");
+      badge.className = "honorific-badge honorific-badge-" + level.id;
+      badge.textContent = level.label;
+      nameCell.append(badge);
+      if (forms.available && forms.isSpecial) {
+        const tag = document.createElement("span");
+        tag.className = "honorific-tag";
+        tag.textContent = "特殊";
+        nameCell.append(tag);
+      }
+
+      const formCell = document.createElement("td");
+      formCell.className = "honorific-form-cell";
+      if (forms.available) {
+        const mainForm = document.createElement("span");
+        mainForm.className = "honorific-main-form";
+        mainForm.textContent = forms.primary.masu;
+        formCell.append(mainForm);
+        if (forms.alternatives.length) {
+          const alt = document.createElement("small");
+          alt.className = "honorific-alt";
+          alt.textContent = forms.alternatives.map(function (item) { return item.masu; }).join("／");
+          formCell.append(alt);
+        }
+      } else {
+        formCell.textContent = "—";
+        formCell.classList.add("honorific-unavailable");
+      }
+
+      const patternCell = document.createElement("td");
+      patternCell.textContent = forms.available
+        ? forms.isSpecial ? "特殊说法，整词记忆" : level.pattern
+        : "不适用";
+
+      const meaningCell = document.createElement("td");
+      meaningCell.className = "honorific-meaning-cell";
+      meaningCell.textContent = forms.available ? level.topic : forms.reason;
+
+      const practiceCell = document.createElement("td");
+      practiceCell.className = "reference-practice-col";
+      if (forms.available) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "practice-link";
+        button.textContent = "练这题";
+        button.addEventListener("click", function () {
+          startHonorificQuestion(honorificEngine.buildQuestion(verb, level.id));
+          elements.honorificPracticeCard.scrollIntoView({ block: "start", behavior: "smooth" });
+          elements.honorificAnswerInput.focus();
+        });
+        practiceCell.append(button);
+      }
+
+      row.append(nameCell, formCell, patternCell, meaningCell, practiceCell);
+      elements.honorificTableBody.append(row);
+    });
+  }
+
+  function renderHonorificSubjects() {
+    elements.honorificSubject.replaceChildren();
+    honorificEngine.SUBJECTS.forEach(function (subject) {
+      addOption(elements.honorificSubject, subject.id, subject.label);
+    });
+    elements.honorificSubject.value = "other";
+  }
+
+  function updateHonorificDiagnosis() {
+    const result = honorificEngine.judgeLevel({
+      subject: elements.honorificSubject.value,
+      inGroup: elements.honorificInGroup.checked
+    });
+    const level = honorificEngine.levelById(result.levelId);
+    elements.honorificDiagnoseResult.textContent = "用「" + level.label + "」。" + result.reason;
+  }
+
+  function updateHonorificCheck() {
+    const text = elements.honorificCheckInput.value.trim();
+    if (!text) {
+      elements.honorificCheckResult.textContent = "输入一句话后自动检查。";
+      elements.honorificCheckResult.className = "honorific-result";
+      return;
+    }
+    const result = honorificEngine.checkDoubleHonorific(text);
+    if (result.ok) {
+      elements.honorificCheckResult.textContent = "没有检测到二重敬语。";
+      elements.honorificCheckResult.className = "honorific-result is-ok";
+      return;
+    }
+    const issue = result.issues[0];
+    elements.honorificCheckResult.textContent = "「" + issue.phrase + "」是"
+      + (issue.severity === "error" ? "错误说法" : "冗余说法")
+      + "，改成「" + issue.suggestion + "」。" + issue.reason;
+    elements.honorificCheckResult.className = "honorific-result is-warning";
+  }
+
+  function renderHonorificSceneFilter() {
+    elements.honorificSceneFilter.replaceChildren();
+    const scenes = [{ id: "all", label: "全部" }].concat(honorificEngine.SCENES);
+    scenes.forEach(function (scene) {
+      const active = honorificSceneId === scene.id;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "honorific-scene-button" + (active ? " is-active" : "");
+      button.textContent = scene.label;
+      button.setAttribute("aria-pressed", String(active));
+      button.addEventListener("click", function () {
+        honorificSceneId = scene.id;
+        renderHonorificExamples();
+      });
+      elements.honorificSceneFilter.append(button);
+    });
+  }
+
+  function renderHonorificExamples() {
+    renderHonorificSceneFilter();
+    elements.honorificExampleList.replaceChildren();
+    honorificEngine.getExamplesByScene(honorificSceneId).forEach(function (example) {
+      const card = document.createElement("article");
+      card.className = "honorific-example";
+
+      const head = document.createElement("div");
+      head.className = "honorific-example-head";
+      const badge = document.createElement("span");
+      badge.className = "honorific-badge honorific-badge-" + example.levelId;
+      badge.textContent = honorificEngine.levelById(example.levelId).label;
+      const who = document.createElement("span");
+      who.className = "honorific-example-who";
+      who.textContent = example.who;
+      head.append(badge, who);
+
+      const jp = document.createElement("p");
+      jp.className = "honorific-example-jp";
+      jp.textContent = example.jp;
+      const kana = document.createElement("p");
+      kana.className = "honorific-example-kana";
+      kana.textContent = example.kana;
+      const zh = document.createElement("p");
+      zh.className = "honorific-example-zh";
+      zh.textContent = example.zh;
+
+      card.append(head, jp, kana, zh);
+
+      if (example.verbId) {
+        const verb = VERB_BY_ID.get(example.verbId);
+        if (verb) {
+          const practice = document.createElement("button");
+          practice.type = "button";
+          practice.className = "text-link honorific-example-practice";
+          practice.textContent = "练这句里的 " + verb.dictionary;
+          practice.addEventListener("click", function () {
+            startHonorificQuestion(honorificEngine.buildQuestion(verb, example.levelId));
+            elements.honorificPracticeCard.scrollIntoView({ block: "start", behavior: "smooth" });
+            elements.honorificAnswerInput.focus();
+          });
+          card.append(practice);
+        }
+      }
+
+      elements.honorificExampleList.append(card);
+    });
+  }
+
+  function renderHonorificPanel() {
+    if (!honorificPanelReady) {
+      populateHonorificVerbs("");
+      renderHonorificSubjects();
+      renderHonorificExamples();
+      updateHonorificDiagnosis();
+      updateHonorificCheck();
+      honorificPanelReady = true;
+    }
+    if (!currentHonorificQuestion) {
+      startHonorificQuestion(pickHonorificQuestion());
+    }
   }
 
   // 形容词模块二级切换：练习（做题训练）与速查（规则查阅）分视，
@@ -3575,7 +4007,14 @@
     elements.particleSubviewNav.hidden = viewId !== "particle";
     setMobileSidebarOpen(false, false);
     elements.tabs.forEach(function (tab) {
-      const active = tab.dataset.view === viewId;
+      // 敬语入口与「动词活用」共用 verb 视图：带 data-verb-subview 的项按子视图高亮，
+      // 不带的那项只在练习／速查时高亮，避免两个侧栏项同时显示为当前页。
+      let active = tab.dataset.view === viewId;
+      if (active && tab.dataset.verbSubview) {
+        active = tab.dataset.verbSubview === currentVerbSubview;
+      } else if (active && viewId === "verb" && currentVerbSubview === "honorific") {
+        active = false;
+      }
       tab.classList.toggle("is-active", active);
       if (active) {
         tab.setAttribute("aria-current", "page");
@@ -3998,7 +4437,8 @@
       best: 0,
       verbAnswers: 0,
       adjectiveAnswers: 0,
-      particleAnswers: 0
+      particleAnswers: 0,
+      honorificAnswers: 0
     };
   }
 
@@ -4029,6 +4469,8 @@
     const verbAnswers = stored.verbAnswers === undefined ? 0 : stored.verbAnswers;
     const adjectiveAnswers = stored.adjectiveAnswers === undefined ? 0 : stored.adjectiveAnswers;
     const particleAnswers = stored.particleAnswers === undefined ? 0 : stored.particleAnswers;
+    // 敬语是后加的模块：旧记录没有该字段时按 0 处理，不判为损坏。
+    const honorificAnswers = stored.honorificAnswers === undefined ? 0 : stored.honorificAnswers;
     if (typeof stored.lastDate !== "string"
       || !Number.isSafeInteger(stored.streak)
       || stored.streak < 0
@@ -4039,7 +4481,9 @@
       || !Number.isSafeInteger(adjectiveAnswers)
       || adjectiveAnswers < 0
       || !Number.isSafeInteger(particleAnswers)
-      || particleAnswers < 0) {
+      || particleAnswers < 0
+      || !Number.isSafeInteger(honorificAnswers)
+      || honorificAnswers < 0) {
       showToast("打卡记录格式无效，本次从零开始。", true);
       return createEmptyDailyRecord();
     }
@@ -4049,7 +4493,8 @@
       best: stored.best,
       verbAnswers: verbAnswers,
       adjectiveAnswers: adjectiveAnswers,
-      particleAnswers: particleAnswers
+      particleAnswers: particleAnswers,
+      honorificAnswers: honorificAnswers
     };
   }
 
@@ -4079,7 +4524,8 @@
     const countKey = {
       verb: "verbAnswers",
       adjective: "adjectiveAnswers",
-      particle: "particleAnswers"
+      particle: "particleAnswers",
+      honorific: "honorificAnswers"
     }[moduleId];
     if (!countKey) {
       throw new RangeError("Unknown daily activity module: " + moduleId);
@@ -4097,6 +4543,7 @@
       dailyRecord.verbAnswers = 0;
       dailyRecord.adjectiveAnswers = 0;
       dailyRecord.particleAnswers = 0;
+      dailyRecord.honorificAnswers = 0;
       dailyRecord.best = Math.max(dailyRecord.best, dailyRecord.streak);
     }
     dailyRecord[countKey] = Math.min(Number.MAX_SAFE_INTEGER, dailyRecord[countKey] + 1);
@@ -4779,6 +5226,13 @@
   });
   elements.tabs.forEach(function (tab) {
     tab.addEventListener("click", function () {
+      // 侧栏的敬语入口复用 verb 视图，点击时要同时切到对应子视图。
+      if (tab.dataset.verbSubview) {
+        setVerbSubview(tab.dataset.verbSubview);
+      } else if (tab.dataset.view === "verb" && currentVerbSubview === "honorific") {
+        // 敬语有独立入口；回到「动词活用」应落在练习，而不是停在敬语页。
+        setVerbSubview("practice");
+      }
       showView(tab.dataset.view);
     });
   });
@@ -4804,6 +5258,39 @@
     subtab.addEventListener("click", function () {
       setVerbSubview(subtab.dataset.verbSubview);
     });
+  });
+  elements.honorificAnswerForm.addEventListener("submit", submitHonorificAnswer);
+  elements.honorificNext.addEventListener("click", advanceHonorificQuestion);
+  elements.honorificHintButton.addEventListener("click", toggleHonorificHint);
+  elements.honorificReveal.addEventListener("click", revealHonorificAnswer);
+  elements.honorificSearch.addEventListener("input", function () {
+    populateHonorificVerbs(elements.honorificSearch.value);
+  });
+  elements.honorificVerb.addEventListener("change", function () {
+    honorificVerbId = elements.honorificVerb.value;
+    renderHonorificTable();
+  });
+  elements.honorificSubject.addEventListener("change", updateHonorificDiagnosis);
+  elements.honorificInGroup.addEventListener("change", updateHonorificDiagnosis);
+  elements.honorificCheckInput.addEventListener("input", updateHonorificCheck);
+  elements.honorificPrompt.addEventListener("click", function () {
+    if (!currentHonorificQuestion) {
+      return;
+    }
+    const expanded = elements.honorificPrompt.getAttribute("aria-expanded") === "true";
+    elements.honorificQuestionReading.textContent = expanded
+      ? "假名"
+      : currentHonorificQuestion.verbReading;
+    elements.honorificPrompt.setAttribute("aria-expanded", String(!expanded));
+  });
+  elements.honorificPrompt.addEventListener("keydown", function (event) {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    event.preventDefault();
+    if (!event.repeat) {
+      elements.honorificPrompt.click();
+    }
   });
   elements.sidebarCollapse.addEventListener("click", function () {
     const collapsed = elements.appShell.classList.toggle("is-sidebar-collapsed");

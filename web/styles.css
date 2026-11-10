@@ -4324,3 +4324,238 @@ select:disabled {
     font-size: 16px;
   }
 }
+
+/* —— 敬语子页 —— */
+
+.honorific-practice {
+  margin-bottom: 4px;
+}
+
+.honorific-section {
+  margin-top: 20px;
+}
+
+.honorific-section-head {
+  margin-bottom: 10px;
+}
+
+.honorific-section-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.honorific-section-head p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.honorific-table td {
+  vertical-align: top;
+}
+
+.honorific-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.honorific-badge-sonkeigo {
+  background: var(--orange-pale);
+  color: var(--orange-text-deep);
+}
+
+.honorific-badge-kenjougo {
+  background: var(--green-pale);
+  color: var(--text-green-deep);
+}
+
+.honorific-badge-teineigo {
+  background: var(--line);
+  color: var(--text-strong);
+}
+
+.honorific-tag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border: 1px solid var(--hairline-control-soft);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.honorific-form-cell {
+  font-weight: 600;
+}
+
+.honorific-alt {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.honorific-unavailable {
+  color: var(--text-faint);
+}
+
+.honorific-meaning-cell {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.honorific-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.honorific-tool {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 18px 20px;
+}
+
+.honorific-tool h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.honorific-tool > label {
+  display: grid;
+  gap: 6px;
+  color: var(--form-label);
+  font-size: 11px;
+}
+
+.honorific-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--form-label);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.honorific-checkbox input {
+  margin: 2px 0 0;
+  accent-color: var(--green);
+}
+
+.honorific-result {
+  margin: 0;
+  min-height: 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.honorific-result.is-ok {
+  color: var(--text-green-deep);
+}
+
+.honorific-result.is-warning {
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--red-pale);
+  color: var(--text-red);
+}
+
+.honorific-scene-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.honorific-scene-button {
+  padding: 6px 12px;
+  border: 1px solid var(--hairline-control-soft);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-strong);
+  font-size: 11px;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.honorific-scene-button:hover {
+  border-color: var(--line-accent);
+}
+
+.honorific-scene-button.is-active {
+  border-color: var(--green);
+  background: var(--green-pale);
+  color: var(--text-green-deep);
+}
+
+.honorific-example-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.honorific-example {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 15px 17px;
+  border: 1px solid var(--hairline-control-soft);
+  border-radius: 13px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.honorific-example-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.honorific-example-who {
+  color: var(--text-faint);
+  font-size: 10px;
+}
+
+.honorific-example-jp {
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.honorific-example-kana {
+  margin: 0;
+  color: var(--reading);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.honorific-example-zh {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.honorific-example-practice {
+  justify-self: start;
+  margin-top: 2px;
+  font-size: 11px;
+}
+
+@media (max-width: 860px) {
+  .honorific-tool-grid,
+  .honorific-example-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

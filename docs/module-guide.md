@@ -54,6 +54,7 @@
 | 动词活用 | 错题 `module: "verb"` | 已接入全局错题与每日活动 |
 | 形容词接续 | 错题 `module: "adjective"`（题 key 带 `adj::` 前缀） | 已接入全局错题与每日活动 |
 | 助词学习 | `japanese-particle-practice-*` 独立键族 | 错题在助词模块内独立复习，不进全局错题分组 |
+| 敬语 | 复用 `japanese-verb-practice-daily-v1` 的 `honorificAnswers`；不占错题模块 ID | 已接入（2026-11-10）：动词模块第三子页 + 侧栏独立入口（复用 `verb` 视图）；题目 key 形如 `hon::<verbId>::<levelId>`，答错只进当前会话重练队列，**不写全局错题本**；无独立存储键 |
 | 文章阅读（read-analyzer） | `japanese-read-analyzer-*` 五键 + 书签复用 `japanese-verb-practice-bookmarks-v1` | 已接入（2026-11-06，B0–B9）：解析题经 `resolveEngineRef` 反查后走既有出题通道、归属目标模块错题，**本身不占错题模块 ID、不直接写错题本**（D-048）；今日活动只记阅读段数/收藏词数（`japanese-read-analyzer-activity-v1`） |
 
 ## Web 当前代码约定

@@ -433,6 +433,7 @@ function createWindow() {
       this.onerror = null;
     },
     JapaneseVerbEngine: require(path.join(PROJECT_ROOT, "verb-engine.js")),
+    JapaneseHonorificEngine: require(path.join(PROJECT_ROOT, "honorific-engine.js")),
     JapaneseAdjectiveEngine: require(path.join(PROJECT_ROOT, "adjective-engine.js")),
     JapaneseParticleEngine: require(path.join(PROJECT_ROOT, "particle-engine.js")),
     ReadEngine: require(path.join(PROJECT_ROOT, "read-engine.js")),
