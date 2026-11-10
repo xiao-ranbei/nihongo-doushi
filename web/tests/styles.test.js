@@ -192,3 +192,31 @@ test("逐词按 pos 分组取底色，正文与输入区固定行高", function 
   assert.match(css, /\.read-textarea\s*\{[^}]*line-height:\s*30px;/);
   assert.match(css, /\.read-paragraph-tokens\s*\{[^}]*flex-wrap:\s*wrap;/);
 });
+
+test("大屏 zoom 断点必须同时补偿外壳高度", function () {
+  // zoom 会把依赖视口的尺寸一起放大：.app-shell 的 height: 100dvh 在 1.15 倍下
+  // 实际占 1.15 × 视口高，而 html/body 是 overflow: clip —— 多出来的部分直接裁掉、
+  // 无法滚动。实测 1920×1080 时底部 162px 永远看不到。这条守卫把「加 zoom 断点
+  // 必须同时写 calc(100dvh / 同比例)」变成硬约束，防止后来者再加一档时漏掉。
+  const scales = Array.from(new Set(
+    Array.from(css.matchAll(/zoom:\s*([0-9.]+)/g), function (match) { return match[1]; })
+  ));
+  assert.ok(scales.length > 0, "应存在大屏 zoom 断点");
+
+  scales.forEach(function (scale) {
+    const escaped = scale.replace(".", "\\.");
+    // 必须落在 .app-shell 自己的声明块里：只在文件别处出现同一个 calc 值不算数
+    const shellRule = new RegExp(
+      "\\.app-shell\\s*\\{[^}]*height:\\s*calc\\(100dvh / " + escaped + "\\)"
+    );
+    assert.ok(
+      shellRule.test(css),
+      "zoom: " + scale + " 缺少 .app-shell 的 height: calc(100dvh / " + scale + ") 补偿，页面底部会被裁掉"
+    );
+
+    const mainRule = new RegExp(
+      "\\.app-shell \\.app-main[^{]*\\{[^}]*calc\\(100dvh / " + escaped + "\\)"
+    );
+    assert.ok(mainRule.test(css), "滚动容器 .app-main 也要按同一比例补偿（zoom: " + scale + "）");
+  });
+});

@@ -9,7 +9,7 @@
 
 界面、规则引擎和记录均在浏览器本地运行。答题统计、每日练习记录和错题保存在当前浏览器的 `localStorage` 中，不提供云端同步。
 
-每次打开网页默认进入学习主页。桌面端侧栏与主内容区分别滚动，页面外层锁定动态视口且不参与滚动；答题后焦点滚动主内容区时，侧栏保持固定。桌面侧栏左上角的“日”品牌可返回主页，侧栏不重复放置主页按钮，折叠状态在主页导航时保留。窄屏使用左侧抽屉，顶部“日”品牌可返回主页，顶部栏固定，主页内容在独立滚动区内浏览，底部内容带安全留白。动词、形容词和助词是独立学习模块；动词与形容词错题在全局错题本中分组，助词错题在助词模块内复习。文章阅读是第四个模块（B0–B9，见 [web-read-analyzer-plan.md](web-read-analyzer-plan.md)）：贴文本地切段、点段解析逐词/译文、点词详情、结构化语法、朗读、图片 OCR、AI 助手与本地埋点，解析题可经 `resolveEngineRef` 反查进既有练习。Android 端为同一套模块的原生实现（动词、形容词、助词与共享错题本 + AI 文章解析），导航为底部四标签（主页/学习/阅读/我的）；整套 UI 已按**方案 B 液态玻璃**重做（悬浮岛底栏、全局单值 24dp 圆角、玻璃采样 `vibrancy → blur → lens`，见 [android-liquid-glass-plan-b.md](android-liquid-glass-plan-b.md)）。「排版」「撰写」与「查词」仍是规划中占位。
+每次打开网页默认进入学习主页。桌面端侧栏与主内容区分别滚动，页面外层锁定动态视口且不参与滚动；答题后焦点滚动主内容区时，侧栏保持固定。**大屏等比放大（zoom）必须同步补偿高度**：1600×900 起 zoom 1.15、2200×1150 起 1.3、3000×1500 起 1.45，壳层与两个滚动容器的高度写成 `calc(100dvh / 比例)`——zoom 会把 `height: 100dvh` 一起放大，而 `html/body` 是 `overflow: clip`，不补偿会让底部内容直接被裁（2026-11-10 修，1920×1080 实测底部 162px 滚不到）。桌面侧栏左上角的“日”品牌可返回主页，侧栏不重复放置主页按钮，折叠状态在主页导航时保留。窄屏使用左侧抽屉，顶部“日”品牌可返回主页，顶部栏固定，主页内容在独立滚动区内浏览，底部内容带安全留白。动词、形容词和助词是独立学习模块；动词与形容词错题在全局错题本中分组，助词错题在助词模块内复习。文章阅读是第四个模块（B0–B9，见 [web-read-analyzer-plan.md](web-read-analyzer-plan.md)）：贴文本地切段、点段解析逐词/译文、点词详情、结构化语法、朗读、图片 OCR、AI 助手与本地埋点，解析题可经 `resolveEngineRef` 反查进既有练习。Android 端为同一套模块的原生实现（动词、形容词、助词与共享错题本 + AI 文章解析），导航为底部四标签（主页/学习/阅读/我的）；整套 UI 已按**方案 B 液态玻璃**重做（悬浮岛底栏、全局单值 24dp 圆角、玻璃采样 `vibrancy → blur → lens`，见 [android-liquid-glass-plan-b.md](android-liquid-glass-plan-b.md)）。「排版」「撰写」与「查词」仍是规划中占位。
 
 ## 2. 总体结构
 
@@ -163,7 +163,7 @@ web/index.html ── 页面结构与交互节点
   node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/read-engine.test.js tests/read-client.test.js tests/read-ocr.test.js tests/read-stats.test.js tests/read-tts.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
   ```
 
-当前基线（2026-11-10 实测）：网页端 12 个测试文件共 **417 项全绿**；Android 端 `./gradlew :app:testDebugUnitTest` **273 项全绿**（含 `GlassContractTest` 8 项 Golden 契约与静态守卫），仪器化 `TalkBackMergeTest` **4 项全绿**（qa33 API 33 与 qa36 API 36 两个模拟器各跑一遍，读屏语义树口径，见 D-030/D-031）；双皮肤 WCAG 对比度由 `android/tools/contrast-check.py` 逐项校验全绿。
+当前基线（2026-11-10 实测）：网页端 12 个测试文件共 **418 项全绿**；Android 端 `./gradlew :app:testDebugUnitTest` **273 项全绿**（含 `GlassContractTest` 8 项 Golden 契约与静态守卫），仪器化 `TalkBackMergeTest` **4 项全绿**（qa33 API 33 与 qa36 API 36 两个模拟器各跑一遍，读屏语义树口径，见 D-030/D-031）；双皮肤 WCAG 对比度由 `android/tools/contrast-check.py` 逐项校验全绿。
 
 未解决的遗留问题（预留位转正清单、跨端数据缺口、技术债务等）统一登记在 [known-issues.md](known-issues.md)，不要在本文件重复罗列。
 

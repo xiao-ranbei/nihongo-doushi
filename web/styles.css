@@ -4559,3 +4559,45 @@ select:disabled {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* 大屏 zoom 断点（上文 1.15 / 1.3 / 1.45）的高度补偿。
+   zoom 会把依赖视口的尺寸一起放大：.app-main 的 height: 100dvh 在 1.15 倍下
+   实际占 1.15 × 视口高，而 html/body 是 overflow: clip，多出来的部分被直接裁掉。
+   实测 1920×1080：shell 高 1242 / 视口 1080，页面底部 162px 永远滚不到。
+   修复：壳层与两个滚动容器的高度先除以缩放比，乘回去正好一屏。
+   选择器带 .app-shell 前缀是为了压过后面的 .app-main / .app-sidebar 基础规则（源序更晚）。 */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .app-shell {
+    height: calc(100dvh / 1.15);
+    min-height: 0;
+  }
+
+  .app-shell .app-main,
+  .app-shell .app-sidebar {
+    height: calc(100dvh / 1.15);
+  }
+}
+
+@media (min-width: 2200px) and (min-height: 1150px) {
+  .app-shell {
+    height: calc(100dvh / 1.3);
+    min-height: 0;
+  }
+
+  .app-shell .app-main,
+  .app-shell .app-sidebar {
+    height: calc(100dvh / 1.3);
+  }
+}
+
+@media (min-width: 3000px) and (min-height: 1500px) {
+  .app-shell {
+    height: calc(100dvh / 1.45);
+    min-height: 0;
+  }
+
+  .app-shell .app-main,
+  .app-shell .app-sidebar {
+    height: calc(100dvh / 1.45);
+  }
+}
