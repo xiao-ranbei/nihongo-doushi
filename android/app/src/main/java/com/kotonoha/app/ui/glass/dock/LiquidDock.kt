@@ -13,9 +13,13 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,6 +41,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
@@ -54,9 +59,6 @@ import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.lerp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -121,12 +123,11 @@ fun LiquidDock(
 
     val dark = isSystemInDarkTheme()
     val colors = glassColors()
-    val accentColor = colors.brand
+    val accentColor = paperColors().textGreen
     // 官方容器底是 40% 不透明；我们的 glassSurface 本身已有 55%，再压一档才透得出背景
     val containerColor = colors.surface.copy(alpha = 0.34f)
     val contentColor = MaterialTheme.colorScheme.onSurface
 
-    val tabsBackdrop = rememberLayerBackdrop()
 
     BoxWithConstraints(
         modifier,
@@ -238,47 +239,25 @@ fun LiquidDock(
             DockTabs(tabs, selectedIndex, onSelect, contentColor, alpha = 1f)
         }
 
-        // ② 中层图标层：alpha = 0，只负责把图标录进 tabsBackdrop 供选中块折射
-        CompositionLocalProvider(
-            LocalDockTabScale provides { lerp(1f, 1.2f, dampedDragAnimation.pressProgress) },
-        ) {
-            Row(
-                Modifier
-                    .clearAndSetSemantics {}
-                    // 这一层只做两件事：把图标内容录进 tabsBackdrop（供选中块采样）+ 染成强调色。
-                    // 官方这里还叠了一层 drawBackdrop 让图标自带玻璃感；我们去掉它 ——
-                    // 少一次全屏采样，选中块里依然是「染色图标 + 折射」，视觉差别只在按下瞬间
-                    .graphicsLayer { translationX = panelOffset }
-                    // 用 0.001 而不是 0：alpha 精确为 0 时 Compose 会跳过绘制，
-                    // layerBackdrop 就录不到内容，选中块里便没有可折射的染色图标
-                    .alpha(0.001f)
-                    .layerBackdrop(tabsBackdrop)
-                    .height(56.dp)
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp)
-                    .graphicsLayer(colorFilter = ColorFilter.tint(accentColor)),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                DockTabs(tabs, selectedIndex, onSelect, contentColor, alpha = 1f)
-            }
-        }
-
-        // ③ 选中块：采「背景 + 图标层」，所以块里既有折射也有染色图标
+        // ③ 选中块：一块比胶囊更亮的玻璃，块内自带一条"图标条"。
+        //
+        // 为什么不用官方的「采 combined backdrop（背景+图标底片）」：
+        // 块的表面色画在采样结果**之上**，只要填充超过 ~20% 白就会把块内图标一起冲淡；
+        // 而填充低于 20% 又读不出"浮起"，只剩边缘光 → 又变成凹槽。这是个死结。
+        // 改成块内自绘图标条（一条与底栏等宽的图标带，按当前格偏移、被块的形状裁掉），
+        // 填充与图标就解耦了：填充想多亮都行，图标自己画在最上层。
+        // 附带好处：少一次全屏 backdrop 采样。
         Box(
             Modifier
-                .padding(horizontal = 6.dp)
-                .graphicsLayer {
-                    translationX =
-                        if (isLtr) {
-                            dampedDragAnimation.value * tabWidth + panelOffset
-                        } else {
-                            size.width - (dampedDragAnimation.value + 1f) * tabWidth + panelOffset
-                        }
-                }
+                .offset(
+                    x = with(density) { (dampedDragAnimation.value * tabWidth).toDp() } + 4.dp,
+                    y = 4.dp,
+                )
+                .width(with(density) { tabWidth.toDp() })
                 .then(interactiveHighlight.gestureModifier)
                 .then(dampedDragAnimation.modifier)
                 .drawBackdrop(
-                    backdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop),
+                    backdrop = backdrop,
                     shape = { DockShape },
                     effects = {
                         val progress = dampedDragAnimation.pressProgress
@@ -289,19 +268,25 @@ fun LiquidDock(
                             chromaticAberration = true,
                         )
                     },
-                    // 静止时也留一条高光与内阴影：块要一直"有玻璃的边"，不能只在按下时才有质感
+                    // 块要「浮起来」，不是「陷下去」——
+                    // 这里的方向是：外投影常驻（托起块）、内阴影几乎为零（只在按下那一刻才凹）。
+                    // 上一版把内阴影做成常态 0.45，整条底栏读起来就是一个凹槽
                     highlight = {
-                        // 用 Ambient（无方向环境光）而不是 Default：Default 会在某一角拉出一道很亮的弧，
-                        // 与胶囊自身的高光叠在一起形成"两个亮角"，看着乱
+                        // 静止时完全不画边缘光：只要有一圈亮边，就会与胶囊的边缘形成"两个圈"，
+                        // 在均匀浅色背景上必然读成凹槽。选中感交给下面那团光
                         val progress = dampedDragAnimation.pressProgress
-                        Highlight.Ambient.copy(alpha = 0.42f + 0.58f * progress)
+                        if (progress <= 0.01f) null else Highlight.Ambient.copy(alpha = progress)
                     },
-                    shadow = { Shadow(alpha = 0.22f + 0.6f * dampedDragAnimation.pressProgress) },
+                    shadow = {
+                        // 静止不给外投影：这套 Shadow 是均匀外扩的，落在块四周会围出一圈暗边，
+                        // 读起来就是"嵌进玻璃里的凹槽"。凸起感改由「中心亮 + 顶面反光」承担
+                        Shadow(alpha = 0.42f * dampedDragAnimation.pressProgress)
+                    },
                     innerShadow = {
                         val progress = dampedDragAnimation.pressProgress
                         InnerShadow(
-                            radius = (7f + 5f * progress).dp,
-                            alpha = 0.45f + 0.55f * progress,
+                            radius = (1.5f + 9f * progress).dp,
+                            alpha = 0.06f + 0.94f * progress,
                         )
                     },
                     layerBlock = {
@@ -314,19 +299,70 @@ fun LiquidDock(
                     },
                     onDrawSurface = {
                         val progress = dampedDragAnimation.pressProgress
-                        // 关键改动：用「白提亮」而不是「黑压暗」。
-                        // 浅青玻璃上压 7% 黑会出来一块灰贴纸，看着脏；提亮 30% 白才是"浮起的玻璃"，
-                        // 手机上的液体玻璃也是这个道理 —— 选中块比周围更亮，不是更暗
+                        val top = if (!dark) 0.30f else 0.12f
+                        val edge = if (!dark) 0.02f else 0.01f
+                        // 中心亮、边缘略暗 —— 这是「凸起」的光照特征。
+                        // 均匀填充 + 边缘高光会被读成凹槽（亮边围着暗心），前面的版本就是栽在这里
                         drawRect(
-                            if (!dark) Color.White.copy(0.26f) else Color.White.copy(0.07f),
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color.White.copy(top),
+                                    Color.White.copy(edge),
+                                ),
+                                center = Offset(size.width / 2f, size.height * 0.42f),
+                                radius = size.maxDimension * 1.15f,
+                            ),
+                            alpha = 1f - progress,
+                        )
+                        // 顶面 1px 反光：让块有一条"棱"，而不是一团雾
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                0f to Color.White.copy(0.38f),
+                                0.05f to Color.Transparent,
+                                1f to Color.Transparent,
+                            ),
                             alpha = 1f - progress,
                         )
                         drawRect(Color.White.copy(alpha = 0.10f * progress))
                     },
                 )
                 .height(56.dp)
-                .fillMaxWidth(1f / tabs.size),
-        )
+                .clip(DockShape),
+        ) {
+            // 块内图标：按「块当前落在哪一格」直接画一个。
+            //
+            // 为什么不做成"整条图标带 + 偏移"：块 Box 的宽度就是一格，任何子项都会被父约束
+            // 卡在这一格内，即使 requiredWidth 突破，weight 分配的仍是块宽，图标会糊成一团。
+            // 直接取最近格更稳，拖动过程中块在移动、注意力在位移上，图标切换看不出来。
+            val focus = dampedDragAnimation.value.fastRoundToInt().fastCoerceIn(0, tabs.size - 1)
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                androidx.compose.foundation.layout.Box(
+                    Modifier
+                        .size(28.dp)
+                        .graphicsLayer {
+                            // 按下时图标跟着块一起放大，与官方 LiquidBottomTab 的 1.2 倍对齐
+                            val s = 1f + 0.2f * dampedDragAnimation.pressProgress
+                            scaleX = s
+                            scaleY = s
+                        }
+                        .paint(
+                            painter = painterResource(tabs[focus].iconRes),
+                            colorFilter = ColorFilter.tint(accentColor),
+                        ),
+                )
+                Text(
+                    text = tabs[focus].label,
+                    color = accentColor,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 14.sp,
+                )
+            }
+        }
     }
 }
 
