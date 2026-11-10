@@ -122,7 +122,8 @@ fun LiquidDock(
     val dark = isSystemInDarkTheme()
     val colors = glassColors()
     val accentColor = colors.brand
-    val containerColor = colors.surface
+    // 官方容器底是 40% 不透明；我们的 glassSurface 本身已有 55%，再压一档才透得出背景
+    val containerColor = colors.surface.copy(alpha = 0.42f)
     val contentColor = MaterialTheme.colorScheme.onSurface
 
     val tabsBackdrop = rememberLayerBackdrop()
@@ -148,7 +149,7 @@ fun LiquidDock(
 
         val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
         val animationScope = rememberCoroutineScope()
-        var currentIndex by remember { mutableIntStateOf(selectedIndex) }
+        var currentIndex by remember(selectedIndex) { mutableIntStateOf(selectedIndex) }
         val dampedDragAnimation = remember(animationScope) {
             DampedDragAnimation(
                 animationScope = animationScope,
@@ -244,24 +245,14 @@ fun LiquidDock(
             Row(
                 Modifier
                     .clearAndSetSemantics {}
-                    .alpha(0f)
-                    .layerBackdrop(tabsBackdrop)
+                    // 这一层只做两件事：把图标内容录进 tabsBackdrop（供选中块采样）+ 染成强调色。
+                    // 官方这里还叠了一层 drawBackdrop 让图标自带玻璃感；我们去掉它 ——
+                    // 少一次全屏采样，选中块里依然是「染色图标 + 折射」，视觉差别只在按下瞬间
                     .graphicsLayer { translationX = panelOffset }
-                    .drawBackdrop(
-                        backdrop = backdrop,
-                        shape = { DockShape },
-                        effects = {
-                            val progress = dampedDragAnimation.pressProgress
-                            vibrancy()
-                            blur(8f.dp.toPx())
-                            lens(24f.dp.toPx() * progress, 24f.dp.toPx() * progress)
-                        },
-                        highlight = {
-                            Highlight.Default.copy(alpha = dampedDragAnimation.pressProgress)
-                        },
-                        onDrawSurface = { drawRect(containerColor) },
-                    )
-                    .then(interactiveHighlight.modifier)
+                    // 用 0.001 而不是 0：alpha 精确为 0 时 Compose 会跳过绘制，
+                    // layerBackdrop 就录不到内容，选中块里便没有可折射的染色图标
+                    .alpha(0.001f)
+                    .layerBackdrop(tabsBackdrop)
                     .height(56.dp)
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp)
@@ -320,7 +311,7 @@ fun LiquidDock(
                         val progress = dampedDragAnimation.pressProgress
                         // 静止时选中块只是一片 10% 的黑/白 —— 质感全在折射与内阴影里
                         drawRect(
-                            if (!dark) Color.Black.copy(0.1f) else Color.White.copy(0.1f),
+                            if (!dark) Color.Black.copy(0.07f) else Color.White.copy(0.09f),
                             alpha = 1f - progress,
                         )
                         drawRect(Color.Black.copy(alpha = 0.03f * progress))
