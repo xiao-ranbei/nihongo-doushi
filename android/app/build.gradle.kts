@@ -78,6 +78,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     // 液态玻璃（Backdrop）：drawBackdrop / layerBackdrop / blur / lens / Highlight / Shadow
     implementation(libs.backdrop)
+    implementation(libs.shapes)
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 

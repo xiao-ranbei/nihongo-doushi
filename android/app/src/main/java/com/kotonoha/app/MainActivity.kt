@@ -217,11 +217,12 @@ private fun AppRoot(
                 // 悬浮岛交给 GlassLayer 的 overlay 槽：它要采内容层，就必须在 Provider 的子树里
                 overlay = {
                     if (sub == null) {
-                        val current = AppTab.valueOf(tab)
                         LiquidDock(
                             tabs = AppTab.entries.map { DockTab(it.iconRes, it.label) },
-                            selectedIndex = AppTab.entries.indexOf(current),
-                            onSelect = { index -> tab = AppTab.entries[index].name },
+                            // 传 lambda 而不是值：官方 API 就是 `selectedTabIndex: () -> Int`，
+                            // 内部的 snapshotFlow 靠它感知外部切换
+                            selectedIndex = { AppTab.entries.indexOf(AppTab.valueOf(tab)) },
+                            onTabSelected = { index -> tab = AppTab.entries[index].name },
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
                                 .navigationBarsPadding()
