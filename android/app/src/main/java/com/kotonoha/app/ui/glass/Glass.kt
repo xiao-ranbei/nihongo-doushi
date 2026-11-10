@@ -78,6 +78,13 @@ enum class Layer {
 private val LocalBackgroundBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 private val LocalContentBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 
+/** 同包内给 [metalPanel] 取当前层用：Local 本身保持 private，不让页面直接读。 */
+@Composable
+internal fun currentBackgroundBackdrop(): Backdrop? = LocalBackgroundBackdrop.current
+
+@Composable
+internal fun currentContentBackdrop(): Backdrop? = LocalContentBackdrop.current
+
 /** 全局唯一形状：24dp 圆角，别处不许再写数字半径。 */
 object GlassShape {
     val corner: Shape = RoundedCornerShape(GlassTokens.radius)

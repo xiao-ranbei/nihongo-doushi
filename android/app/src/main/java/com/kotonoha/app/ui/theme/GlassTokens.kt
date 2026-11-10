@@ -58,4 +58,31 @@ object GlassTokens {
     val blobHeights = listOf(230.dp, 270.dp, 210.dp)
     val blobCenterX = listOf(0.16f, 0.88f, 0.28f)
     val blobCenterY = listOf(0.14f, 0.40f, 0.88f)
+
+    // ── 液态金属（底栏选中块）────────────────────────────────────────
+    // 金属不是另一种材质，而是同一条效果链的更强参数：折射推得更狠、边缘更硬、表面带斜向金属渐变。
+
+    /** 金属块的折射带宽与偏移：比玻璃（18/24）明显更强，图标与身后内容才会被推挤变形。 */
+    val metalRefractionHeight = 30.dp
+    val metalRefractionAmount = 36.dp
+
+    /** 金属块投影：比普通玻璃厚一档，才像一块实体浮在岛上。 */
+    val metalElevation = 12.dp
+
+    /** 金属块三种形态的几何：整格滑块高度、图标胶囊宽高、连接带高度。 */
+    val metalSlabHeight = 50.dp
+    val metalCapsuleWidth = 56.dp
+    val metalCapsuleHeight = 32.dp
+    val metalTrailHeight = 6.dp
+
+    /** 切换瞬间宽度收到 92% 再弹回，模拟液体被拉动时的横向收缩。 */
+    const val metalSquash = 0.92f
+
+    // ── 一级页布局（焦点卡 + 分区列表）───────────────────────────────
+
+    /** 焦点卡投影：比普通卡片厚一档，作为整页唯一视觉重心。 */
+    val focusElevation = 8.dp
+
+    /** 分区容器内的行高下限（行间用 1dp 分隔线，不再各自成卡）。 */
+    val groupRowMinHeight = 52.dp
 }

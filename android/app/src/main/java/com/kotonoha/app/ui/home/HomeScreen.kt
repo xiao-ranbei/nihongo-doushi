@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -39,7 +41,11 @@ import com.kotonoha.app.engine.verb.VerbData
 import com.kotonoha.app.storage.ActivityAggregation
 import com.kotonoha.app.ui.AppState
 import com.kotonoha.app.ui.adjectiveModulePercent
+import com.kotonoha.app.ui.common.FocusCard
+import com.kotonoha.app.ui.common.GroupBlock
+import com.kotonoha.app.ui.common.InlineTextAction
 import com.kotonoha.app.ui.common.ModuleHeader
+import com.kotonoha.app.ui.common.SectionGroup
 import com.kotonoha.app.ui.currentStreak
 import com.kotonoha.app.ui.isReviewDue
 import com.kotonoha.app.ui.particleDueCount
@@ -106,82 +112,93 @@ fun HomeScreen(
             modifier = Modifier.padding(start = 2.dp, top = 4.dp, bottom = 2.dp),
         )
 
-        // 段② 谚语卡：进入随机一条，「换一句」不与当前重复
-        ProverbCard(
-            proverb = ProverbData.PROVERBS[proverbIndex],
-            onRefresh = {
-                proverbIndex = ProverbPicker.next(proverbIndex, ProverbData.PROVERBS.size, Random.Default)
+        // 段② 焦点卡：整页唯一的视觉重心。谚语原文 + 读音 + 释义，
+        // 底部挂「开始一组练习」——这一页现在该做什么，只由这一个按钮回答
+        val proverb = ProverbData.PROVERBS[proverbIndex]
+        FocusCard(
+            eyebrow = "每日一句",
+            title = proverb.text,
+            subtitle = proverb.reading,
+            body = proverb.meaning,
+            actionLabel = "开始一组练习",
+            onAction = { onSelectTab(AppTab.STUDY) },
+            trailing = {
+                InlineTextAction(
+                    label = "换一句",
+                    icon = Icons.Filled.Refresh,
+                    onClick = {
+                        proverbIndex = ProverbPicker.next(
+                            proverbIndex,
+                            ProverbData.PROVERBS.size,
+                            Random.Default,
+                        )
+                    },
+                )
             },
         )
 
-        // 段③ 今日概览（沿用现有周历条 + 本周小结行，样式不改）
-        GlassSurface(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 14.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    week.forEach { cell ->
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = cell.label,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (cell.isToday) MaterialTheme.colorScheme.primary else paper.muted,
-                                fontWeight = if (cell.isToday) FontWeight.Bold else FontWeight.Normal,
-                            )
-                            Spacer(modifier = Modifier.height(5.dp))
-                            Box(
-                                modifier = Modifier
-                                    .width(34.dp)
-                                    .height(34.dp)
-                                    .clip(RoundedCornerShape(g.smallRadius))
-                                    .background(
-                                        when {
-                                            cell.isToday -> MaterialTheme.colorScheme.primary
-                                            cell.isFuture -> MaterialTheme.colorScheme.background
-                                            cell.answers > 0 -> MaterialTheme.colorScheme.primaryContainer
-                                            else -> MaterialTheme.colorScheme.background
-                                        },
-                                    ),
-                                contentAlignment = Alignment.Center,
-                            ) {
+        // 段③ 本周：从「独立大卡」降级成容器里的一块内容。
+        // 它不再是主角——数据是给焦点卡做注脚的，用一行小格 + 一句小结就够
+        SectionGroup(title = "本周") {
+            GroupBlock {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        week.forEach { cell ->
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = if (cell.isFuture) "–" else cell.answers.toString(),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = if (cell.isToday || cell.answers > 0) {
-                                        FontWeight.Bold
+                                    text = cell.label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (cell.isToday) {
+                                        MaterialTheme.colorScheme.primary
                                     } else {
-                                        FontWeight.Normal
+                                        paper.muted
                                     },
-                                    color = when {
-                                        cell.isToday -> MaterialTheme.colorScheme.onPrimary
-                                        cell.answers > 0 -> MaterialTheme.colorScheme.onPrimaryContainer
-                                        else -> paper.muted
-                                    },
+                                    fontWeight = if (cell.isToday) FontWeight.Bold else FontWeight.Normal,
                                 )
+                                Spacer(modifier = Modifier.height(5.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .width(30.dp)
+                                        .height(30.dp)
+                                        .clip(RoundedCornerShape(g.smallRadius))
+                                        .background(
+                                            when {
+                                                cell.isToday -> MaterialTheme.colorScheme.primary
+                                                cell.isFuture -> MaterialTheme.colorScheme.background
+                                                cell.answers > 0 -> MaterialTheme.colorScheme.primaryContainer
+                                                else -> MaterialTheme.colorScheme.background
+                                            },
+                                        ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = if (cell.isFuture) "–" else cell.answers.toString(),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = if (cell.isToday || cell.answers > 0) {
+                                            FontWeight.Bold
+                                        } else {
+                                            FontWeight.Normal
+                                        },
+                                        color = when {
+                                            cell.isToday -> MaterialTheme.colorScheme.onPrimary
+                                            cell.answers > 0 -> MaterialTheme.colorScheme.onPrimaryContainer
+                                            else -> paper.muted
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "本周 $weekTotal 题 · 连续 ${app.currentStreak()} 天 · 正确率 $accuracy",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = paper.textStrong,
+                    )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(MaterialTheme.colorScheme.outlineVariant),
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = "本周 $weekTotal 题 · 连续 ${app.currentStreak()} 天 · 正确率 $accuracy",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = paper.textStrong,
-                )
             }
         }
 

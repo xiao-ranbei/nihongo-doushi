@@ -52,25 +52,27 @@ fun MineProfileCard(app: AppState) {
     val paper = paperColors()
     var editing by remember { mutableStateOf(false) }
 
+    // 资料卡是全页的"身份"位，给焦点卡的投影厚度与字号，其余容器保持普通卡
     GlassSurface(
         modifier = Modifier.fillMaxWidth(),
+        elevation = com.kotonoha.app.ui.theme.GlassTokens.focusElevation,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 18.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(56.dp)
                     .clip(RoundedCornerShape(g.pillRadius))
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = app.profile.nickname.first().toString(),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
@@ -79,7 +81,7 @@ fun MineProfileCard(app: AppState) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = app.profile.nickname,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )

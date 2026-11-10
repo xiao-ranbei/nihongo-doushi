@@ -41,13 +41,20 @@ import com.kotonoha.app.ui.theme.paperColors
 
 /** 时长 / 任务紧凑条：今日学习时长（大数字锚点）+ 完成任务数 */
 @Composable
-fun StudyDurationCard(today: DayActivity) {
-    val g = geometry()
+fun StudyDurationCard(today: DayActivity, bare: Boolean = false) {
+    if (bare) {
+        DurationRow(today)
+    } else {
+        GlassSurface(modifier = Modifier.fillMaxWidth()) { DurationRow(today) }
+    }
+}
+
+/** 时长 + 任务的横排内容。`bare` 时直接嵌进「今日」容器，不再自带一张卡。 */
+@Composable
+private fun DurationRow(today: DayActivity) {
     val paper = paperColors()
     val (durationValue, durationUnit) = ActivityAggregation.durationParts(today.seconds)
-    GlassSurface(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    run {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -145,8 +152,7 @@ fun StudyProgressCard(app: AppState) {
 
 /** 今日明细卡：答题数 / 正确率 / 连续学习 */
 @Composable
-fun StudyDetailCard(app: AppState) {
-    val g = geometry()
+fun StudyDetailCard(app: AppState, bare: Boolean = false) {
     val today = app.todayActivity()
     val verbStats = app.verbStats
     val adjStats = app.adjectiveStats
@@ -157,9 +163,25 @@ fun StudyDetailCard(app: AppState) {
         Math.round((verbStats.correct + adjStats.correct) * 100.0 / totalAnswers).toString() + "%"
     }
 
-    GlassSurface(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    if (bare) {
+        DetailContent(app)
+    } else {
+        GlassSurface(modifier = Modifier.fillMaxWidth()) { DetailContent(app) }
+    }
+}
+
+@Composable
+private fun DetailContent(app: AppState) {
+    val today = app.todayActivity()
+    val verbStats = app.verbStats
+    val adjStats = app.adjectiveStats
+    val totalAnswers = verbStats.correct + verbStats.incorrect + adjStats.correct + adjStats.incorrect
+    val accuracy = if (totalAnswers == 0) {
+        "—"
+    } else {
+        Math.round((verbStats.correct + adjStats.correct) * 100.0 / totalAnswers).toString() + "%"
+    }
+    run {
         Column(modifier = Modifier.fillMaxWidth()) {
             DetailRow(
                 title = "答题数",

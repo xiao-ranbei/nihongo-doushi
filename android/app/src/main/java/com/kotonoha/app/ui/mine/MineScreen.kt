@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kotonoha.app.ui.glass.DockPreview
 import com.kotonoha.app.ui.glass.GlassSurface
 import com.kotonoha.app.ui.glass.GlassAlertDialog
 import com.kotonoha.app.storage.Bookmark
@@ -53,7 +54,9 @@ import com.kotonoha.app.ui.resetVerbStats
 import com.kotonoha.app.ui.todayActivity
 import com.kotonoha.app.ui.common.ModuleGlyphBox
 import com.kotonoha.app.ui.common.ModuleHeader
+import com.kotonoha.app.ui.common.GroupDivider
 import com.kotonoha.app.ui.common.ModuleSectionLabel
+import com.kotonoha.app.ui.common.SectionGroup
 import com.kotonoha.app.ui.common.PlannedRow
 import com.kotonoha.app.ui.theme.GlassTokens
 import com.kotonoha.app.ui.theme.geometry
@@ -111,14 +114,17 @@ fun MineScreen(app: AppState, onOpenModelSettings: () -> Unit) {
         // 段① 资料卡：首字圆标 + 昵称 + 编辑
         MineProfileCard(app)
 
-        // 段② 学习统计（原两标签版内容，原样保留）
-        StudyDurationCard(app.todayActivity())
+        // 段② 今日：时长与明细合成一个容器。
+        // 拆成两张卡时，一个是"大数字"、一个是"三行明细"，读者要在两个边框之间来回跳；
+        // 合起来之后「今天练了多少 / 正确率多少 / 连续几天」是同一件事的四个面
+        SectionGroup(title = "今日", tone = moduleTone()) {
+            StudyDurationCard(app.todayActivity(), bare = true)
+            GroupDivider(startInset = 16.dp)
+            StudyDetailCard(app, bare = true)
+        }
 
         SectionLabel("学习进度")
         StudyProgressCard(app)
-
-        SectionLabel("今日明细")
-        StudyDetailCard(app)
 
         // 段三 书签收藏夹：计数（N > 99 显示「99+ 条」）+ 按数据显示（空态 / 列表）
         BookmarkSectionLabel(app)
@@ -180,6 +186,15 @@ fun MineScreen(app: AppState, onOpenModelSettings: () -> Unit) {
                     onClick = { showLicenses = true },
                 )
             }
+        }
+
+        // TEMP-PICKER：第 11 轮底栏选型入口。定档后本行与 DockPreview/DockVariant 一起删除。
+        TextButton(onClick = { DockPreview.cycle() }) {
+            Text(
+                text = "底栏形态 · " + DockPreview.variant.label,
+                style = MaterialTheme.typography.labelMedium,
+                color = paperColors().muted,
+            )
         }
 
         // 段⑤ 统计清零（沿用现有实现，不动）
