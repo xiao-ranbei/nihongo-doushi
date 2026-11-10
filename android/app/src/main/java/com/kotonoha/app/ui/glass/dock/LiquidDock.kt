@@ -123,7 +123,7 @@ fun LiquidDock(
     val colors = glassColors()
     val accentColor = colors.brand
     // 官方容器底是 40% 不透明；我们的 glassSurface 本身已有 55%，再压一档才透得出背景
-    val containerColor = colors.surface.copy(alpha = 0.42f)
+    val containerColor = colors.surface.copy(alpha = 0.34f)
     val contentColor = MaterialTheme.colorScheme.onSurface
 
     val tabsBackdrop = rememberLayerBackdrop()
@@ -266,7 +266,7 @@ fun LiquidDock(
         // ③ 选中块：采「背景 + 图标层」，所以块里既有折射也有染色图标
         Box(
             Modifier
-                .padding(horizontal = 4.dp)
+                .padding(horizontal = 6.dp)
                 .graphicsLayer {
                     translationX =
                         if (isLtr) {
@@ -289,14 +289,19 @@ fun LiquidDock(
                             chromaticAberration = true,
                         )
                     },
+                    // 静止时也留一条高光与内阴影：块要一直"有玻璃的边"，不能只在按下时才有质感
                     highlight = {
-                        Highlight.Default.copy(alpha = dampedDragAnimation.pressProgress)
+                        // 用 Ambient（无方向环境光）而不是 Default：Default 会在某一角拉出一道很亮的弧，
+                        // 与胶囊自身的高光叠在一起形成"两个亮角"，看着乱
+                        val progress = dampedDragAnimation.pressProgress
+                        Highlight.Ambient.copy(alpha = 0.42f + 0.58f * progress)
                     },
-                    shadow = { Shadow(alpha = dampedDragAnimation.pressProgress) },
+                    shadow = { Shadow(alpha = 0.22f + 0.6f * dampedDragAnimation.pressProgress) },
                     innerShadow = {
+                        val progress = dampedDragAnimation.pressProgress
                         InnerShadow(
-                            radius = 8f.dp * dampedDragAnimation.pressProgress,
-                            alpha = dampedDragAnimation.pressProgress,
+                            radius = (7f + 5f * progress).dp,
+                            alpha = 0.45f + 0.55f * progress,
                         )
                     },
                     layerBlock = {
@@ -309,12 +314,14 @@ fun LiquidDock(
                     },
                     onDrawSurface = {
                         val progress = dampedDragAnimation.pressProgress
-                        // 静止时选中块只是一片 10% 的黑/白 —— 质感全在折射与内阴影里
+                        // 关键改动：用「白提亮」而不是「黑压暗」。
+                        // 浅青玻璃上压 7% 黑会出来一块灰贴纸，看着脏；提亮 30% 白才是"浮起的玻璃"，
+                        // 手机上的液体玻璃也是这个道理 —— 选中块比周围更亮，不是更暗
                         drawRect(
-                            if (!dark) Color.Black.copy(0.07f) else Color.White.copy(0.09f),
+                            if (!dark) Color.White.copy(0.26f) else Color.White.copy(0.07f),
                             alpha = 1f - progress,
                         )
-                        drawRect(Color.Black.copy(alpha = 0.03f * progress))
+                        drawRect(Color.White.copy(alpha = 0.10f * progress))
                     },
                 )
                 .height(56.dp)
@@ -343,13 +350,19 @@ private fun RowScope.DockTabs(
     alpha: Float,
 ) {
     tabs.forEachIndexed { index, tab ->
+        val selected = index == selectedIndex
         DockTabItem(
-            selected = index == selectedIndex,
+            selected = selected,
             onClick = { onSelect(index) },
         ) {
             androidx.compose.foundation.layout.Box(
                 Modifier
-                    .size(26.dp)
+                    .size(28.dp)
+                    .graphicsLayer {
+                        val s = if (selected) 1.08f else 1f
+                        scaleX = s
+                        scaleY = s
+                    }
                     .paint(
                         painter = painterResource(tab.iconRes),
                         colorFilter = ColorFilter.tint(contentColor),
@@ -359,9 +372,9 @@ private fun RowScope.DockTabs(
             Text(
                 text = tab.label,
                 color = contentColor.copy(alpha = contentColor.alpha * alpha),
-                fontSize = 10.sp,
+                fontSize = 11.sp,
                 fontWeight = if (index == selectedIndex) FontWeight.SemiBold else FontWeight.Normal,
-                lineHeight = 12.sp,
+                lineHeight = 14.sp,
             )
         }
     }
