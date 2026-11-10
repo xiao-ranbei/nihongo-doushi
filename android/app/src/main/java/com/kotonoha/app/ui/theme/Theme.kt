@@ -334,19 +334,19 @@ data class GlassColors(
     // 里混进四个局部值；但派生仍写在这里，保证「颜色只在 Theme.kt 定义」这条红线不被绕过。
 
     /** 镜面高光带：左上那道窄而亮的反射，金属与"白色半透明块"的全部区别就在这里 */
-    val metalTop: Color get() = highlight.copy(alpha = 0.62f)
+    val metalTop: Color get() = highlight.copy(alpha = 0.50f)
 
     /** 高光带后的回落：很快降到很淡的品牌色，形成"亮 → 暗"的金属过渡 */
-    val metalMid: Color get() = brand.copy(alpha = 0.08f)
+    val metalMid: Color get() = brand.copy(alpha = 0.12f)
 
     /** 表面渐变终点：右下压入品牌色，块因此是青玉而不是白雾 */
-    val metalBottom: Color get() = brand.copy(alpha = 0.20f)
+    val metalBottom: Color get() = brand.copy(alpha = 0.40f)
 
     /** 底边暗线：让块有厚度，不至于像一张贴纸 */
-    val metalEdgeDark: Color get() = brand.copy(alpha = 0.40f)
+    val metalEdgeDark: Color get() = brand.copy(alpha = 0.55f)
 
     /** 内侧辉光：选中时整块被点亮，是「这块被激活」的辅助信号（主信号仍是块本身） */
-    val metalGlow: Color get() = brand.copy(alpha = 0.16f)
+    val metalGlow: Color get() = brand.copy(alpha = 0.30f)
 
     /** 无玻璃层时的兜底：金属块不能透明，否则在预览里就是一块空白 */
     val metalFallback: Color get() = brand.copy(alpha = 0.18f)

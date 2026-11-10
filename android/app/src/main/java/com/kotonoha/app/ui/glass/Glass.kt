@@ -100,6 +100,15 @@ object GlassShape {
 fun GlassLayer(
     modifier: Modifier = Modifier,
     colors: GlassColors = glassColors(),
+    /**
+     * 悬浮层：位于 [CompositionLocalProvider] 之内、录制层**之外**。
+     *
+     * 悬浮岛必须放这里，而不是放在 [GlassLayer] 的兄弟位置 —— 兄弟位置拿不到
+     * [LocalContentBackdrop]（Provider 只对子树生效），`GlassSurface` 会静默退回
+     * 半透明实底，看起来"像玻璃"但从来没有采样过，lens 折射与 blur 全部缺席。
+     * 放进 [content] 里也不行：那会重新进入录制层，形成绘制环（D-052）。
+     */
+    overlay: @Composable BoxScope.() -> Unit = {},
     content: @Composable BoxScope.() -> Unit,
 ) {
     val backgroundLayer = rememberLayerBackdrop { drawScreenTexture(colors) }
@@ -121,6 +130,8 @@ fun GlassLayer(
                 Spacer(modifier = Modifier.matchParentSize().drawBehind { drawScreenTexture(colors) })
                 content()
             }
+            // ③ 悬浮层：能拿到两层 backdrop，但不在录制层内
+            overlay()
         }
     }
 }

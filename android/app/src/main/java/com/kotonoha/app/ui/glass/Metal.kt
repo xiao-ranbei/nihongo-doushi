@@ -98,12 +98,24 @@ fun Modifier.metalPanel(
                         // 斜向金属渐变：左上接高光、右下压品牌色，中间回到玻璃底
                         // 垂直三层：顶面高光（窄而硬）→ 中段淡青 → 底面压暗。
                         // 小块上斜向渐变会糊成一片纯色，只有"上亮下暗"才读得出金属锭的侧面
+                        // 打底：上部近白、下部压青，块因此比岛更"沉"
                         drawRect(
                             brush = Brush.verticalGradient(
                                 0f to colors.metalTop,
-                                0.30f to colors.metalMid,
-                                0.58f to colors.metalMid,
+                                0.38f to colors.metalMid,
                                 1f to colors.metalBottom,
+                            ),
+                        )
+                        // 反射带：块上部 18% 处一条横向椭圆光斑，模拟金属对天空的镜面反射。
+                        // 只靠垂直渐变读到的是"染色塑料"，加上这一道才读得出"有一层水面/金属在反光"
+                        drawRect(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    colors.highlight.copy(alpha = 0.55f),
+                                    Color.Transparent,
+                                ),
+                                center = Offset(size.width * 0.5f, size.height * 0.16f),
+                                radius = size.width * 0.62f,
                             ),
                         )
                     },
@@ -112,8 +124,22 @@ fun Modifier.metalPanel(
         )
         .clip(shape)
         .drawWithContent {
+            // ① 内阴影：沿边缘向内 7dp 的一圈暗青，让块像"凹"进去的金属而不是贴上的纸片。
+            // 必须画在内容之前，否则会盖住图标与文字
+            if (glow > 0f) {
+                drawRoundRect(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color.Transparent, colors.metalGlow.copy(alpha = colors.metalGlow.alpha * glow)),
+                        center = Offset(size.width / 2f, size.height / 2f),
+                        radius = max(size.width, size.height) * 0.72f,
+                    ),
+                    size = Size(size.width, size.height),
+                    cornerRadius = CornerRadius(cornerPx),
+                    style = Stroke(glowStrokePx),
+                )
+            }
             drawContent()
-            // ① 顶部 2dp 硬高光：金属的"棱"，衰减极快，和玻璃的柔和内高光不是一回事
+            // ② 顶部 2dp 硬高光：金属的"棱"，衰减极快，和玻璃的柔和内高光不是一回事
             drawRoundRect(
                 brush = Brush.verticalGradient(
                     0f to colors.highlight,
@@ -131,19 +157,6 @@ fun Modifier.metalPanel(
                 cornerRadius = CornerRadius(cornerPx),
                 style = Stroke(strokePx),
             )
-            // ③ 内侧品牌辉光：沿边缘向内一圈，是"这块被激活"的主要信号
-            if (glow > 0f) {
-                drawRoundRect(
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color.Transparent, colors.metalGlow.copy(alpha = colors.metalGlow.alpha * glow)),
-                        center = Offset(size.width / 2f, size.height / 2f),
-                        radius = max(size.width, size.height) * 0.72f,
-                    ),
-                    size = Size(size.width, size.height),
-                    cornerRadius = CornerRadius(cornerPx),
-                    style = Stroke(glowStrokePx),
-                )
-            }
         }
 }
 
@@ -224,7 +237,7 @@ object DockPreview {
 
 /** 语义描边（如选中格的品牌色细环）：与金属边分层，不互相覆盖。 */
 @Composable
-fun Modifier.metalRing(colors: GlassColors = glassColors(), width: Dp = 2.dp): Modifier {
+fun Modifier.metalRing(colors: GlassColors = glassColors(), width: Dp = 2.5.dp): Modifier {
     val density = LocalDensity.current
     val cornerPx = with(density) { GlassTokens.radius.toPx() }
     val strokePx = with(density) { width.toPx() }
@@ -241,7 +254,7 @@ fun Modifier.metalRing(colors: GlassColors = glassColors(), width: Dp = 2.dp): M
         )
         // 主环：品牌色，比玻璃边粗一档才在整条岛上看得见
         drawRoundRect(
-            color = colors.brand.copy(alpha = 0.80f),
+            color = colors.brand.copy(alpha = 0.90f),
             size = Size(size.width, size.height),
             cornerRadius = CornerRadius(cornerPx),
             style = Stroke(strokePx),

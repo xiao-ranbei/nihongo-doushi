@@ -216,7 +216,25 @@ private fun AppRoot(
         Box(modifier = Modifier.fillMaxSize()) {
             // 录制层：屏幕底 + 页面内容。悬浮岛是本层的兄弟节点（见下方），
             // 它采样 Layer.Content 才能做出「内容从岛后方穿过并被折射」的覆盖浮法
-            GlassLayer(modifier = Modifier.fillMaxSize()) {
+            GlassLayer(
+                modifier = Modifier.fillMaxSize(),
+                // 悬浮岛交给 GlassLayer 的 overlay 槽：它要采内容层，就必须在 Provider 的子树里
+                overlay = {
+                    if (sub == null) {
+                        AppBottomBar(
+                            current = AppTab.valueOf(tab),
+                            onSelect = { tab = it.name },
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(
+                                    start = GlassTokens.islandInset,
+                                    end = GlassTokens.islandInset,
+                                    bottom = GlassTokens.islandInset,
+                                ),
+                        )
+                    }
+                },
+            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -321,21 +339,6 @@ private fun AppRoot(
                 }
                 }
                 }
-            }
-            // 悬浮岛：贴底浮起，左右与底部各 16dp。它采样 Layer.Content（内容层），
-            // 且必须是 GlassLayer 的兄弟节点——放进录制层会与 drawBackdrop 形成绘制环
-            if (sub == null) {
-                AppBottomBar(
-                    current = AppTab.valueOf(tab),
-                    onSelect = { tab = it.name },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(
-                            start = GlassTokens.islandInset,
-                            end = GlassTokens.islandInset,
-                            bottom = GlassTokens.islandInset,
-                        ),
-                )
             }
         }
     }

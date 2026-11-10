@@ -30,6 +30,7 @@ import com.kotonoha.app.ui.adjectiveModulePercent
 import com.kotonoha.app.ui.isReviewDue
 import com.kotonoha.app.ui.particleMasteredCount
 import com.kotonoha.app.ui.verbModulePercent
+import com.kotonoha.app.ui.common.FocusCard
 import com.kotonoha.app.ui.common.GroupDivider
 import com.kotonoha.app.ui.common.GroupRow
 import com.kotonoha.app.ui.common.ModuleHeader
@@ -96,7 +97,29 @@ fun StudyScreen(
             modifier = Modifier.padding(start = 2.dp, top = 4.dp, bottom = 2.dp),
         )
 
-        // 段② 练习模块：四个入口从「四张独立卡」收进一个容器。
+        // 段② 焦点卡：这一页现在该练什么，只由一个按钮回答。
+        // 之前四张入口卡等权并列，读者得自己比较"掌握度 0% vs 0% vs 0%"才知道点哪个——
+        // 选择权交回给应用：有到期错题先复习，否则补掌握度最低的那一项
+        val focus = studyFocus(
+            dueCount = dueCount,
+            mistakeTotal = mistakeTotal,
+            verbTotal = verbTotal,
+            verbPracticed = verbPracticed,
+            adjectiveTotal = adjectiveTotal,
+            adjectivePracticed = adjectivePracticed,
+            particlePercent = particlePercent,
+            particleLessons = ParticleData.LESSONS.size,
+        )
+        FocusCard(
+            eyebrow = focus.eyebrow,
+            title = focus.title,
+            subtitle = focus.subtitle,
+            body = focus.body,
+            actionLabel = focus.actionLabel,
+            onAction = { onOpen(focus.destination) },
+        )
+
+        // 段③ 练习模块：四个入口从「四张独立卡」收进一个容器。
         // 分割方式因此从「卡片边界」变成「容器 + 1dp 分隔线」——
         // 四项是同一件事（今天要练什么）的四个选项，不该各自占一张卡
         SectionGroup(title = "练习模块", tone = tone) {
@@ -143,7 +166,7 @@ fun StudyScreen(
             )
         }
 
-        // 段③ 更多工具：规划中的能力留一个位，用「规划中」徽章而不是整张卡
+        // 段④ 更多工具：规划中的能力留一个位，用「规划中」徽章而不是整张卡
         SectionGroup(title = "更多工具", tone = tone) {
             GroupRow(
                 icon = Icons.Filled.Search,
@@ -154,5 +177,81 @@ fun StudyScreen(
             )
         }
 
+    }
+}
+
+/**
+ * 「现在练什么」的推荐规则（纯函数，便于单测与解释）：
+ *
+ * 1. 有到期错题 → 错题复习。间隔复习是**会过期**的，错过一次就退回到新一轮，优先级最高
+ * 2. 否则补掌握度最低的模块：动词 / 形容词 / 助词里百分比最小的那一项
+ * 3. 三项都满（≥100%）→ 退回动词综合练习，作为"随便练一组"的兜底
+ *
+ * 不引入随机：同一状态下推荐稳定，用户第二次进页面不会看到焦点卡跳来跳去。
+ */
+private data class StudyFocus(
+    val eyebrow: String,
+    val title: String,
+    val subtitle: String,
+    val body: String,
+    val actionLabel: String,
+    val destination: StudyDestination,
+)
+
+private fun studyFocus(
+    dueCount: Int,
+    mistakeTotal: Int,
+    verbTotal: Int,
+    verbPracticed: Int,
+    adjectiveTotal: Int,
+    adjectivePracticed: Int,
+    particlePercent: Int,
+    particleLessons: Int,
+): StudyFocus {
+    if (dueCount > 0) {
+        return StudyFocus(
+            eyebrow = "今日到期",
+            title = "错题复习",
+            subtitle = "$dueCount 道今天到期 · 错题本共 $mistakeTotal 道",
+            body = "到期题必须先过一遍，否则会退回新一轮复习；连续答对 3 次才移出错题本。",
+            actionLabel = "开始复习",
+            destination = StudyDestination.MISTAKES,
+        )
+    }
+    val verbPercent = if (verbTotal == 0) 100 else verbPracticed * 100 / verbTotal
+    val adjectivePercent = if (adjectiveTotal == 0) 100 else adjectivePracticed * 100 / adjectiveTotal
+    return when {
+        verbPercent <= adjectivePercent && verbPercent <= particlePercent && verbPercent < 100 -> StudyFocus(
+            eyebrow = "继续练",
+            title = "动词活用",
+            subtitle = "已练 $verbPracticed / $verbTotal 词条 · 掌握度 $verbPercent%",
+            body = "还有 ${verbTotal - verbPracticed} 个词条没练过。先过一遍基础形，再进综合练习。",
+            actionLabel = "练动词",
+            destination = StudyDestination.VERB,
+        )
+        adjectivePercent <= particlePercent && adjectivePercent < 100 -> StudyFocus(
+            eyebrow = "继续练",
+            title = "形容词活用",
+            subtitle = "已练 $adjectivePracticed / $adjectiveTotal 词条 · 掌握度 $adjectivePercent%",
+            body = "还有 ${adjectiveTotal - adjectivePracticed} 个词条没练过，先把十个基本形走一遍。",
+            actionLabel = "练形容词",
+            destination = StudyDestination.ADJECTIVE,
+        )
+        particlePercent < 100 -> StudyFocus(
+            eyebrow = "继续练",
+            title = "助词专题",
+            subtitle = "$particleLessons 个专题 · 已掌握 $particlePercent%",
+            body = "助词按专题推进，每个专题二十来道题，答错的会进错题本一起复习。",
+            actionLabel = "练助词",
+            destination = StudyDestination.PARTICLE,
+        )
+        else -> StudyFocus(
+            eyebrow = "都练完了",
+            title = "综合练习",
+            subtitle = "三个模块的掌握度都已满",
+            body = "可以随便练一组保持手感，或者去错题本看看还有没有漏网的。",
+            actionLabel = "练一组",
+            destination = StudyDestination.VERB,
+        )
     }
 }
