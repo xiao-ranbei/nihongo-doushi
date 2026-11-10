@@ -53,7 +53,7 @@ web/index.html ── 页面结构与交互节点
 
 ### 3.1 动词练习
 
-- 词库覆盖五段、一段和不规则动词，共 **126** 词（五段 70／一段 39／不规则 17，2026-11-10 由 79 扩容，见 [web-honorific-module-spec.md](web-honorific-module-spec.md) §2）；练习目标由语态与活用形式组合构成。
+- 词库覆盖五段、一段和不规则动词，共 **173** 词（五段 98／一段 51／不规则 24，2026-11-10 由 79 分两批扩容：先按音便词尾与自他配对补 45 词，再按语体补 47 个书面语与复合动词，见 [web-honorific-module-spec.md](web-honorific-module-spec.md) §2）；练习目标由语态与活用形式组合构成。
 - 可按动词类别、变形类型、活用形式和基础／进阶难度筛选。选择具体活用形式时，难度筛选停用，避免筛选条件冲突。
 - 题池按筛选条件建立并洗牌；一轮内避免重复同一题，并尽量避开最近出现过的动词。到期错题优先于普通随机题。
 - 题面默认隐藏读音和类别，用户可展开查看；可在判题前查看规律提示。
@@ -163,7 +163,7 @@ web/index.html ── 页面结构与交互节点
   node --test tests/verb-engine.test.js tests/adjective-engine.test.js tests/particle-engine.test.js tests/read-engine.test.js tests/read-client.test.js tests/read-ocr.test.js tests/read-stats.test.js tests/read-tts.test.js tests/styles.test.js tests/font.test.js tests/ui.test.js
   ```
 
-当前基线（2026-11-10 实测）：网页端 12 个测试文件共 **416 项全绿**；Android 端 `./gradlew :app:testDebugUnitTest` **273 项全绿**（含 `GlassContractTest` 8 项 Golden 契约与静态守卫），仪器化 `TalkBackMergeTest` **4 项全绿**（qa33 API 33 与 qa36 API 36 两个模拟器各跑一遍，读屏语义树口径，见 D-030/D-031）；双皮肤 WCAG 对比度由 `android/tools/contrast-check.py` 逐项校验全绿。
+当前基线（2026-11-10 实测）：网页端 12 个测试文件共 **417 项全绿**；Android 端 `./gradlew :app:testDebugUnitTest` **273 项全绿**（含 `GlassContractTest` 8 项 Golden 契约与静态守卫），仪器化 `TalkBackMergeTest` **4 项全绿**（qa33 API 33 与 qa36 API 36 两个模拟器各跑一遍，读屏语义树口径，见 D-030/D-031）；双皮肤 WCAG 对比度由 `android/tools/contrast-check.py` 逐项校验全绿。
 
 未解决的遗留问题（预留位转正清单、跨端数据缺口、技术债务等）统一登记在 [known-issues.md](known-issues.md)，不要在本文件重复罗列。
 

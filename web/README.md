@@ -8,7 +8,7 @@
 
 ## 练习内容
 
-- 五段、一段和不规则动词，共 126 词（五段 70／一段 39／不规则 17）；练习目标为 7 种语态 × 18 种活用形式
+- 五段、一段和不规则动词，共 173 词（五段 98／一段 51／不规则 24）；练习目标为 7 种语态 × 18 种活用形式
 - 敬语子页：三层（尊敬語／謙譲語／丁寧語）对照与填空练习、15 条特殊敬语动词、敬语诊断、二重敬语检查、6 个场景各 4 句手写例句；侧栏有独立入口
 - 学习主页汇总今日答题量、连续学习天数和各模块今日状态
 - 动词、形容词和助词作为独立模块，通过侧栏导航切换；窄屏使用左侧抽屉
@@ -59,7 +59,7 @@ Windows 下 `node --test` 需要显式列出文件，不能只传 `tests/` 目�
 
 ## 字体
 
-页面使用霞鹜楷体（`font/LXGWZhenKaiGB-Regular.ttf`，约 16.7MB）。运行时实际加载的是按当前词库与界面文本生成的子集 `LXGWZhenKaiGB-Regular.subset.woff2`（约 453KB，字符表 1508 项 / cmap 1506 字形，字形轮廓与步进宽度与原字体一致）。同一脚本还会产出 Android 端 TTF `android/app/src/main/res/font/lxgw_zhenkai_subset.ttf`（约 821KB，与 woff2 同一字符表，D-029），两端必须一起重建。新增词库或界面文本后，重新生成子集：
+页面使用霞鹜楷体（`font/LXGWZhenKaiGB-Regular.ttf`，约 16.7MB）。运行时实际加载的是按当前词库与界面文本生成的子集 `LXGWZhenKaiGB-Regular.subset.woff2`（约 466KB，字符表 1542 项 / cmap 1540 字形，字形轮廓与步进宽度与原字体一致）。同一脚本还会产出 Android 端 TTF `android/app/src/main/res/font/lxgw_zhenkai_subset.ttf`（约 843KB，与 woff2 同一字符表，D-029），两端必须一起重建。新增词库或界面文本后，重新生成子集：
 
 ```text
 pip install fonttools brotli

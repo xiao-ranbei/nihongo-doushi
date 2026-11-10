@@ -246,6 +246,56 @@ test("扩容动词的音便与语态抽样正确", function () {
   });
 });
 
+test("书面语与复合动词的活用抽样正确", function () {
+  // 这批词按语体补入：行う 这类书面语动词与「申し込む／間に合う」这类复合动词
+  // 是上一轮按词尾音便选词时整类漏掉的。抽样重点盯「汉字同形但读音不同」的坑：
+  // 行う（おこなう）与 行く（いく）汉字相同，て形必须按五段规则走 おこなって。
+  const cases = [
+    ["okonau", "te", "行って"],
+    ["okonau", "past", "行った"],
+    ["okonau", "negative", "行わない"],
+    ["fukumu", "te", "含んで"],
+    ["shimesu", "masu", "示します"],
+    ["motodzuku", "te", "基づいて"],
+    ["motodzuku", "past", "基づいた"],
+    ["kakawaru", "negative", "関わらない"],
+    ["tomonau", "te", "伴って"],
+    ["moushikomu", "masu", "申し込みます"],
+    ["moushikomu", "te", "申し込んで"],
+    ["maniau", "te", "間に合って"],
+    ["ochitsuku", "te", "落ち着いて"],
+    ["moukeru", "masu", "設けます"],
+    ["shoujiru", "masu", "生じます"],
+    ["shoujiru", "te", "生じて"],
+    ["hikiukeru", "masu", "引き受けます"],
+    ["sadameru", "past", "定めた"]
+  ];
+
+  cases.forEach(function (item) {
+    const target = VERB_BY_ID.get(item[0]);
+    assert.ok(target, "找不到动词：" + item[0]);
+    assert.equal(
+      engine.conjugate(target, "base", item[1]).written,
+      item[2],
+      item[0] + " / " + item[1]
+    );
+  });
+
+  // 行う 与 行く 的假名必须分开：前者 おこなって，后者 いって
+  const okonau = VERB_BY_ID.get("okonau");
+  const iku = VERB_BY_ID.get("iku");
+  assert.equal(engine.conjugate(okonau, "base", "te").kana, "おこなって");
+  assert.equal(engine.conjugate(iku, "base", "te").kana, "いって");
+  assert.equal(engine.conjugate(okonau, "base", "masu").kana, "おこないます");
+  assert.equal(engine.conjugate(iku, "base", "masu").kana, "いきます");
+
+  // サ変复合的漢語词干切分：提出 + する
+  assert.equal(
+    engine.conjugate(VERB_BY_ID.get("taiou-suru"), "potential", "dictionary").written,
+    "対応できる"
+  );
+});
+
 test("罗马字输入可转换为平假名", function () {
   assert.equal(engine.toHiraganaFromRomaji("kakimasu"), "かきます");
   assert.equal(engine.toHiraganaFromRomaji("yomimashita"), "よみました");
