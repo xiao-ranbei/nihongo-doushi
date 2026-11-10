@@ -66,15 +66,11 @@ import androidx.compose.ui.unit.sp
 import com.kotonoha.app.storage.LocalStore
 import com.kotonoha.app.ui.AppState
 import com.kotonoha.app.ui.adjective.AdjectiveFlow
-import com.kotonoha.app.ui.glass.DockPreview
-import com.kotonoha.app.ui.glass.DockVariant
-import com.kotonoha.app.ui.glass.metalEdge
-import com.kotonoha.app.ui.glass.metalPanel
-import com.kotonoha.app.ui.glass.metalRing
 import com.kotonoha.app.ui.glass.GlassLayer
 import com.kotonoha.app.ui.glass.Layer
 import com.kotonoha.app.ui.glass.GlassShape
-import com.kotonoha.app.ui.glass.GlassSurface
+import com.kotonoha.app.ui.glass.dock.DockTab
+import com.kotonoha.app.ui.glass.dock.LiquidDock
 import com.kotonoha.app.ui.home.HomeScreen
 import com.kotonoha.app.ui.mine.MineScreen
 import com.kotonoha.app.ui.mistakes.MistakesScreen
@@ -221,16 +217,15 @@ private fun AppRoot(
                 // 悬浮岛交给 GlassLayer 的 overlay 槽：它要采内容层，就必须在 Provider 的子树里
                 overlay = {
                     if (sub == null) {
-                        AppBottomBar(
-                            current = AppTab.valueOf(tab),
-                            onSelect = { tab = it.name },
+                        val current = AppTab.valueOf(tab)
+                        LiquidDock(
+                            tabs = AppTab.entries.map { DockTab(it.iconRes, it.label) },
+                            selectedIndex = AppTab.entries.indexOf(current),
+                            onSelect = { index -> tab = AppTab.entries[index].name },
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
-                                .padding(
-                                    start = GlassTokens.islandInset,
-                                    end = GlassTokens.islandInset,
-                                    bottom = GlassTokens.islandInset,
-                                ),
+                                .navigationBarsPadding()
+                                .padding(horizontal = GlassTokens.islandInset, vertical = 14.dp),
                         )
                     }
                 },
@@ -344,183 +339,6 @@ private fun AppRoot(
     }
 }
 
-/**
- * 悬浮岛底栏。壳体形态随选型档位变化（见 [DockVariant]），内部结构不变：
- * 一层选中块 + 一层四个标签。
- *
- * 三条与旧实现的差异，都是「必须」而不是偏好：
- * 1. **脱离屏幕**：左右与底部各 16dp，岛不再铺到导航栏下方；内容从岛后方穿过并被折射（覆盖浮法）。
- * 2. **四角同 r**：取消「顶圆角 + 底部直角」，也不再按皮肤切换悬浮/平铺——两套皮肤同形，只换配色。
- * 3. **选中态有实体**：不再只换字色，选中格背后有一块液态金属（折射 30/36、斜向金属渐变、
- *    顶部 2dp 硬高光、内侧品牌辉光），切换时它从旧格滑到新格并做一次横向收缩回弹。
- *
- * 为什么不用 M3 NavigationBar：它的选中态由指示条 + 填充色阶驱动，label 颜色还被内部 token 强制，
- * 与「玻璃岛 + 单块金属」的口径对不上。
- *
- * 读屏口径与原先一致：整格一个焦点站（`selectable` 自带合并子语义，禁手工 mergeDescendants）、
- * role = Tab 供读屏报「标签页」，选中态由 selected 语义而非颜色表达。
- */
-@Composable
-private fun AppBottomBar(
-    current: AppTab,
-    onSelect: (AppTab) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val variant = DockPreview.variant
-    val colors = glassColors()
-    val paper = paperColors()
-    val shell = modifier.fillMaxWidth().navigationBarsPadding()
-
-    DockShell(variant = variant, modifier = shell) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val spacing = 4.dp
-            val inner = maxWidth - GlassTokens.islandPaddingH * 2
-            val cell = (inner - spacing * 3) / 4
-            val index = AppTab.entries.indexOf(current)
-            val target = GlassTokens.islandPaddingH + (cell + spacing) * index
-
-            if (variant != DockVariant.MetalBar) {
-                DockIndicator(variant = variant, cell = cell, target = target, colors = colors)
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = GlassTokens.islandPaddingH,
-                        vertical = GlassTokens.islandPaddingV,
-                    ),
-                horizontalArrangement = Arrangement.spacedBy(spacing),
-            ) {
-                AppTab.entries.forEach { entry ->
-                    BottomTabItem(
-                        entry = entry,
-                        selected = current == entry,
-                        // 整条金属形态没有滑块，选中格改用一圈品牌光环表达
-                        ring = variant == DockVariant.MetalBar && current == entry,
-                        onClick = { onSelect(entry) },
-                        muted = paper.muted,
-                        brand = colors.brand,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-        }
-    }
-}
-
-/** 底栏壳体：整条金属形态把岛本身换成金属材质，其余形态仍是普通玻璃岛。 */
-@Composable
-private fun DockShell(
-    variant: DockVariant,
-    modifier: Modifier,
-    content: @Composable BoxScope.() -> Unit,
-) {
-    if (variant == DockVariant.MetalBar) {
-        // 整条铺金属底会变成一根碧玉条、压过页面内容；这里只要「玻璃岛 + 金属包边」
-        GlassSurface(
-            modifier = modifier.metalEdge(),
-            layer = Layer.Content,
-            elevation = GlassTokens.islandElevation,
-            content = content,
-        )
-    } else {
-        GlassSurface(
-            modifier = modifier,
-            layer = Layer.Content,
-            elevation = GlassTokens.islandElevation,
-            content = content,
-        )
-    }
-}
-
-/**
- * 选中块的三种形态。位置与格宽由调用方算好传进来，这里只负责「怎么画 + 怎么迁移」。
- *
- * 迁移统一是「滑动 + 横向收缩回弹」：`animateDpAsState` 负责位移（340ms，起步快收尾缓），
- * `Animatable` 在每次切换时 snapTo(0.92) 再 spring 回 1.0（dampingRatio 0.85，只过冲一点点）。
- * 收缩围绕格中心进行，所以视觉上是「液体被拉动后回弹」，不是「块从左往右长出来」。
- */
-@Composable
-private fun DockIndicator(
-    variant: DockVariant,
-    cell: Dp,
-    target: Dp,
-    colors: com.kotonoha.app.ui.theme.GlassColors,
-) {
-    val x by animateDpAsState(
-        targetValue = target,
-        animationSpec = tween(GlassMotion.emphasized + 20, easing = GlassMotion.enter),
-        label = "dock-indicator-x",
-    )
-    val squash = remember { Animatable(1f) }
-    var first by remember { mutableStateOf(true) }
-    LaunchedEffect(target) {
-        // 首帧不弹：App 启动时块应该已经就位，不该先收一下再展开
-        if (first) {
-            first = false
-            return@LaunchedEffect
-        }
-        squash.snapTo(GlassTokens.metalSquash)
-        squash.animateTo(1f, spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow))
-    }
-
-    when (variant) {
-        DockVariant.Slab, DockVariant.Trail -> {
-            val w = cell * squash.value
-            Box(
-                modifier = Modifier
-                    .offset(x = x + (cell - w) / 2, y = GlassTokens.islandPaddingV)
-                    .width(w)
-                    .height(GlassTokens.metalSlabHeight)
-                    .metalPanel(layer = Layer.Content, colors = colors),
-            )
-            if (variant == DockVariant.Trail) {
-                // 连接带：只在迁移途中存在，宽度等于「块离目标还有多远」，
-                // 所以它天然随块靠近而缩短——看起来像被拉过去的水银尾巴
-                val distance = abs(x.value - target.value)
-                if (distance > 1f) {
-                    val trail = Dp(distance)
-                    Box(
-                        modifier = Modifier
-                            .offset(
-                                x = Dp(minOf(x.value, target.value)) + cell / 2 - trail / 2,
-                                y = GlassTokens.islandPaddingV + GlassTokens.metalSlabHeight -
-                                    GlassTokens.metalTrailHeight - 8.dp,
-                            )
-                            .width(trail)
-                            .height(GlassTokens.metalTrailHeight)
-                            .background(
-                                color = colors.brand.copy(alpha = 0.32f),
-                                shape = RoundedCornerShape(GlassTokens.metalTrailHeight / 2),
-                            ),
-                    )
-                }
-            }
-        }
-
-        DockVariant.Capsule -> {
-            val w = GlassTokens.metalCapsuleWidth
-            // 图标槽中心在 tab 顶部下方 18dp（26dp 槽 + 2dp 间距 + 12dp 文字，整体居中），
-            // 胶囊要咬住图标而不是连文字一起吞：中心对齐 18dp
-            val y = GlassTokens.islandPaddingV + 17.dp - GlassTokens.metalCapsuleHeight / 2
-            Box(
-                modifier = Modifier
-                    .offset(x = x + (cell - w) / 2, y = y)
-                    .width(w)
-                    .height(GlassTokens.metalCapsuleHeight)
-                    .metalPanel(
-                        layer = Layer.Content,
-                        colors = colors,
-                        elevation = 8.dp,
-                    ),
-            )
-        }
-
-        DockVariant.MetalBar -> Unit
-    }
-}
-
 /** 标签 → 矢量图标。四枚都是 24 viewBox 描边图标，与原型 `src/icons/tab-*.svg` 同形。 */
 private val AppTab.iconRes: Int
     get() = when (this) {
@@ -529,64 +347,3 @@ private val AppTab.iconRes: Int
         AppTab.READ -> R.drawable.ic_tab_read
         AppTab.MINE -> R.drawable.ic_tab_mine
     }
-
-/**
- * 底栏单格：26dp 图标槽 + 10sp 标签。
- *
- * 选中态由「背后的金属块」承担主要表达，这里只做配合：颜色换 brand、图标 1.06 倍、
- * 字重 SemiBold。整条金属形态没有块，才由 [ring] 补一圈品牌光环。
- *
- * 动效（M17）：颜色 160ms、图标缩放 220ms，都走标准缓动，不做弹跳。
- * 缩放只作用在图标本体（graphicsLayer），不参与测量，因此不会引起文字与格宽的重排。
- */
-@Composable
-private fun BottomTabItem(
-    entry: AppTab,
-    selected: Boolean,
-    ring: Boolean,
-    onClick: () -> Unit,
-    muted: Color,
-    brand: Color,
-    modifier: Modifier = Modifier,
-) {
-    val tint by animateColorAsState(
-        targetValue = if (selected) brand else muted,
-        animationSpec = tween(GlassMotion.fast, easing = GlassMotion.standard),
-        label = "tab-tint",
-    )
-    val glyphScale by animateFloatAsState(
-        targetValue = if (selected) 1.06f else 1f,
-        animationSpec = tween(GlassMotion.base, easing = GlassMotion.enter),
-        label = "tab-glyph-scale",
-    )
-    Column(
-        modifier = modifier
-            .height(GlassTokens.tabHeight)
-            .clip(GlassShape.corner)
-            .then(if (ring) Modifier.metalRing() else Modifier)
-            .selectable(selected = selected, role = Role.Tab, onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Box(modifier = Modifier.size(GlassTokens.tabGlyphSlot), contentAlignment = Alignment.Center) {
-            Icon(
-                painter = painterResource(entry.iconRes),
-                contentDescription = entry.label,
-                tint = tint,
-                modifier = Modifier
-                    .size(GlassTokens.tabIcon)
-                    .graphicsLayer {
-                        scaleX = glyphScale
-                        scaleY = glyphScale
-                    },
-            )
-        }
-        Spacer(Modifier.height(2.dp))
-        Text(
-            text = entry.label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, lineHeight = 12.sp),
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = tint,
-        )
-    }
-}

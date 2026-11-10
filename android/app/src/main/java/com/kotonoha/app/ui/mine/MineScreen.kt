@@ -43,7 +43,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kotonoha.app.ui.glass.DockPreview
 import com.kotonoha.app.ui.glass.GlassSurface
 import com.kotonoha.app.ui.glass.GlassAlertDialog
 import com.kotonoha.app.storage.Bookmark
@@ -186,15 +185,6 @@ fun MineScreen(app: AppState, onOpenModelSettings: () -> Unit) {
                     onClick = { showLicenses = true },
                 )
             }
-        }
-
-        // TEMP-PICKER：第 11 轮底栏选型入口。定档后本行与 DockPreview/DockVariant 一起删除。
-        TextButton(onClick = { DockPreview.cycle() }) {
-            Text(
-                text = "底栏形态 · " + DockPreview.variant.label,
-                style = MaterialTheme.typography.labelMedium,
-                color = paperColors().muted,
-            )
         }
 
         // 段⑤ 统计清零（沿用现有实现，不动）
