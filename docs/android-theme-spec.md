@@ -82,8 +82,23 @@
 ## 5. 玻璃的三条硬规矩
 
 1. **玻璃面只能 `GlassSurface` / `Modifier.glassPanel`**。用「半透明 `colorScheme.surface` + 普通 `Surface`」冒充玻璃会在卡片内部出现边界生硬的白色矩形（D-056）。
-2. **层级不能混**：`Layer.Background`（只录屏幕底）供内容流卡片采样；`Layer.Content`（屏幕底 + 页面内容）供悬浮岛 / 吸底条采样。悬浮类玻璃面必须是 `GlassLayer` 的兄弟节点，放进录制层里会形成绘制环、启动即 native 崩溃（D-052）。
+2. **层级不能混**：`Layer.Background`（只录屏幕底）供内容流卡片采样；`Layer.Content`（屏幕底 + 页面内容）供悬浮岛 / 吸底条采样。悬浮类玻璃面必须走 **`GlassLayer(overlay = …)`**：放进 `content` 会形成绘制环、启动即 native 崩溃（D-052）；放在 `GlassLayer` 的兄弟位置则拿不到 Provider、静默退化成半透明实底（D-059）。
 3. **弹层走包装件**：`GlassBottomSheet` / `GlassAlertDialog`。它们把容器底设透明、用 `ScreenTextureBackdrop` 补采样源；`ModalNavigationDrawer` 在主窗口内可直接采 `Layer.Background`，但仍要 `glassPanel` + 透明容器（D-058）。
+
+## 5.1 液态金属（底栏选中块）
+
+不是第三种材质，而是同一条效果链的更强参数：
+
+| | 普通玻璃 | 液态金属 |
+| --- | --- | --- |
+| 折射 | 18dp / 24dp | **30dp / 36dp** |
+| 投影 | 4–10dp | **12dp** |
+| 表面 | 均匀半透明白 | 垂直三层 + **上部 18% 的横向反射带** |
+| 边缘 | 1dp 均匀渐变 | 顶部 2dp 硬高光 + 底边暗线 + 内侧 7dp 暗青内阴影 |
+
+表面色由 `GlassColors` 的四个派生属性给出（`metalTop / metalMid / metalBottom / metalEdgeDark / metalGlow`），全部从 `highlight` 与 `brand` 算出，不引入新色值。
+
+只用垂直渐变读到的是"染色塑料"——必须叠那道横向反射带（`radialGradient` 椭圆光斑）才会读成"有一层金属在反光"。
 
 ## 6. 动效令牌（`ui/theme/Motion.kt`）
 

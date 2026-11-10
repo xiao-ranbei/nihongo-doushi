@@ -281,7 +281,7 @@ adb shell run-as com.kotonoha.app cat files/japanese-verb-practice-profile-v1.js
 | --- | --- | --- |
 | 引擎 | `engine/proverb/`（ProverbData 24 条 + ProverbPicker）、`engine/suggest/`（SuggestionEngine 六规则） | 纯 Kotlin 无 Android 依赖；建议 id 与文案进引擎，图标/色调映射留在 UI |
 | 存储 | `StorageKeys`（profile-v1 / bookmarks-v1）、`Models`（UserProfile/NicknameCheck/Bookmark/BookmarkList）、`LocalStore`（防御性读写）、`AppState`（profile/bookmarks 状态 + updateNickname） | 书签增删纯函数就绪，本期无 UI 写入入口 |
-| UI | `MainActivity`（AppTab 4 项 + 图标单点解析）、`ui/study/StudyScreen`、`ui/read/ReadScreen`（ReadTool 数据清单）、`ui/home/` 重写（ProverbCard/SuggestionSection 拆分）、`ui/mine/` 扩展（MineProfileCard/MineStats 拆分）、`ui/common/ModuleUi`（EntryCard 迁入 + PlannedBadge/PlannedRow） | 单文件 ≤300 行通过拆分达成；既有 bottomInset/BackHandler/错题来源逻辑未动 |
+| UI | `MainActivity`（AppTab 4 项 + 图标单点解析）、`ui/study/StudyScreen`、`ui/read/ReadScreen`（ReadTool 数据清单）、`ui/home/` 重写（第 11 轮改为 FocusCard 焦点卡 + SuggestionSection 分区）、`ui/mine/` 扩展（MineProfileCard/MineStats 拆分）、`ui/common/ModuleUi`（EntryCard 迁入 + PlannedBadge/PlannedRow） | 单文件 ≤300 行通过拆分达成；既有 bottomInset/BackHandler/错题来源逻辑未动 |
 | 图标 | `res/drawable/ic_tab_study.xml`（学士帽）、`ic_tab_read.xml`（打开的书） | 24dp 单色填充，tint 基底 #FF000000 |
 | 字体 | `web/font/collect-chars.js` 扩展收集 Android 字面量（D-029）+ `subset.py` 重跑：1218 字符，woff2 361KB，Android TTF 655KB | 两端同源；此前 Android 独有的 ざぢぱぴぷぺ 等缺字一并修复 |
 
