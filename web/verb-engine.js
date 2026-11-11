@@ -255,6 +255,87 @@
     "む": "んだ", "ぶ": "んだ", "ぬ": "んだ",
     "く": "いた", "ぐ": "いだ", "す": "した"
   };
+  // —— 按类别看规则 ——
+  // 速查页的「查一个词」出的是具体结果；这一层出的是「这一类怎么变」。
+  // 规则文本不另写一份：inflectionRule 本来就是按 kind 写的类别口吻
+  // （「五段动词词尾改为对应あ段」这类），只有两处按具体词分叉
+  // （行く的て/た、す结尾的短使役受身），传代表词即可绕开。
+  const VERB_CLASSES = [
+    {
+      id: "godan",
+      group: "godan",
+      label: "五段",
+      alias: "一类",
+      summary: "辞书形以「う段」假名结尾，活用时词尾在「あ・い・う・え・お」五段之间移动。",
+      detect: [
+        "辞书形不以「る」结尾时，一定是五段。",
+        "以「る」结尾时，「る」前是「あ・う・お段」→ 五段（作る、取る、分かる）。"
+      ],
+      exceptions: [
+        "「行く」的て形／た形是「行って」「行った」，不按「く→いて」类推。",
+        "「帰る・入る・切る・走る・知る」看着像一段，实际是五段。"
+      ],
+      representativeId: "kaku"
+    },
+    {
+      id: "ichidan",
+      group: "ichidan",
+      label: "一段",
+      alias: "二类",
+      summary: "辞书形以「る」结尾、「る」前是「い段」或「え段」；活用时一律去掉「る」。",
+      detect: [
+        "「る」前是「い段」→ 一段（見る、起きる、借りる）。",
+        "「る」前是「え段」→ 一段（食べる、教える、寝る）。"
+      ],
+      exceptions: [
+        "「る」前是「い段／え段」却仍属五段的词要单独记：帰る・入る・切る・走る・知る。",
+        "同音不同类：「変える」是一段、「帰る」是五段。"
+      ],
+      representativeId: "taberu"
+    },
+    {
+      id: "suru",
+      group: "irregular",
+      label: "サ变",
+      alias: "三类",
+      summary: "「する」及「名词＋する」的复合词，只有「し・さ・す・せ・しろ」几个形态。",
+      detect: [
+        "词尾是「する」，或「する」前是名词（勉強する、掃除する）。",
+        "复合词一律按「する」变，前面的名词部分不动。"
+      ],
+      exceptions: [
+        "可能形是「できる」而不是「される」，复合词同理（勉強できる）。"
+      ],
+      representativeId: "suru"
+    },
+    {
+      id: "kuru",
+      group: "irregular",
+      label: "カ变",
+      alias: "三类",
+      summary: "只有「来る」及其复合词一个词，汉字不变、读音在「く・き・こ」之间切换。",
+      detect: ["辞书形是「来る（くる）」，或它的复合词（持って来る）。"],
+      exceptions: ["写法不变，只换读音：来ない（こない）、来ます（きます）、来い（こい）。"],
+      representativeId: "kuru"
+    }
+  ];
+
+  // 五段的九个词尾行。音便是五段唯一真正的难点：同样叫五段，て形却有五套。
+  const GODAN_ROWS = [
+    { ending: "く", label: "か行", verbId: "kaku", onbin: "イ音便：く→いて／いた" },
+    { ending: "ぐ", label: "が行", verbId: "oyogu", onbin: "イ音便（浊）：ぐ→いで／いだ" },
+    { ending: "す", label: "さ行", verbId: "hanasu", onbin: "无音便：す→して／した" },
+    { ending: "つ", label: "た行", verbId: "matsu", onbin: "促音便：つ→って／った" },
+    { ending: "ぬ", label: "な行", verbId: "shinu", onbin: "拨音便：ぬ→んで／んだ" },
+    { ending: "ぶ", label: "ば行", verbId: "asobu", onbin: "拨音便：ぶ→んで／んだ" },
+    { ending: "む", label: "ま行", verbId: "yomu", onbin: "拨音便：む→んで／んだ" },
+    { ending: "る", label: "ら行", verbId: "kaeru", onbin: "促音便：る→って／った" },
+    { ending: "う", label: "わ行", verbId: "kau", onbin: "促音便：う→って／った" }
+  ];
+
+  const VERB_INDEX = new Map(VERBS.map(function (verb) { return [verb.id, verb]; }));
+  const CLASS_INDEX = new Map(VERB_CLASSES.map(function (klass) { return [klass.id, klass]; }));
+
   const VOICE_IDS = new Set(VOICES.map(function (voice) { return voice.id; }));
   const INFLECTION_IDS = new Set(INFLECTIONS.map(function (form) { return form.id; }));
 
@@ -676,6 +757,37 @@
       + "\n再变「" + inflection.label + "」：" + formRule;
   }
 
+  function getVerbById(verbId) {
+    return VERB_INDEX.get(verbId) || null;
+  }
+
+  function getVerbClass(classId) {
+    return CLASS_INDEX.get(classId) || null;
+  }
+
+  // kind → 类别 id：iku 归五段，suru／kuru 各自成类。数据里 group 只有三值，
+  // 教学上却要分四类，这一层负责把两套口径对上。
+  function classIdOfKind(kind) {
+    if (kind === "suru" || kind === "kuru") {
+      return kind;
+    }
+    return kind === "ichidan" ? "ichidan" : "godan";
+  }
+
+  function classIdOfVerb(verb) {
+    return verb && typeof verb.kind === "string" ? classIdOfKind(verb.kind) : null;
+  }
+
+  // 类级规则：复用按 kind 写的规则文本；代表词只用来绕开两处按具体词分叉的分支
+  // （行く的て/た音便、す结尾动词的短使役受身）。
+  function explainClass(classId, inflectionId) {
+    const klass = CLASS_INDEX.get(classId);
+    if (!klass || !INFLECTION_IDS.has(inflectionId)) {
+      throw new RangeError("A known verb class and inflection are required.");
+    }
+    return inflectionRule(classId, inflectionId, VERB_INDEX.get(klass.representativeId), "base");
+  }
+
   function toHiraganaFromRomaji(input) {
     const source = String(input).normalize("NFKC").toLowerCase().replace(/\s/g, "");
     let result = "";
@@ -794,9 +906,16 @@
     O_ROW: O_ROW,
     GODAN_TE: GODAN_TE,
     GODAN_PAST: GODAN_PAST,
+    VERB_CLASSES: VERB_CLASSES,
+    GODAN_ROWS: GODAN_ROWS,
     conjugate: conjugate,
     explainVoice: explainVoice,
     explain: explain,
+    explainClass: explainClass,
+    getVerbById: getVerbById,
+    getVerbClass: getVerbClass,
+    classIdOfKind: classIdOfKind,
+    classIdOfVerb: classIdOfVerb,
     toHiraganaFromRomaji: toHiraganaFromRomaji,
     normalizeText: normalizeText,
     normalizeAnswer: normalizeAnswer,

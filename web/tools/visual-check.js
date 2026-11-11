@@ -133,6 +133,22 @@ async function main() {
     await page.waitForTimeout(350);
     await shoot(page, outDir, "07-reference");
 
+    // 速查 · 按类别看规则：五段带九行音便表，一段只有通用规则表。
+    // 面板在首屏之下，滚到面板顶部再拍，才能覆盖表头与列宽。
+    await page.click('[data-reference-class="godan"]');
+    await page.waitForTimeout(350);
+    await page.evaluate(() => {
+      const panel = document.getElementById("reference-class-panel");
+      if (panel) panel.scrollIntoView({ block: "start" });
+    });
+    await page.waitForTimeout(250);
+    await shoot(page, outDir, "07b-reference-class-godan", { keepScroll: true });
+    await page.click('[data-reference-class="ichidan"]');
+    await page.waitForTimeout(350);
+    await shoot(page, outDir, "07c-reference-class-ichidan", { keepScroll: true });
+    await page.click('[data-reference-class="all"]');
+    await page.waitForTimeout(250);
+
     // 形容词练习视图（初始）
     await page.click('[data-view="adjective"]');
     await page.waitForTimeout(400);

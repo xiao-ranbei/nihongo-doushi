@@ -633,6 +633,153 @@ function formRowsOf(app) {
   });
 }
 
+function classTab(app, classId) {
+  const found = app.document.querySelectorAll("[data-reference-class]").filter(function (node) {
+    return node.dataset.referenceClass === classId;
+  })[0];
+  assert.ok(found, "应存在类别切换按钮：" + classId);
+  return found;
+}
+
+function classFormRowsOf(app) {
+  return app.$("reference-class-table-body").childNodes.filter(function (row) {
+    return !row.classList.contains("reference-section-row");
+  });
+}
+
+test("速查页可按动词类别看规则，与查单词互斥显示", function () {
+  const app = createApp();
+  tab(app, "reference");
+
+  // 初始是「查一个词」：单词控件与活用表都在，类别面板隐藏。
+  assert.equal(app.$("reference-controls").hidden, false);
+  assert.equal(app.$("reference-class-panel").hidden, true);
+  assert.equal(classTab(app, "all").getAttribute("aria-pressed"), "true");
+
+  app.click(classTab(app, "godan"));
+
+  assert.equal(app.$("reference-class-panel").hidden, false, "类别面板应显示");
+  assert.equal(app.$("reference-controls").hidden, true, "类别模式下应隐藏单词控件");
+  assert.equal(app.$("reference-summary").hidden, true);
+  assert.equal(app.$("reference-word-table").hidden, true);
+  assert.equal(app.$("verb-morphology-guide").hidden, true);
+  assert.equal(app.$("reference-voice-guide").hidden, true);
+  assert.equal(classTab(app, "godan").getAttribute("aria-pressed"), "true");
+  assert.equal(classTab(app, "all").getAttribute("aria-pressed"), "false");
+
+  assert.equal(app.$("reference-class-title").textContent, "五段动词");
+  assert.equal(app.$("reference-class-pill").textContent, "一类");
+  assert.match(app.$("reference-class-summary").textContent, /「あ・い・う・え・お」/);
+  assert.match(app.$("reference-lead").textContent, /这一类怎么变/);
+  assert.equal(app.$("reference-class-detect").childNodes.length, 2, "五段应给出两条判定方法");
+  assert.equal(app.$("reference-class-exceptions").childNodes.length, 2, "五段应列出两条例外");
+  assert.match(app.$("reference-class-detect").textContent, /不以「る」结尾/);
+  assert.match(app.$("reference-class-exceptions").textContent, /行って/);
+});
+
+test("五段类别给出九个词尾行的て形与た形", function () {
+  const app = createApp();
+  tab(app, "reference");
+  app.click(classTab(app, "godan"));
+
+  assert.equal(app.$("reference-class-rows").hidden, false, "五段应显示九行音便表");
+  const rows = app.$("reference-class-rows-body").childNodes;
+  assert.equal(rows.length, engine.GODAN_ROWS.length);
+  assert.equal(rows.length, 9, "五段应有九个词尾行");
+
+  engine.GODAN_ROWS.forEach(function (rowSpec, index) {
+    const verb = engine.VERBS.filter(function (item) {
+      return item.id === rowSpec.verbId;
+    })[0];
+    const row = rows[index];
+    assert.equal(row.childNodes[0].textContent, rowSpec.label, "第一列是行名");
+    assert.equal(row.childNodes[1].textContent, "「" + rowSpec.ending + "」", "第二列是词尾");
+    assert.equal(
+      row.childNodes[3].textContent,
+      engine.conjugate(verb, "base", "te").written,
+      rowSpec.label + " 的て形应等于代表词的结果"
+    );
+    assert.equal(
+      row.childNodes[4].textContent,
+      engine.conjugate(verb, "base", "past").written,
+      rowSpec.label + " 的た形应等于代表词的结果"
+    );
+    assert.equal(row.childNodes[5].textContent, rowSpec.onbin, "第六列是音便说明");
+  });
+
+  // 抽查两行：イ音便与促音便是不同的结果，表里不能混成一套。
+  assert.equal(rows[0].childNodes[3].textContent, "書いて");
+  assert.equal(rows[3].childNodes[3].textContent, "待って");
+  assert.notEqual(rows[0].childNodes[3].textContent, rows[3].childNodes[3].textContent);
+});
+
+test("非五段的类别不显示九行音便表，规则用该类的说法", function () {
+  const app = createApp();
+  tab(app, "reference");
+
+  app.click(classTab(app, "ichidan"));
+  assert.equal(app.$("reference-class-rows").hidden, true, "一段没有九行音便表");
+  assert.equal(app.$("reference-class-title").textContent, "一段动词");
+  assert.equal(app.$("reference-class-pill").textContent, "二类");
+  assert.equal(classFormRowsOf(app).length, engine.INFLECTIONS.length, "所有活用形都要列出");
+  assert.match(app.$("reference-class-table-body").textContent, /去掉「る」/);
+
+  app.click(classTab(app, "suru"));
+  assert.equal(app.$("reference-class-title").textContent, "サ变动词");
+  assert.match(app.$("reference-class-table-body").textContent, /「する」变为「した」/);
+  assert.equal(app.$("reference-class-rows").hidden, true);
+
+  app.click(classTab(app, "kuru"));
+  assert.equal(app.$("reference-class-title").textContent, "カ变动词");
+  assert.match(app.$("reference-class-table-body").textContent, /きます/);
+  assert.equal(app.$("reference-class-rows").hidden, true);
+});
+
+test("类别里的词点一下就切回单词速查并选中该词", function () {
+  const app = createApp();
+  tab(app, "reference");
+  app.click(classTab(app, "ichidan"));
+
+  const buttons = app.$("reference-class-word-list").querySelectorAll("button");
+  assert.ok(buttons.length > 0, "类别里应有可点的词");
+  const target = buttons[0];
+  const label = target.textContent;
+
+  app.click(target);
+
+  assert.equal(app.$("reference-class-panel").hidden, true, "应切回单词模式");
+  assert.equal(app.$("reference-controls").hidden, false);
+  assert.equal(app.$("reference-word-table").hidden, false);
+  assert.equal(app.$("verb-morphology-guide").hidden, false);
+  assert.equal(app.$("reference-voice-guide").hidden, false);
+  assert.equal(classTab(app, "all").getAttribute("aria-pressed"), "true");
+  assert.match(app.$("reference-lead").textContent, /六种活用形/);
+
+  const verbId = app.$("reference-verb").value;
+  const verb = engine.VERBS.filter(function (item) {
+    return item.id === verbId;
+  })[0];
+  assert.equal(verb.dictionary, label, "下拉应选中刚点的词");
+  assert.match(app.$("reference-word").textContent, new RegExp(label));
+  assert.ok(formRowsOf(app).length > 0, "单词活用表应重新渲染");
+});
+
+test("类别表的「练这题」用代表词开练", function () {
+  const app = createApp();
+  tab(app, "reference");
+  app.click(classTab(app, "ichidan"));
+
+  const targetRow = classFormRowsOf(app)[2];
+  const rowLabel = targetRow.childNodes[0].textContent;
+  const expected = targetRow.childNodes[1].querySelector("strong").textContent;
+  app.click(targetRow.querySelectorAll(".practice-link")[0]);
+
+  assert.equal(app.$("view-practice").hidden, false);
+  assert.equal(app.$("view-reference").hidden, true);
+  assert.equal(app.$("target-pill").textContent, rowLabel);
+  assert.equal(currentAnswer(app), expected, "题目答案应等于表里的代表词结果");
+});
+
 test("速查表按基础／进阶分组展示活用形式", function () {
   const app = createApp();
   tab(app, "reference");

@@ -368,10 +368,86 @@
           <div>
             <p class="eyebrow">REFERENCE</p>
             <h2 id="reference-title">活用速查</h2>
-            <p>先看六种活用形如何决定后续接法，再查不同语态和活用结果；具体表达大意会随语境变化。</p>
+            <p id="reference-lead">先看六种活用形如何决定后续接法，再查不同语态和活用结果；具体表达大意会随语境变化。</p>
           </div>
         </div>
-        <div class="reference-controls">
+        <div class="reference-class-bar" role="group" aria-label="选择速查方式">
+          <button class="reference-class-tab" type="button" data-reference-class="all" aria-pressed="true">
+            查一个词
+          </button>
+          <button class="reference-class-tab" type="button" data-reference-class="godan" aria-pressed="false">
+            五段<small>一类</small>
+          </button>
+          <button class="reference-class-tab" type="button" data-reference-class="ichidan" aria-pressed="false">
+            一段<small>二类</small>
+          </button>
+          <button class="reference-class-tab" type="button" data-reference-class="suru" aria-pressed="false">
+            サ变<small>三类</small>
+          </button>
+          <button class="reference-class-tab" type="button" data-reference-class="kuru" aria-pressed="false">
+            カ变<small>三类</small>
+          </button>
+        </div>
+        <section class="reference-class-panel" id="reference-class-panel" hidden aria-label="按动词类别查看的活用规则">
+          <div class="reference-class-head">
+            <div>
+              <p class="eyebrow" id="reference-class-eyebrow">CLASS</p>
+              <h3 id="reference-class-title"></h3>
+              <p id="reference-class-summary"></p>
+            </div>
+            <span class="class-pill" id="reference-class-pill"></span>
+          </div>
+          <div class="reference-class-notes">
+            <div class="reference-class-note">
+              <h4>怎么判断</h4>
+              <ul id="reference-class-detect"></ul>
+            </div>
+            <div class="reference-class-note">
+              <h4>例外与陷阱</h4>
+              <ul id="reference-class-exceptions"></ul>
+            </div>
+          </div>
+          <details class="reference-class-rows" id="reference-class-rows" open hidden>
+            <summary>五段的九个词尾行与音便</summary>
+            <div class="table-wrap">
+              <table class="reference-table reference-class-rows-table" aria-label="五段动词按词尾行的て形与た形">
+                <thead>
+                  <tr>
+                    <th scope="col">行</th>
+                    <th scope="col">词尾</th>
+                    <th scope="col">代表词</th>
+                    <th scope="col">て形</th>
+                    <th scope="col">た形</th>
+                    <th scope="col">音便</th>
+                    <th scope="col" class="reference-practice-col">练一练</th>
+                  </tr>
+                </thead>
+                <tbody id="reference-class-rows-body"></tbody>
+              </table>
+            </div>
+          </details>
+          <div class="reference-class-forms">
+            <p class="reference-class-caption" id="reference-class-caption"></p>
+            <div class="table-wrap">
+              <table class="reference-table reference-class-table" aria-label="该类动词的活用形式与变化规则">
+                <thead>
+                  <tr>
+                    <th scope="col">活用形式</th>
+                    <th scope="col">代表词结果</th>
+                    <th scope="col">变化规则</th>
+                    <th scope="col" class="reference-practice-col">练一练</th>
+                  </tr>
+                </thead>
+                <tbody id="reference-class-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="reference-class-words">
+            <h4>换一个这一类里的词</h4>
+            <div class="reference-class-word-list" id="reference-class-word-list"></div>
+          </div>
+        </section>
+        <div class="reference-controls" id="reference-controls">
           <label class="search-control">
             <span>搜索动词</span>
             <input id="reference-search" type="search" placeholder="输入汉字、假名或中文意思">
@@ -385,7 +461,7 @@
             <select id="reference-voice"></select>
           </label>
         </div>
-        <div class="reference-summary">
+        <div class="reference-summary" id="reference-summary">
           <div>
             <h3 id="reference-word"></h3>
             <p id="reference-meaning"></p>
@@ -429,7 +505,7 @@
             </table>
           </div>
         </details>
-        <div class="table-wrap">
+        <div class="table-wrap" id="reference-word-table">
           <table class="reference-table">
             <thead>
               <tr>

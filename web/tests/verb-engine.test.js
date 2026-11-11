@@ -336,3 +336,98 @@ test("归一化明细标识罗马字识别失败", function () {
   // toHiraganaFromRomaji 一旦遇表外字符即整体返回原串，故 converted === normalized 即失败
   assert.equal(detailed("kakimasu").answer, engine.normalizeAnswer("kakimasu"));
 });
+
+// —— 按类别看规则（五段/一段/サ变/カ变）——
+
+test("类别规则按类给出各自的活用说法", function () {
+  assert.equal(engine.explainClass("godan", "masu"), "把词尾换成对应的い段，再接「ます」。");
+  assert.equal(engine.explainClass("ichidan", "masu"), "去掉「る」后接「ます」。");
+  assert.equal(engine.explainClass("suru", "masu"), "连用形「し」加「ます」。");
+  assert.match(engine.explainClass("kuru", "masu"), /きます/);
+
+  assert.match(engine.explainClass("godan", "negative"), /あ段/);
+  assert.match(engine.explainClass("ichidan", "negative"), /去掉「る」/);
+  assert.match(engine.explainClass("godan", "te"), /音便/);
+  assert.match(engine.explainClass("ichidan", "te"), /去掉「る」/);
+});
+
+test("类别规则不受行く特例污染", function () {
+  // 行く 的て形是不规则，但五段这一类不该继承它。
+  assert.equal(
+    engine.explainClass("godan", "te").indexOf("行く"),
+    -1,
+    "类级规则不该出现个别动词"
+  );
+  assert.equal(
+    engine.explainClass("godan", "past").indexOf("行く"),
+    -1,
+    "た形同理"
+  );
+  // 通用规则仍在：「う」结尾转あ段要变「わ」。
+  assert.match(engine.explainClass("godan", "negative"), /「う」要变成「わ」/);
+});
+
+test("四类各自绑定一个属于该类的代表词", function () {
+  assert.equal(engine.VERB_CLASSES.length, 4);
+  engine.VERB_CLASSES.forEach(function (klass) {
+    const representative = engine.getVerbById(klass.representativeId);
+    assert.ok(representative, klass.id + " 应有代表词");
+    assert.equal(
+      engine.classIdOfVerb(representative),
+      klass.id,
+      klass.id + " 的代表词应属于该类"
+    );
+    assert.equal(typeof klass.label, "string");
+    assert.equal(typeof klass.alias, "string");
+    assert.ok(klass.detect.length > 0, klass.id + " 应给出判定方法");
+    assert.ok(klass.exceptions.length > 0, klass.id + " 应列出例外");
+  });
+});
+
+test("类别归类：行く并入五段、帰る是五段、変える是一段", function () {
+  const classOf = function (verbId) {
+    return engine.classIdOfVerb(VERB_BY_ID.get(verbId));
+  };
+  assert.equal(classOf("iku"), "godan");
+  assert.equal(classOf("kaeru"), "godan");
+  assert.equal(classOf("kaeru-change"), "ichidan");
+  assert.equal(classOf("taberu"), "ichidan");
+  assert.equal(classOf("suru"), "suru");
+  assert.equal(classOf("benkyou-suru"), "suru");
+  assert.equal(classOf("kuru"), "kuru");
+  assert.equal(engine.classIdOfKind("iku"), "godan");
+  assert.equal(engine.classIdOfKind("godan"), "godan");
+  assert.equal(engine.classIdOfKind("ichidan"), "ichidan");
+});
+
+test("五段九行覆盖全部词尾，代表词词尾与所在行一致", function () {
+  const endings = engine.GODAN_ROWS.map(function (row) {
+    return row.ending;
+  });
+  assert.equal(endings.length, 9);
+  assert.deepEqual(
+    endings.slice().sort(),
+    ["う", "く", "ぐ", "す", "つ", "ぬ", "ぶ", "む", "る"].sort()
+  );
+
+  engine.GODAN_ROWS.forEach(function (row) {
+    const verb = engine.getVerbById(row.verbId);
+    assert.ok(verb, row.label + " 应有代表词");
+    assert.equal(
+      verb.dictionary.slice(-1),
+      row.ending,
+      row.label + " 的代表词应以「" + row.ending + "」结尾"
+    );
+    assert.equal(engine.classIdOfVerb(verb), "godan", row.label + " 代表词应是五段");
+    assert.match(row.onbin, /音便/);
+  });
+});
+
+test("类别规则拒绝未知类别与未知活用形", function () {
+  assert.throws(function () {
+    engine.explainClass("nope", "masu");
+  }, RangeError);
+  assert.throws(function () {
+    engine.explainClass("godan", "nope");
+  }, RangeError);
+});

@@ -71,6 +71,13 @@
   // 速查表分组行需要跨全部列；列数以 index.html 表头为准（活用形式/变形结果/
   // 常见表达大意/变化提示/练一练），改表头时同步这里。
   const REFERENCE_COLUMN_COUNT = 5;
+  // 类别规则表少一列（没有「常见表达大意」），列数单独记。
+  const REFERENCE_CLASS_COLUMN_COUNT = 4;
+  const REFERENCE_CLASS_LIST_LIMIT = 14;
+  const REFERENCE_LEADS = {
+    word: "先看六种活用形如何决定后续接法，再查不同语态和活用结果；具体表达大意会随语境变化。",
+    classRule: "这里看的是「这一类怎么变」，不针对某一个词：怎么判断、有哪些例外，以及用代表词跑出的每一种活用结果。"
+  };
   const MORPHOLOGY_FILTER_PREFIX = "morphology:";
   const VERB_MORPHOLOGY_FORMS = [
     {
@@ -490,6 +497,23 @@
     referenceSearch: document.getElementById("reference-search"),
     referenceVerb: document.getElementById("reference-verb"),
     referenceVoice: document.getElementById("reference-voice"),
+    referenceLead: document.getElementById("reference-lead"),
+    referenceClassTabs: Array.from(document.querySelectorAll("[data-reference-class]")),
+    referenceControls: document.getElementById("reference-controls"),
+    referenceSummary: document.getElementById("reference-summary"),
+    referenceWordTable: document.getElementById("reference-word-table"),
+    referenceClassPanel: document.getElementById("reference-class-panel"),
+    referenceClassEyebrow: document.getElementById("reference-class-eyebrow"),
+    referenceClassTitle: document.getElementById("reference-class-title"),
+    referenceClassSummary: document.getElementById("reference-class-summary"),
+    referenceClassPill: document.getElementById("reference-class-pill"),
+    referenceClassDetect: document.getElementById("reference-class-detect"),
+    referenceClassExceptions: document.getElementById("reference-class-exceptions"),
+    referenceClassRows: document.getElementById("reference-class-rows"),
+    referenceClassRowsBody: document.getElementById("reference-class-rows-body"),
+    referenceClassCaption: document.getElementById("reference-class-caption"),
+    referenceClassTableBody: document.getElementById("reference-class-table-body"),
+    referenceClassWordList: document.getElementById("reference-class-word-list"),
     referenceWord: document.getElementById("reference-word"),
     referenceMeaning: document.getElementById("reference-meaning"),
     referenceVoiceMeaning: document.getElementById("reference-voice-meaning"),
@@ -5159,12 +5183,13 @@
   }
 
   // 与练习页共用同一套 LEVELS 分类：速查表按 基础活用/进阶活用 分组展示，
-  // 组头为跨列表头，随后紧跟该组的活用形式行。
-  function appendReferenceSection(levelId, forms) {
+  // 组头为跨列表头，随后紧跟该组的活用形式行。单词表与类别表列数不同，
+  // 组头的 colSpan 由调用方传入。
+  function appendReferenceSection(tbody, levelId, forms, columnCount) {
     const groupRow = document.createElement("tr");
     groupRow.className = "reference-section-row";
     const groupCell = document.createElement("th");
-    groupCell.colSpan = REFERENCE_COLUMN_COUNT;
+    groupCell.colSpan = columnCount;
     groupCell.scope = "colgroup";
     const groupLabel = document.createElement("span");
     groupLabel.className = "reference-section-label";
@@ -5174,7 +5199,7 @@
     groupCount.textContent = forms.length + " 项";
     groupCell.append(groupLabel, groupCount);
     groupRow.append(groupCell);
-    elements.referenceTableBody.append(groupRow);
+    tbody.append(groupRow);
   }
 
   function renderReferenceTable() {
@@ -5207,11 +5232,215 @@
       const forms = INFLECTIONS.filter(function (form) {
         return form.level === level.id;
       });
-      appendReferenceSection(level.id, forms);
+      appendReferenceSection(elements.referenceTableBody, level.id, forms, REFERENCE_COLUMN_COUNT);
       forms.forEach(function (form) {
         elements.referenceTableBody.append(buildReferenceRow(verb, voiceId, form));
       });
     });
+  }
+
+  // —— 按类别看规则 ——
+  // 与「查一个词」共处一页：currentReferenceClass 为 "all" 时是原来的单词速查，
+  // 其余值是 VERB_CLASSES 的 id，整页切成「这一类怎么变」，不依赖具体动词。
+  let currentReferenceClass = "all";
+
+  function applyReferenceMode() {
+    const isWordMode = currentReferenceClass === "all";
+    elements.referenceClassTabs.forEach(function (tab) {
+      tab.setAttribute(
+        "aria-pressed",
+        String(tab.dataset.referenceClass === currentReferenceClass)
+      );
+    });
+    elements.referenceLead.textContent = isWordMode
+      ? REFERENCE_LEADS.word
+      : REFERENCE_LEADS.classRule;
+    elements.referenceControls.hidden = !isWordMode;
+    elements.referenceSummary.hidden = !isWordMode;
+    elements.referenceWordTable.hidden = !isWordMode;
+    elements.verbMorphologyGuide.hidden = !isWordMode;
+    elements.referenceVoiceGuide.hidden = !isWordMode;
+    elements.referenceClassPanel.hidden = isWordMode;
+  }
+
+  function setReferenceClass(classId) {
+    const klass = engine.getVerbClass(classId);
+    currentReferenceClass = klass ? klass.id : "all";
+    applyReferenceMode();
+    if (currentReferenceClass === "all") {
+      renderReferenceTable();
+      return;
+    }
+    renderReferenceClass();
+  }
+
+  function fillTextList(list, items) {
+    list.replaceChildren();
+    items.forEach(function (text) {
+      const item = document.createElement("li");
+      item.textContent = text;
+      list.append(item);
+    });
+  }
+
+  // 类别表的一行：规则文字是这一类的通用说法，结果列是代表词的实际形态。
+  function buildReferenceClassFormRow(verb, form) {
+    const result = engine.conjugate(verb, "base", form.id);
+    const row = document.createElement("tr");
+
+    const formCell = document.createElement("th");
+    formCell.scope = "row";
+    formCell.textContent = form.label;
+
+    const resultCell = document.createElement("td");
+    const answer = document.createElement("div");
+    answer.className = "reference-result";
+    const written = document.createElement("strong");
+    written.textContent = result.written;
+    answer.append(written);
+    if (result.kana !== result.written) {
+      const reading = document.createElement("small");
+      reading.textContent = result.kana;
+      answer.append(reading);
+    }
+    resultCell.append(answer);
+
+    const ruleCell = document.createElement("td");
+    ruleCell.className = "reference-form-meaning";
+    renderRuleExplanation(ruleCell, engine.explainClass(currentReferenceClass, form.id));
+
+    const actionCell = document.createElement("td");
+    actionCell.className = "reference-practice";
+    const practiceButton = document.createElement("button");
+    practiceButton.type = "button";
+    practiceButton.className = "inline-button practice-link";
+    practiceButton.textContent = "练这题";
+    practiceButton.setAttribute("aria-label", "练习这一类动词的" + form.label);
+    practiceButton.addEventListener("click", function () {
+      practiceFromReference(verb, "base", form.id);
+    });
+    actionCell.append(practiceButton);
+
+    row.append(formCell, resultCell, ruleCell, actionCell);
+    return row;
+  }
+
+  function buildGodanRowSpecRow(rowSpec) {
+    const verb = VERB_BY_ID.get(rowSpec.verbId);
+    const row = document.createElement("tr");
+
+    const labelCell = document.createElement("th");
+    labelCell.scope = "row";
+    labelCell.textContent = rowSpec.label;
+
+    const endingCell = document.createElement("td");
+    endingCell.textContent = "「" + rowSpec.ending + "」";
+
+    const verbCell = document.createElement("td");
+    verbCell.textContent = verb.dictionary + "（" + verb.reading + "）";
+
+    const teCell = document.createElement("td");
+    teCell.textContent = engine.conjugate(verb, "base", "te").written;
+
+    const pastCell = document.createElement("td");
+    pastCell.textContent = engine.conjugate(verb, "base", "past").written;
+
+    const onbinCell = document.createElement("td");
+    onbinCell.className = "reference-class-onbin";
+    onbinCell.textContent = rowSpec.onbin;
+
+    const actionCell = document.createElement("td");
+    actionCell.className = "reference-practice";
+    const practiceButton = document.createElement("button");
+    practiceButton.type = "button";
+    practiceButton.className = "inline-button practice-link";
+    practiceButton.textContent = "练这题";
+    practiceButton.setAttribute(
+      "aria-label",
+      "练习 " + verb.dictionary + " 的て形（" + rowSpec.label + "）"
+    );
+    practiceButton.addEventListener("click", function () {
+      practiceFromReference(verb, "base", "te");
+    });
+    actionCell.append(practiceButton);
+
+    row.append(labelCell, endingCell, verbCell, teCell, pastCell, onbinCell, actionCell);
+    return row;
+  }
+
+  function renderReferenceClass() {
+    const klass = engine.getVerbClass(currentReferenceClass);
+    if (!klass) {
+      return;
+    }
+    const representative = VERB_BY_ID.get(klass.representativeId);
+
+    elements.referenceClassEyebrow.textContent = klass.alias + " · CLASS";
+    elements.referenceClassTitle.textContent = klass.label + "动词";
+    elements.referenceClassSummary.textContent = klass.summary;
+    elements.referenceClassPill.textContent = klass.alias;
+    fillTextList(elements.referenceClassDetect, klass.detect);
+    fillTextList(elements.referenceClassExceptions, klass.exceptions);
+
+    elements.referenceClassCaption.textContent = "以「" + representative.dictionary
+      + "（" + representative.reading + "）」为代表词：变化规则是这一类的通用说法，"
+      + "结果列是这个代表词的实际形态。";
+
+    // 九个词尾行只有五段需要：同样叫五段，て形却有五套。
+    const showRows = klass.id === "godan";
+    elements.referenceClassRows.hidden = !showRows;
+    elements.referenceClassRowsBody.replaceChildren();
+    elements.referenceClassTableBody.replaceChildren();
+    if (showRows) {
+      engine.GODAN_ROWS.forEach(function (rowSpec) {
+        elements.referenceClassRowsBody.append(buildGodanRowSpecRow(rowSpec));
+      });
+    }
+
+    LEVELS.forEach(function (level) {
+      const forms = INFLECTIONS.filter(function (form) {
+        return form.level === level.id;
+      });
+      appendReferenceSection(
+        elements.referenceClassTableBody,
+        level.id,
+        forms,
+        REFERENCE_CLASS_COLUMN_COUNT
+      );
+      forms.forEach(function (form) {
+        elements.referenceClassTableBody.append(
+          buildReferenceClassFormRow(representative, form)
+        );
+      });
+    });
+
+    // 类别里的词：点一下切回单词模式并选中，省得为了看别的词再去找下拉框。
+    elements.referenceClassWordList.replaceChildren();
+    VERBS.filter(function (verb) {
+      return engine.classIdOfVerb(verb) === klass.id;
+    }).slice(0, REFERENCE_CLASS_LIST_LIMIT).forEach(function (verb) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "reference-class-word-button";
+      button.textContent = verb.dictionary;
+      button.setAttribute("aria-label", "查看 " + verb.dictionary + " 的完整活用表");
+      button.addEventListener("click", function () {
+        openReferenceWord(verb.id);
+      });
+      elements.referenceClassWordList.append(button);
+    });
+  }
+
+  function openReferenceWord(verbId) {
+    const verb = VERB_BY_ID.get(verbId);
+    if (!verb) {
+      return;
+    }
+    elements.referenceSearch.value = "";
+    populateReferenceControls("");
+    elements.referenceVerb.value = verb.id;
+    setReferenceClass("all");
+    elements.referenceVerb.focus();
   }
 
   elements.homeLinks.forEach(function (link) {
@@ -5347,6 +5576,13 @@
   });
   elements.revealAnswer.addEventListener("click", revealVerbAnswer);
 
+  elements.referenceClassTabs.forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      setReferenceClass(tab.dataset.referenceClass);
+      const klass = engine.getVerbClass(tab.dataset.referenceClass);
+      announce("速查 · " + (klass ? klass.label + "动词" : "查一个词"));
+    });
+  });
   elements.referenceSearch.addEventListener("input", function () {
     populateReferenceControls(elements.referenceSearch.value);
   });
@@ -5436,6 +5672,7 @@
   populatePracticeFilters();
   populateReferenceVoices();
   populateReferenceControls("");
+  applyReferenceMode();
   populateAdjectiveFilters();
   updateMistakeCount();
   renderPracticeStats();
