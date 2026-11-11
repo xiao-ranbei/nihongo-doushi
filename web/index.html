@@ -12,6 +12,7 @@
   <script src="honorific-engine.js" defer></script>
   <script src="adjective-engine.js" defer></script>
   <script src="particle-engine.js" defer></script>
+  <script src="grammar-engine.js" defer></script>
   <script src="read-engine.js" defer></script>
   <script src="read-prompts.js" defer></script>
   <script src="read-view.js" defer></script>
@@ -50,6 +51,9 @@
         </button>
         <button class="nav-item" type="button" data-view="verb" data-verb-subview="honorific" aria-label="敬语" title="敬语">
           <span class="nav-icon" aria-hidden="true">敬</span><span class="nav-label">敬语</span>
+        </button>
+        <button class="nav-item" type="button" data-view="grammar" aria-label="语法整理" title="语法整理">
+          <span class="nav-icon" aria-hidden="true">法</span><span class="nav-label">语法整理</span>
         </button>
         <p class="sidebar-section-label">阅读</p>
         <button class="nav-item" type="button" data-view="read" aria-label="文章阅读" title="文章阅读">
@@ -172,6 +176,16 @@
                 <span class="home-module-status" id="home-read-status">现在可以阅读原文</span>
               </span>
               <span class="home-module-count" id="home-read-count">—</span>
+              <span class="home-module-arrow" aria-hidden="true">→</span>
+            </button>
+            <button class="home-module-card" type="button" data-open-view="grammar">
+              <span class="home-module-mark" aria-hidden="true">法</span>
+              <span class="home-module-copy">
+                <strong>语法整理</strong>
+                <small>词性变形总览、名词怎么当副词、疑问短句</small>
+                <span class="home-module-status">查阅内容 · 不计打卡</span>
+              </span>
+              <span class="home-module-count">3 主题</span>
               <span class="home-module-arrow" aria-hidden="true">→</span>
             </button>
           </div>
@@ -1186,6 +1200,62 @@
             <span aria-hidden="true">◎</span>
             <strong>还没有助词错题</strong>
             <p>完成对比练习后，答错的题目会收集到这里。</p>
+          </div>
+        </section>
+      </section>
+
+      <section class="view grammar-view" id="view-grammar" aria-labelledby="grammar-title" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">GRAMMAR NOTES</p>
+            <h2 id="grammar-title">语法整理</h2>
+            <p>从词内变形到句子打包，把常问的语法结论收在一处；本页只作查阅，不计入今日答题量。</p>
+          </div>
+        </div>
+        <div class="grammar-topic-bar" role="group" aria-label="选择语法主题">
+          <button class="grammar-topic-tab" type="button" data-grammar-topic="inflection" aria-pressed="true">
+            词性变形总览<small>词内变形</small>
+          </button>
+          <button class="grammar-topic-tab" type="button" data-grammar-topic="noun-adverb" aria-pressed="false">
+            名词怎么当副词<small>功能转换</small>
+          </button>
+          <button class="grammar-topic-tab" type="button" data-grammar-topic="embedded-question" aria-pressed="false">
+            疑问短句<small>句子打包</small>
+          </button>
+        </div>
+        <section class="grammar-panel" id="grammar-panel" aria-label="语法主题内容">
+          <div class="grammar-head">
+            <div>
+              <p class="eyebrow" id="grammar-topic-eyebrow"></p>
+              <h3 id="grammar-topic-title"></h3>
+              <p class="grammar-lead" id="grammar-topic-lead"></p>
+            </div>
+            <span class="class-pill" id="grammar-topic-pill"></span>
+          </div>
+          <p class="grammar-summary" id="grammar-topic-summary"></p>
+          <section class="grammar-block" aria-labelledby="grammar-table-heading">
+            <h4 id="grammar-table-heading">对照表</h4>
+            <p class="grammar-caption" id="grammar-table-caption"></p>
+            <p class="grammar-scroll-hint">表格较宽，可左右滑动查看完整内容。</p>
+            <div class="table-wrap">
+              <table class="reference-table grammar-table" aria-label="该语法主题的对照表">
+                <thead><tr id="grammar-table-head"></tr></thead>
+                <tbody id="grammar-table-body"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="grammar-block" aria-labelledby="grammar-example-heading">
+            <h4 id="grammar-example-heading">例句</h4>
+            <div class="grammar-example-list" id="grammar-example-list"></div>
+          </section>
+          <section class="grammar-block" aria-labelledby="grammar-pitfall-heading">
+            <h4 id="grammar-pitfall-heading">易错点</h4>
+            <div class="grammar-pitfall-list" id="grammar-pitfall-list"></div>
+          </section>
+          <div class="grammar-practice">
+            <h4>去练一练</h4>
+            <p>下面入口跳到既有练习；查阅本身不算一次有效学习活动。</p>
+            <div class="grammar-practice-list" id="grammar-practice-list"></div>
           </div>
         </section>
       </section>

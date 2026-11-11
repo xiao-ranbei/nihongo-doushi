@@ -436,6 +436,7 @@ function createWindow() {
     JapaneseHonorificEngine: require(path.join(PROJECT_ROOT, "honorific-engine.js")),
     JapaneseAdjectiveEngine: require(path.join(PROJECT_ROOT, "adjective-engine.js")),
     JapaneseParticleEngine: require(path.join(PROJECT_ROOT, "particle-engine.js")),
+    JapaneseGrammarEngine: require(path.join(PROJECT_ROOT, "grammar-engine.js")),
     ReadEngine: require(path.join(PROJECT_ROOT, "read-engine.js")),
     ReadPrompts: require(path.join(PROJECT_ROOT, "read-prompts.js")),
     ReadView: require(path.join(PROJECT_ROOT, "read-view.js")),

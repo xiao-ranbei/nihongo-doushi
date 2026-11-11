@@ -109,6 +109,26 @@ for (const verb of engine.VERBS) {
   }
 }
 
+// 语法整理引擎：全部文案都在 TOPICS 的字符串字段里。递归取值可以覆盖新增字段，
+// 同时排除注释散文（与 honorific-engine 的处理口径一致）。
+const grammarEngine = require(path.join(__dirname, "..", "grammar-engine.js"));
+function collectStrings(value) {
+  if (typeof value === "string") {
+    chars.add(value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach(collectStrings);
+    return;
+  }
+  if (value && typeof value === "object") {
+    Object.keys(value).forEach(function (key) {
+      collectStrings(value[key]);
+    });
+  }
+}
+collectStrings(grammarEngine.TOPICS);
+
 // 页面与脚本中的可见文本（含 toast / aria-label / CSS content）
 for (const file of [
   "index.html", "app.js", "adjective-engine.js", "particle-engine.js", "styles.css",

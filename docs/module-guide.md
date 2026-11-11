@@ -56,6 +56,7 @@
 | 助词学习 | `japanese-particle-practice-*` 独立键族 | 错题在助词模块内独立复习，不进全局错题分组 |
 | 敬语 | 复用 `japanese-verb-practice-daily-v1` 的 `honorificAnswers`；不占错题模块 ID | 已接入（2026-11-10）：动词模块第三子页 + 侧栏独立入口（复用 `verb` 视图）；题目 key 形如 `hon::<verbId>::<levelId>`，答错只进当前会话重练队列，**不写全局错题本**；无独立存储键 |
 | 文章阅读（read-analyzer） | `japanese-read-analyzer-*` 五键 + 书签复用 `japanese-verb-practice-bookmarks-v1` | 已接入（2026-11-06，B0–B9）：解析题经 `resolveEngineRef` 反查后走既有出题通道、归属目标模块错题，**本身不占错题模块 ID、不直接写错题本**（D-048）；今日活动只记阅读段数/收藏词数（`japanese-read-analyzer-activity-v1`） |
+| 语法整理（grammar） | 无存储键、不占错题模块 ID；内容在 `grammar-engine.js` 的 `TOPICS` | 已接入（2026-11-11，D-061）：一级视图 + 侧栏/主页入口，三主题按「词内变形 → 功能转换 → 句子打包」分层；**查阅型，不计打卡、不写错题本**，练一练按 `PRACTICE_TARGETS` 白名单跳既有练习；`validateTopics()` 守护每主题四块结构 |
 
 ## Web 当前代码约定
 

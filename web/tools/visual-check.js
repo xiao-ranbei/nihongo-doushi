@@ -231,6 +231,14 @@ async function main() {
     await settle(page);
     await shoot(page, outDir, "20-read-reader");
 
+    // 语法整理：默认主题与第三主题（对照表列数不同，各留一态）。
+    await page.click('[data-view="grammar"]');
+    await settle(page);
+    await shoot(page, outDir, "21-grammar-inflection");
+    await page.click('[data-grammar-topic="embedded-question"]');
+    await settle(page);
+    await shoot(page, outDir, "22-grammar-embedded-question");
+
     console.log("完成 -> " + outDir);
   } finally {
     await browser.close();

@@ -3561,3 +3561,87 @@ test("敬语：场景筛选切换例句列表", function () {
   app.click(buttons[1]);
   assert.equal(app.$("honorific-example-list").querySelectorAll(".honorific-example").length, 4);
 });
+
+// —— 语法整理（查阅型一级视图）——
+
+test("语法整理有一级入口、主页卡片与独立视图，引擎先于 app.js 加载", function () {
+  const app = createApp();
+  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  const nav = app.document.querySelectorAll("[data-view]").filter(function (node) {
+    return node.dataset.view === "grammar";
+  });
+  const card = app.document.querySelectorAll("[data-open-view]").filter(function (node) {
+    return node.dataset.openView === "grammar";
+  });
+  assert.equal(nav.length, 1, "侧栏应有唯一语法整理入口");
+  assert.equal(card.length, 1, "主页应有唯一语法整理卡片");
+  assert.equal(app.$("view-grammar").hidden, true, "初始停在首页");
+  const scriptAt = html.indexOf('src="grammar-engine.js"');
+  assert.ok(scriptAt > 0, "页面应加载 grammar-engine.js");
+  assert.ok(scriptAt < html.indexOf('src="app.js"'), "引擎必须在 app.js 之前");
+});
+
+test("语法整理默认渲染第一主题，四块内容都落地", function () {
+  const grammar = require("../grammar-engine.js");
+  const app = createApp();
+  const first = grammar.TOPICS[0];
+  assert.equal(app.$("grammar-topic-title").textContent, first.label);
+  assert.equal(app.$("grammar-topic-lead").textContent, first.lead);
+  assert.equal(app.$("grammar-topic-summary").textContent, first.summary);
+  assert.equal(app.$("grammar-topic-pill").textContent, first.alias);
+  assert.equal(app.$("grammar-table-caption").textContent, first.table.caption);
+  assert.equal(app.$("grammar-table-head").childNodes.length, first.table.columns.length);
+  assert.equal(app.$("grammar-table-body").childNodes.length, first.table.rows.length);
+  assert.equal(app.$("grammar-example-list").childNodes.length, first.examples.length);
+  assert.equal(app.$("grammar-pitfall-list").childNodes.length, first.pitfalls.length);
+  assert.equal(app.$("grammar-practice-list").childNodes.length, first.practice.length);
+  const firstRow = app.$("grammar-table-body").childNodes[0];
+  assert.equal(firstRow.childNodes[0].tagName, "TH", "首列应是行头");
+  assert.equal(firstRow.childNodes[0].textContent, first.table.rows[0][0]);
+});
+
+test("切换语法主题同步 aria-pressed 与表格列数", function () {
+  const grammar = require("../grammar-engine.js");
+  const app = createApp();
+  tab(app, "grammar");
+  assert.equal(app.$("view-grammar").hidden, false);
+  const tabs = app.document.querySelectorAll("[data-grammar-topic]");
+  assert.equal(tabs.length, grammar.TOPICS.length);
+  grammar.TOPICS.forEach(function (topic, index) {
+    app.click(tabs[index]);
+    assert.equal(app.$("grammar-topic-title").textContent, topic.label);
+    assert.equal(app.$("grammar-table-head").childNodes.length, topic.table.columns.length);
+    assert.equal(app.$("grammar-table-body").childNodes.length, topic.table.rows.length);
+    assert.equal(app.$("grammar-example-list").childNodes.length, topic.examples.length);
+    const pressed = tabs.map(function (node) { return node.getAttribute("aria-pressed"); });
+    assert.equal(pressed[index], "true", "只有当前主题应为按下态");
+    assert.equal(pressed.filter(function (value) { return value === "true"; }).length, 1);
+  });
+});
+
+test("练一练跳既有视图，查阅不写打卡与错题", function () {
+  const daily = JSON.stringify({
+    lastDate: "2026-11-11", streak: 3, best: 5,
+    verbAnswers: 2, adjectiveAnswers: 0, particleAnswers: 0, honorificAnswers: 0
+  });
+  const app = createApp({ storage: { [DAILY_KEY]: daily } });
+  tab(app, "grammar");
+  const beforeDaily = app.window.localStorage.getItem(DAILY_KEY);
+  const beforeMistakes = app.window.localStorage.getItem(MISTAKES_KEY);
+
+  app.click(app.document.querySelectorAll("[data-grammar-topic]")[1]);
+  app.click(app.$("grammar-practice-list").childNodes[0]);
+
+  assert.equal(app.$("view-particle").hidden, false, "应跳到助词练习");
+  assert.equal(app.$("view-grammar").hidden, true);
+  assert.equal(app.window.localStorage.getItem(DAILY_KEY), beforeDaily, "查阅不该改打卡");
+  assert.equal(app.window.localStorage.getItem(MISTAKES_KEY), beforeMistakes, "查阅不该写错题本");
+});
+
+test("每个练一练落点在 app.js 里都有跳转分支", function () {
+  const grammar = require("../grammar-engine.js");
+  const source = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
+  grammar.PRACTICE_TARGETS.forEach(function (target) {
+    assert.ok(source.indexOf('"' + target + '"') !== -1, "app.js 应处理落点 " + target);
+  });
+});

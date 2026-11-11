@@ -1365,14 +1365,16 @@ select {
 }
 
 /* —— 速查页 · 按类别看规则 —— */
-.reference-class-bar {
+.reference-class-bar,
+.grammar-topic-bar {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 12px;
 }
 
-.reference-class-tab {
+.reference-class-tab,
+.grammar-topic-tab {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1387,34 +1389,40 @@ select {
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.reference-class-tab small {
+.reference-class-tab small,
+.grammar-topic-tab small {
   color: var(--text-faint-soft);
   font-size: 9px;
   line-height: 1;
 }
 
-.reference-class-tab:hover {
+.reference-class-tab:hover,
+.grammar-topic-tab:hover {
   border-color: var(--line-accent-hover);
   background: var(--bg-pale-cool);
 }
 
-.reference-class-tab:focus-visible {
+.reference-class-tab:focus-visible,
+.grammar-topic-tab:focus-visible {
   outline: 2px solid var(--outline-green);
   outline-offset: 2px;
 }
 
-.reference-class-tab[aria-pressed="true"] {
+.reference-class-tab[aria-pressed="true"],
+.grammar-topic-tab[aria-pressed="true"] {
   border-color: var(--line-accent);
   background: var(--bg-green-strong);
   color: var(--text-green-deep);
   font-weight: 600;
 }
 
-.reference-class-tab[aria-pressed="true"] small {
+.reference-class-tab[aria-pressed="true"] small,
+.grammar-topic-tab[aria-pressed="true"] small {
   color: var(--text-green-mid);
 }
 
-.reference-class-panel {
+.reference-class-panel,
+.grammar-panel {
   margin-bottom: 12px;
   padding: 15px 17px;
   border: 1px solid var(--line-control);
@@ -1423,7 +1431,8 @@ select {
   box-shadow: var(--shadow);
 }
 
-.reference-class-head {
+.reference-class-head,
+.grammar-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1431,17 +1440,194 @@ select {
   margin-bottom: 12px;
 }
 
-.reference-class-head h3 {
+.reference-class-head h3,
+.grammar-head h3 {
   margin: 3px 0 0;
   color: var(--green-dark);
   font-size: 19px;
 }
 
-.reference-class-head p {
+.reference-class-head p,
+.grammar-head p {
   margin: 5px 0 0;
   color: var(--text-muted-soft);
   font-size: 11px;
   line-height: 1.7;
+}
+
+/* —— 语法整理 · 四块内容与练一练 —— */
+.grammar-summary {
+  margin: 0 0 13px;
+  padding: 10px 13px;
+  border-radius: 11px;
+  background: var(--bg-pale-green);
+  color: var(--text-green-deep);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.grammar-block {
+  margin-bottom: 14px;
+}
+
+.grammar-block > h4,
+.grammar-practice > h4 {
+  margin: 0 0 7px;
+  color: var(--text-green-deep);
+  font-size: 10px;
+}
+
+.grammar-caption {
+  margin: 0 0 8px;
+  color: var(--text-muted-soft);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.grammar-scroll-hint {
+  display: none;
+  margin: 0 0 6px;
+  color: var(--text-faint-soft);
+  font-size: 10px;
+}
+
+.grammar-example-list,
+.grammar-pitfall-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 9px;
+}
+
+.grammar-example,
+.grammar-pitfall {
+  padding: 11px 13px;
+  border: 1px solid var(--hairline-control-soft);
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+.grammar-example-note,
+.grammar-pitfall-note {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-faint-soft);
+  font-size: 9px;
+}
+
+.grammar-example-jp {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.grammar-example-kana {
+  margin: 2px 0 0;
+  color: var(--text-faint-soft);
+  font-size: 10px;
+}
+
+.grammar-example-zh {
+  margin: 6px 0 0;
+  color: var(--text-muted-soft);
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.grammar-pitfall-wrong,
+.grammar-pitfall-right {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+/* 误例只靠「误：」标签与浅色区分：整行删除线会让中文说明糊成一团。 */
+.grammar-pitfall-wrong {
+  color: var(--text-muted-soft);
+}
+
+.grammar-pitfall-right {
+  margin-top: 3px;
+  color: var(--text-green-mid);
+}
+
+.grammar-pitfall-note {
+  margin: 6px 0 0;
+  color: var(--text-muted-soft);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.grammar-practice {
+  padding-top: 11px;
+  border-top: 1px solid var(--line-faint);
+}
+
+.grammar-practice > p {
+  margin: 0 0 8px;
+  color: var(--text-muted-soft);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.grammar-practice-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.grammar-practice-button {
+  padding: 6px 11px;
+  border: 1px solid var(--hairline-control);
+  border-radius: 8px;
+  background: var(--field-bg);
+  color: var(--text-button);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.grammar-practice-button:hover {
+  border-color: var(--line-accent-hover);
+  background: var(--bg-pale-cool);
+}
+
+.grammar-practice-button:focus-visible {
+  outline: 2px solid var(--outline-green);
+  outline-offset: 2px;
+}
+
+/* 语法整理表沿用 reference-table 骨架：第一列是词性或路径，最后一列是形式或例句。
+   原表的 nowrap 与固定 155px 会把「副词・助词・连体词」这类长行头撑开，故按本表覆盖。 */
+.reference-table.grammar-table td:first-child,
+.reference-table.grammar-table tbody th:first-child {
+  width: 130px;
+  white-space: normal;
+}
+
+.reference-table.grammar-table td:last-child {
+  min-width: 220px;
+}
+
+@media (max-width: 840px) {
+  .grammar-scroll-hint {
+    display: block;
+  }
+
+  .reference-table.grammar-table {
+    min-width: 620px;
+  }
+
+  .reference-table.grammar-table td:first-child,
+  .reference-table.grammar-table tbody th:first-child {
+    width: 100px;
+  }
+}
+
+@media (max-width: 580px) {
+  .grammar-head {
+    flex-wrap: wrap;
+  }
 }
 
 .reference-class-notes {

@@ -44,6 +44,11 @@
     throw new Error("The honorific engine did not load.");
   }
 
+  const grammarEngine = window.JapaneseGrammarEngine;
+  if (!grammarEngine) {
+    throw new Error("The grammar notes engine did not load.");
+  }
+
   const VOICES = engine.VOICES;
   const INFLECTIONS = engine.INFLECTIONS;
   const VERBS = engine.VERBS;
@@ -273,6 +278,12 @@
       main: "把读不动的长文，",
       accent: "拆成能看懂的一段。",
       copy: "贴入日语文章，先在本地切成段落读原文；配置模型后可逐段查看读音、词性与译文。"
+    },
+    grammar: {
+      eyebrow: "从词内变形到句子打包",
+      main: "把零散的疑问，",
+      accent: "收成一张地图。",
+      copy: "词性变形总览、名词怎么当副词、疑问短句：先看结论，再对照表、例句与易错点。"
     }
   };
 
@@ -303,9 +314,22 @@
       verb: document.getElementById("view-verb"),
       adjective: document.getElementById("view-adjective"),
       particle: document.getElementById("view-particle"),
+      grammar: document.getElementById("view-grammar"),
       mistakes: document.getElementById("view-mistakes"),
       read: document.getElementById("view-read")
     },
+    grammarTopicTabs: Array.from(document.querySelectorAll("[data-grammar-topic]")),
+    grammarTopicEyebrow: document.getElementById("grammar-topic-eyebrow"),
+    grammarTopicTitle: document.getElementById("grammar-topic-title"),
+    grammarTopicLead: document.getElementById("grammar-topic-lead"),
+    grammarTopicPill: document.getElementById("grammar-topic-pill"),
+    grammarTopicSummary: document.getElementById("grammar-topic-summary"),
+    grammarTableCaption: document.getElementById("grammar-table-caption"),
+    grammarTableHead: document.getElementById("grammar-table-head"),
+    grammarTableBody: document.getElementById("grammar-table-body"),
+    grammarExampleList: document.getElementById("grammar-example-list"),
+    grammarPitfallList: document.getElementById("grammar-pitfall-list"),
+    grammarPracticeList: document.getElementById("grammar-practice-list"),
     read: {
       textarea: document.getElementById("read-input-textarea"),
       charCount: document.getElementById("read-char-count"),
@@ -739,6 +763,7 @@
   const VIEW_ANNOUNCE_LABELS = {
     home: "学习主页",
     adjective: "形容词模块",
+    grammar: "语法整理",
     mistakes: "错题本",
     read: "文章阅读"
   };
@@ -4073,6 +4098,9 @@
     if (viewId === "home") {
       renderHomeDashboard();
     }
+    if (viewId === "grammar") {
+      renderGrammarPanel();
+    }
     if (viewId === "mistakes") {
       renderMistakes();
     }
@@ -5443,6 +5471,124 @@
     elements.referenceVerb.focus();
   }
 
+  // ---------------- 语法整理 ----------------
+  // 查阅型内容：只渲染引擎里的结论，不生成题目、不写错题本、不计每日打卡。
+  // 三个主题按「词内变形 → 功能转换 → 句子打包」排列，顺序即 TOPICS 顺序。
+  const GRAMMAR_PRACTICE_VIEWS = {
+    "verb-practice": "verb",
+    "verb-reference": "verb",
+    "adjective-reference": "adjective",
+    "particle-practice": "particle",
+    "particle-learn": "particle"
+  };
+
+  let currentGrammarTopic = grammarEngine.TOPIC_IDS[0];
+
+  function setGrammarTopic(topicId) {
+    currentGrammarTopic = grammarEngine.TOPIC_IDS.indexOf(topicId) === -1
+      ? grammarEngine.TOPIC_IDS[0]
+      : topicId;
+    renderGrammarPanel();
+  }
+
+  function renderGrammarPanel() {
+    const topic = grammarEngine.getTopic(currentGrammarTopic);
+    elements.grammarTopicTabs.forEach(function (tab) {
+      tab.setAttribute("aria-pressed", String(tab.dataset.grammarTopic === currentGrammarTopic));
+    });
+    elements.grammarTopicEyebrow.textContent = topic.eyebrow;
+    elements.grammarTopicTitle.textContent = topic.label;
+    elements.grammarTopicLead.textContent = topic.lead;
+    elements.grammarTopicPill.textContent = topic.alias;
+    elements.grammarTopicSummary.textContent = topic.summary;
+    elements.grammarTableCaption.textContent = topic.table.caption;
+
+    elements.grammarTableHead.replaceChildren();
+    topic.table.columns.forEach(function (label) {
+      const head = document.createElement("th");
+      head.scope = "col";
+      head.textContent = label;
+      elements.grammarTableHead.append(head);
+    });
+
+    elements.grammarTableBody.replaceChildren();
+    topic.table.rows.forEach(function (cells) {
+      const row = document.createElement("tr");
+      cells.forEach(function (text, index) {
+        const cell = document.createElement(index === 0 ? "th" : "td");
+        if (index === 0) {
+          cell.scope = "row";
+        }
+        cell.textContent = text;
+        row.append(cell);
+      });
+      elements.grammarTableBody.append(row);
+    });
+
+    elements.grammarExampleList.replaceChildren();
+    topic.examples.forEach(function (example) {
+      const card = document.createElement("article");
+      card.className = "grammar-example";
+      const note = document.createElement("span");
+      note.className = "grammar-example-note";
+      note.textContent = example.note;
+      const jp = document.createElement("p");
+      jp.className = "grammar-example-jp";
+      jp.textContent = example.jp;
+      const kana = document.createElement("p");
+      kana.className = "grammar-example-kana";
+      kana.textContent = example.kana;
+      const zh = document.createElement("p");
+      zh.className = "grammar-example-zh";
+      zh.textContent = example.zh;
+      card.append(note, jp, kana, zh);
+      elements.grammarExampleList.append(card);
+    });
+
+    elements.grammarPitfallList.replaceChildren();
+    topic.pitfalls.forEach(function (pitfall) {
+      const card = document.createElement("article");
+      card.className = "grammar-pitfall";
+      const wrong = document.createElement("p");
+      wrong.className = "grammar-pitfall-wrong";
+      wrong.textContent = "误：" + pitfall.wrong;   // 文字标签，不只靠删除线传达
+      const right = document.createElement("p");
+      right.className = "grammar-pitfall-right";
+      right.textContent = "正：" + pitfall.right;
+      const note = document.createElement("p");
+      note.className = "grammar-pitfall-note";
+      note.textContent = pitfall.note;
+      card.append(wrong, right, note);
+      elements.grammarPitfallList.append(card);
+    });
+
+    elements.grammarPracticeList.replaceChildren();
+    topic.practice.forEach(function (link) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "grammar-practice-button";
+      button.textContent = link.label;
+      button.setAttribute("aria-label", link.label + "，跳转到既有练习");
+      button.addEventListener("click", function () {
+        openGrammarPractice(link.target);
+      });
+      elements.grammarPracticeList.append(button);
+    });
+  }
+
+  function openGrammarPractice(target) {
+    if (target === "verb-practice" || target === "verb-reference") {
+      setVerbSubview(target === "verb-practice" ? "practice" : "reference");
+    } else if (target === "adjective-reference") {
+      setAdjectiveSubview("reference");
+    } else if (target === "particle-practice" || target === "particle-learn") {
+      setParticleSubview(target === "particle-practice" ? "practice" : "learn");
+    } else {
+      return;
+    }
+    showView(GRAMMAR_PRACTICE_VIEWS[target]);
+  }
+
   elements.homeLinks.forEach(function (link) {
     link.addEventListener("click", function (event) {
       if ((event.button !== undefined && event.button !== 0)
@@ -5583,6 +5729,12 @@
       announce("速查 · " + (klass ? klass.label + "动词" : "查一个词"));
     });
   });
+  elements.grammarTopicTabs.forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      setGrammarTopic(tab.dataset.grammarTopic);
+      announce("语法整理 · " + grammarEngine.getTopic(currentGrammarTopic).label);
+    });
+  });
   elements.referenceSearch.addEventListener("input", function () {
     populateReferenceControls(elements.referenceSearch.value);
   });
@@ -5673,6 +5825,7 @@
   populateReferenceVoices();
   populateReferenceControls("");
   applyReferenceMode();
+  renderGrammarPanel();
   populateAdjectiveFilters();
   updateMistakeCount();
   renderPracticeStats();
